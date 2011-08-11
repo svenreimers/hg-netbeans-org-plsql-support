@@ -1,0 +1,187 @@
+-----------------------------------------------------------------------------
+--
+--  Logical unit: AuthorizationCheckRep
+--
+--  Report:       AuthorizationCheck
+--
+--  IFS/Design Template Version 2.5
+--
+--  Date    Sign    History
+--  ------  ------  ---------------------------------------------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- PACKAGE SPECIFICATION ----------------------------------
+-----------------------------------------------------------------------------
+
+PROMPT Creating AUTHORIZATION_CHECK_RPI specification
+
+CREATE OR REPLACE PACKAGE AUTHORIZATION_CHECK_RPI AS
+
+module_ CONSTANT VARCHAR2(6) := 'TIMREP';
+lu_name_ CONSTANT VARCHAR2(25) := 'AuthorizationCheckRep';
+
+--PROCEDURE Execute_Report (
+--   report_attr_    IN VARCHAR2,
+--   parameter_attr_ IN VARCHAR2 );
+
+PROCEDURE Init;
+
+END AUTHORIZATION_CHECK_RPI;
+/
+SHOW ERROR
+
+-----------------------------------------------------------------------------
+-------------------- VIEWS FOR REPORT META DATA -----------------------------
+-----------------------------------------------------------------------------
+
+PROMPT Creating report view AUTHORIZATION_CHECK_REP
+
+CREATE OR REPLACE VIEW AUTHORIZATION_CHECK_REP AS
+SELECT NULL company_id,
+       NULL to_date,
+       NULL sup_emp_no,
+       NULL from_date,
+       NULL sup_emp_name,
+       NULL emp_no,
+       NULL emp_name,
+       NULL account_date
+FROM   dual
+WITH   read only;
+
+COMMENT ON TABLE AUTHORIZATION_CHECK_REP
+   IS 'LU=AuthorizationCheckRep^PROMPT=Authorization Check^MODULE=TIMREP^';
+
+COMMENT ON COLUMN AUTHORIZATION_CHECK_REP.company_id
+   IS 'FLAGS=A----^DATATYPE=STRING(20)^PROMPT=Company Id:^TITLE=Company Id^QUERY=Company Id:^QFLAGS=MCS--^QVALUE=:AUTHORIZATION_CHECK_RPI.Default_Company_Id__^REF=PersonCompany^';
+COMMENT ON COLUMN AUTHORIZATION_CHECK_REP.to_date
+   IS 'FLAGS=A----^DATATYPE=DATE^PROMPT=To date:^TITLE=To date^QUERY=To date:^QFLAGS=MCS--^';
+COMMENT ON COLUMN AUTHORIZATION_CHECK_REP.sup_emp_no
+   IS 'FLAGS=A----^DATATYPE=STRING(11)^PROMPT=Sup Emp No:^TITLE=Sup Emp No^QUERY=Sup Emp No:^QFLAGS=MC--L^QVALUE=%^';
+COMMENT ON COLUMN AUTHORIZATION_CHECK_REP.from_date
+   IS 'FLAGS=A----^DATATYPE=DATE^PROMPT=From date:^TITLE=From date^QUERY=From date:^QFLAGS=MCS--^';
+COMMENT ON COLUMN AUTHORIZATION_CHECK_REP.sup_emp_name
+   IS 'FLAGS=A----^DATATYPE=STRING(80)^PROMPT=Sup Emp Name^TITLE=Sup Emp Name^';
+COMMENT ON COLUMN AUTHORIZATION_CHECK_REP.emp_no
+   IS 'FLAGS=A----^DATATYPE=STRING(11)^PROMPT=Emp No^TITLE=Emp No^';
+COMMENT ON COLUMN AUTHORIZATION_CHECK_REP.emp_name
+   IS 'FLAGS=A----^DATATYPE=STRING(80)^PROMPT=Emp Name^TITLE=Emp Name^';
+COMMENT ON COLUMN AUTHORIZATION_CHECK_REP.account_date
+   IS 'FLAGS=A----^DATATYPE=DATE/DATETIME^PROMPT=Account Date^TITLE=Account Date^';
+
+-----------------------------------------------------------------------------
+-------------------- REPORT REGISTRATION ------------------------------------
+-----------------------------------------------------------------------------
+
+BEGIN
+   Report_SYS.Define_Report_('AUTHORIZATION_CHECK_REP', 'TIMREP', 'AuthorizationCheckRep', 'Authorization Check', 'dual', 'AUTHORIZATION_CHECK_RPI..Execute_Report', 0);
+   --Report_SYS.Define_Report_Layout_('AUTHORIZATION_CHECK_REP', 'AuthorizationCheckRep.xsl', 'Landscape', 'DYNAMIC', NULL, 'DESIGNER');
+   Report_SYS.Define_Report_Text_('AUTHORIZATION_CHECK_REP', 'TXNOTAUTHORIZEDTRANSACTIONS', 'Not authorized transactions');
+   Report_SYS.Refresh_('AUTHORIZATION_CHECK_REP');
+END;
+/
+
+-----------------------------------------------------------------------------
+-------------------- PACKAGE IMPLEMENTATION ---------------------------------
+-----------------------------------------------------------------------------
+
+PROMPT Creating AUTHORIZATION_CHECK_RPI implementation
+
+CREATE OR REPLACE PACKAGE BODY AUTHORIZATION_CHECK_RPI IS
+
+PROCEDURE Execute_Report (
+   report_attr_    IN VARCHAR2,
+   parameter_attr_ IN VARCHAR2 )
+IS
+   result_key_               NUMBER;
+   company_id_               VARCHAR2(20);
+   to_date_                  DATE;
+   sup_emp_no_               VARCHAR2(11);
+   from_date_                DATE;
+   
+   xml_                      CLOB;
+
+   CURSOR get_sup_emp_detail IS
+      SELECT
+         NULL            sup_emp_no,   
+         NULL            sup_emp_name
+      FROM dual;
+
+CURSOR get_emp_detail IS
+   SELECT
+      NULL            emp_no,   
+      NULL            emp_name
+   FROM dual;
+
+CURSOR get_account_date IS
+   SELECT
+      to_date(NULL)   account_date
+   FROM dual;
+
+BEGIN
+   General_SYS.Init_Method(lu_name_, 'AUTHORIZATION_CHECK_RPI', 'Execute_Report');
+   result_key_ := Client_SYS.Attr_Value_To_Number(Client_SYS.Get_Item_Value('RESULT_KEY', report_attr_));
+
+   company_id_               := Client_SYS.Get_Item_Value('COMPANY_ID', parameter_attr_);
+   to_date_                  := Client_SYS.Get_Item_Value('TO_DATE', parameter_attr_);
+   sup_emp_no_               := Client_SYS.Get_Item_Value('SUP_EMP_NO', parameter_attr_);
+   from_date_                := Client_SYS.Get_Item_Value('FROM_DATE', parameter_attr_);
+
+   Xml_Record_Writer_SYS.Create_Report_Header(xml_,'AUTHORIZATION_CHECK_REP','Authorization Check');
+   Xml_Record_Writer_SYS.Start_Element(xml_, 'SUP_EMP_DETAILS');
+   FOR sup_emp_detail_ IN get_sup_emp_detail LOOP
+      Xml_Record_Writer_SYS.Start_Element(xml_, 'SUP_EMP_DETAIL');
+      Xml_Record_Writer_SYS.Add_Element(xml_, 'SUP_EMP_NO', sup_emp_detail_.sup_emp_no);
+      Xml_Record_Writer_SYS.Add_Element(xml_, 'SUP_EMP_NAME', sup_emp_detail_.sup_emp_name);
+      Xml_Record_Writer_SYS.Start_Element(xml_, 'EMP_DETAILS');
+      FOR emp_detail_ IN get_emp_detail LOOP
+         Xml_Record_Writer_SYS.Start_Element(xml_, 'EMP_DETAIL');
+         Xml_Record_Writer_SYS.Add_Element(xml_, 'EMP_NO', emp_detail_.emp_no);
+         Xml_Record_Writer_SYS.Add_Element(xml_, 'EMP_NAME', emp_detail_.emp_name);
+         Xml_Record_Writer_SYS.Start_Element(xml_, 'ACCOUNT_DATES');
+         FOR account_date_ IN get_account_date LOOP
+            Xml_Record_Writer_SYS.Start_Element(xml_, 'ACCOUNT_DATE');
+            Xml_Record_Writer_SYS.Add_Element(xml_, 'ACCOUNT_DATE', account_date_.account_date);
+            Xml_Record_Writer_SYS.End_Element(xml_, 'ACCOUNT_DATE');
+         END LOOP;
+         Xml_Record_Writer_SYS.End_Element(xml_, 'ACCOUNT_DATES');
+         Xml_Record_Writer_SYS.End_Element(xml_, 'EMP_DETAIL');
+      END LOOP;
+      Xml_Record_Writer_SYS.End_Element(xml_, 'EMP_DETAILS');
+      Xml_Record_Writer_SYS.End_Element(xml_, 'SUP_EMP_DETAIL');
+   END LOOP;
+   Xml_Record_Writer_SYS.End_Element(xml_, 'SUP_EMP_DETAILS');
+   Xml_Record_Writer_SYS.End_Element(xml_,'AUTHORIZATION_CHECK_REP');
+
+   Report_SYS.Finish_Xml_Report('AUTHORIZATION_CHECK_REP',result_key_,xml_);
+END Execute_Report;
+
+PROCEDURE test___
+IS
+BEGIN
+    Dbms_Output.Put_Line('This is a test method');
+END test___;
+
+PROCEDURE test__
+IS
+BEGIN
+    Dbms_Output.Put_Line('This is a test method');
+END test__;
+-----------------------------------------------------------------------------
+-------------------- FOUNDATION1 METHODS ------------------------------------
+-----------------------------------------------------------------------------
+-- Init
+--   Dummy procedure that can be called at database startup to ensure that
+--   this package is loaded into memory for performance reasons only.
+-----------------------------------------------------------------------------
+
+PROCEDURE Init
+IS
+BEGIN
+   NULL;
+END Init;
+
+END AUTHORIZATION_CHECK_RPI;
+/
+SHOW ERROR

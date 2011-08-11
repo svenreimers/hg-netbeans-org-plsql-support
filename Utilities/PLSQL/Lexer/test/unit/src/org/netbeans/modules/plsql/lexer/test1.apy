@@ -1,0 +1,338 @@
+PROMPT Creating &VIEW view
+CREATE OR REPLACE VIEW &VIEW AS
+SELECT s.sid                               sid,
+       s.audsid                            audsid,
+       u.identity                          fnd_user,
+       s.osuser                            os_user,
+       s.username                          oracle_user,
+       s.machine                           machine,
+       s.program                           program,
+       s.module                            package,
+       s.action                            method,
+       logon_time                          log_on_time,
+       s.status                            status,
+       decode(s.status, 'ACTIVE', SYSDATE, sysdate - last_call_et/(24*3600)) last_query,
+       nvl(f.info, '!FNDBAS.SESSION.INFO') info,
+       s.serial#                           serial_no,
+       Fnd_Session_API.Get_Sql_Statement(s.sql_address, s.sql_hash_value, s.sql_id) sql_statement,
+       Fnd_Session_API.Get_Sql_Statement(s.prev_sql_addr, s.prev_hash_value, s.prev_sql_id) previous_sql_statement
+FROM   &TABLE1 s, &TABLE2 f, &TABLE3 u
+       WHERE   rtrim(substr(s.client_info, 1, 30)) = u.identity
+       AND     s.audsid  = f.session_id (+)
+       AND     s.audsid != 0
+WITH   read only;
+
+DECLARE
+   CURSOR Insert_Module_Data IS
+   SELECT *
+   FROM MODULE_TAB;
+
+PROCEDURE Insert_data(module_ VARCHAR2,module_name_ VARCHAR2) IS
+
+   tmp_attribute_key_   VARCHAR2(120);
+   newrec_              LANGUAGE_SYS_TAB%ROWTYPE;
+   lu_                  VARCHAR2(120) :='Module';
+   path_                VARCHAR2(500);
+   base_module_         VARCHAR2(120) :='FNDBAS';
+
+BEGIN
+   tmp_attribute_key_ := Replace (module_, '^','~');
+   newrec_.main_type := 'LU';
+   newrec_.type := 'Basic Data';
+   newrec_.path := lu_||'_'||base_module_||'.'||module_;
+   path_ := newrec_.path;
+   newrec_.attribute := 'Text';
+      DECLARE
+      BEGIN
+         INSERT
+            INTO language_sys_tab (
+            main_type,
+            type,
+            path,
+            attribute,
+            lang_code,
+            module,
+            text,
+            installation_text,
+            system_defined,
+            term_usage_version_id,
+            bulk,
+            rowversion)
+         VALUES (
+            newrec_.main_type,
+            newrec_.type,
+            newrec_.path,
+            newrec_.attribute,
+            'PROG',
+            base_module_,
+            module_name_,
+            module_name_,
+            'FALSE',
+            NULL,
+            0,
+            SYSDATE);
+      EXCEPTION
+         WHEN dup_val_on_index THEN
+            UPDATE language_sys_tab
+            SET main_type = newrec_.main_type,
+                type = newrec_.type,
+                path = newrec_.path,
+                attribute = newrec_.attribute,
+                lang_code = 'PROG',
+                module = base_module_,
+                text = module_name_,
+                installation_text = module_name_,
+                system_defined = 'FALSE',
+                rowversion = SYSDATE
+            WHERE main_type = newrec_.main_type
+            AND   type = newrec_.type
+            AND   path = newrec_.path
+            AND   attribute = newrec_.attribute
+            AND   lang_code = 'PROG';
+
+         WHEN OTHERS THEN
+            NULL;
+         END;
+
+
+END Insert_data;
+
+
+BEGIN
+   IF NOT Installation_SYS.Is_Db_Patch_Registered('FNDBAS', '70745') THEN
+      FOR rec_ IN Insert_Module_Data LOOP
+         Insert_data(rec_.module,rec_.name);
+      END LOOP;
+   END IF;
+   Installation_SYS.Register_Db_Patch('FNDBAS', '70745','Insert Basic Data Transations for Module Name');
+   COMMIT;
+END;
+/
+
+EXEC Installation_SYS.Log_Detail_Time_Stamp('ORDER', '100512_90590_ORDER.cdb', 'Timestamp_2');
+PROMPT Updating the value of column SHIP_ADDR_NO in CUSTOMER_ORDER_DELIVERY_TAB
+BEGIN
+    IF (NOT Database_SYS.Is_Db_Patch_Registered('ORDER', 90590)) THEN
+       DECLARE
+          column_       Database_SYS.ColRec;
+          table_name_   VARCHAR2(30) := 'CUSTOMER_ORDER_DELIVERY_TAB';
+
+       BEGIN
+
+          UPDATE customer_order_delivery_tab cod
+             SET cod.ship_addr_no = (CASE WHEN (cod.delnote_no IS NOT NULL) THEN
+                                             (SELECT codn.ship_addr_no
+                                                 FROM  customer_order_deliv_note_tab codn
+                                              WHERE codn.delnote_no = cod.delnote_no)
+                                          WHEN (cod.delnote_no IS NULL AND cod.shipment_id IS NOT NULL) THEN
+                                             (SELECT ship.ship_addr_no
+                                                 FROM shipment_tab ship
+                                              WHERE ship.shipment_id = cod.shipment_id)
+                                          ELSE
+                                             (SELECT col.ship_addr_no
+                                                 FROM customer_order_line_tab col
+                                              WHERE col.order_no     = cod.order_no
+                                              AND   col.line_no      = cod.line_no
+                                              AND   col.rel_no       = cod.rel_no
+                                              AND   col.line_item_no = cod.line_item_no)
+                                    END)
+             WHERE cod.ship_addr_no IS NULL;
+       END;
+       Database_SYS.Register_Db_Patch('ORDER', 90590, 'Adding column SHIP_ADDR_NO into CUSTOMER_ORDER_DELIVERY_TAB');
+    END IF;
+END;
+/
+COMMIT;
+
+exec Installation_SYS.Log_Detail_Time_Stamp('ORDER','1340.upg','Timestamp_14');
+PROMPT Updating the value of D3, DELIVERY_DATE in INVOICE_TAB.
+UPDATE INVOICE_TAB
+   SET D3            =   CASE
+                            WHEN CREATOR = 'CUSTOMER_ORDER_INV_HEAD_API' THEN
+                               DELIVERY_DATE
+                            ELSE
+                               D3
+                         END,
+       DELIVERY_DATE =   CASE
+                            WHEN CREATOR = 'CUSTOMER_ORDER_INV_HEAD_API' AND INVOICE_TYPE NOT IN('CUSTORDDEB','CUSTCOLDEB','SELFBILLDEB','SELFBILLCRE','CUSTORDCRE','CUSTCOLCRE','CUSTCOLCOR','CUSTORDCOR') THEN
+                               NULL
+                            ELSE
+                               DELIVERY_DATE
+                         END;
+ROLLBACK;
+
+PROMPT Creating &VIEW._DEF view
+
+CREATE OR REPLACE VIEW &VIEW._DEF AS
+SELECT doc_class                      doc_class,
+       Language_Text_API.Decode(doc_name)  doc_name,
+       doc_name                       db_doc_name,
+       &OBJID                         objid,
+       &OBJVERSION                    objversion
+FROM   doc_class_tab
+WHERE   DOC_CLASS > ' '
+WITH   read only;
+
+COMMENT ON TABLE &VIEW._DEF
+   IS 'LU=&LU^PROMPT=Document Class^MODULE=&MODULE^';
+
+DECLARE
+   execution_date_     DATE := SYSDATE + 30/86400;
+BEGIN
+    NULL;
+END;
+
+DECLARE
+   CURSOR check_exits(company_id_ VARCHAR2,emp_no_ VARCHAR2)IS
+      SELECT 1
+      FROM company_person_tab
+      WHERE company_id = company_id_
+      AND emp_no = emp_no_;
+   temp_ NUMBER;
+BEGIN
+FOR rec_ IN (SELECT * FROM company_emp_tab) LOOP
+   OPEN check_exits(rec_.company,rec_.employee_id);
+   FETCH check_exits INTO temp_;
+   IF (check_exits%NOTFOUND) THEN
+      INSERT INTO company_person_tab(company_id,emp_no,master_employment,operator,rowversion)
+      VALUES (rec_.company,rec_.employee_id,'0',User,rec_.rowversion);
+   END IF;
+   CLOSE check_exits;
+END LOOP;
+END;
+/
+
+PROMPT dropping temporary procedure
+
+DROP PROCEDURE Temp_Person_Document_Default;
+
+BEGIN
+   Object_Connection_SYS.Disable_Logical_Unit('CompanyPerson');
+   Object_Connection_SYS.Enable_Logical_Unit('CompanyPerson', 'DocReferenceObject^', 'COMPANY_PERSON_ALL', 'COMPANY_PERSON_API');
+END;
+/
+
+CREATE  UNIQUE INDEX Report_Grouping_Detail_Ux ON Report_Grouping_Detail_Tab
+   ( company,
+     internal_key )
+   TABLESPACE &FINREP_INDEX
+   STORAGE
+      ( INITIAL &FINREP_LARGE_IX
+);
+
+CREATE VIEW &MODULE_VIEW1
+( ORDER_NO, RELEASE_NO, SEQUENCE_NO, LINE_ITEM_NO, PART_NO, CONTRACT, CONFIGURATION_ID ,
+LOCATION_NO, LOT_BATCH_NO, SERIAL_NO, WAIV_DEV_REJ_NO, ENG_CHG_LEVEL, ACTIVITY_SEQ,
+QTY_ASSIGNED, LAST_ACTIVITY_DATE)
+AS
+SELECT
+  ' ', ' ', ' ', 0,' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 0, 0, SYSDATE
+ FROM DUAL WHERE 1 = 2
+/
+
+CREATE OR REPLACE VIEW &VIEW3 AS
+SELECT contract                       contract,
+       work_center_no                 work_center_no,
+       work_day                       work_day,
+       Work_Center_Int_API.Get_Work_Center_Prod_Line(contract,work_center_no) production_line,
+       Work_Center_Int_API.Get_Department_No(contract,work_center_no) department,
+       Shop_Order_Operation_Int_API.Planned_Load(work_day,contract,work_center_no) planned,
+       Shop_Order_Operation_Int_API.Released_Load(work_day,contract,work_center_no) released,
+       nvl(Crp_Mach_Op_Load_Util_API.Get_Work_Center_Load(contract,work_center_no, work_day, work_day),0) requisitioned,
+       nvl(Crp_Mach_Op_Load_Util_API.Get_W_C_Dop_Load(contract,work_center_no, work_day, work_day),0) unreleased_dop,
+       nvl(CRP_MACH_OP_LOAD_UTIL_API.Get_Crp_Capac_Workday(contract,work_center_no, work_day),0) wc_cap,
+       nvl((nvl(Crp_Mach_Op_Load_Util_API.Get_Work_Center_Load(contract,work_center_no, work_day, work_day),0)
+       + nvl(Crp_Mach_Op_Load_Util_API.Get_W_C_Dop_Load(contract,work_center_no, work_day, work_day),0)
+       + Shop_Order_Operation_Int_API.Planned_Load(work_day,contract,work_center_no)
+       + Shop_Order_Operation_Int_API.Released_Load(work_day,contract,work_center_no))
+       / DECODE(Work_Center_Capacity_API.Get_Range_Avail_Capacity(contract,work_center_no, work_day, work_day), 0, .00001,
+         CRP_MACH_OP_LOAD_UTIL_API.Get_Crp_Capac_Workday(contract,work_center_no, work_day)) * 100,0) load_pct,
+       objid                          objid,
+       objversion                     objversion
+FROM   CRP_MACH_OP_LOAD2;
+
+CREATE TRIGGER VMOL_BASE_FIELDDEPVALUES_TIB BEFORE INSERT ON
+   VMOL_BASE_FIELDDEPVALUES REFERENCING OLD AS OLDREC NEW AS NEWREC FOR EACH ROW
+   BEGIN
+      SELECT VMOL_ID_SEQ.NEXTVAL INTO :NEWREC.ID_ FROM DUAL;
+   END;
+/
+
+BEGIN
+EXECUTE IMMEDIATE('
+    create sequence vmo_gss_usermap_seq
+    minvalue 1
+    nomaxvalue
+    start with 1
+    increment by 1
+    nocache
+    order
+');
+EXCEPTION
+    WHEN OTHERS THEN
+        --OK if ORA -00955: name is already used by an existing object
+        IF INSTR(SQLERRM,'-00955') != 0 THEN NULL;
+        ELSE raise_application_error ( -20000, SQLERRM );
+        END IF;
+END;
+/
+
+create or replace trigger VMO_BASE_GSS_SYNCED_RECORDS_TR before
+insert or update
+on VMO_BASE_GSS_SYNCED_RECORDS referencing old as oldrec new as newrec for each row
+
+--This trigger is only used to make sure that an old version of GSS still can be tested
+--against this database after this database has been upgraded to version 3.15.1.15
+--Reason is that GSS_USER is part of the primary key and is not set by previous versions.
+
+declare
+
+  FUNCTION GET_GSS_USER (
+    GSS_ID_ in VARCHAR2,
+    VMO_TABLE_ in VARCHAR2,
+    GSS_TABLE_ in VARCHAR2,
+    VMO_USER_ in VARCHAR2
+    ) RETURN VARCHAR2 IS
+
+    GSS_USER_ VARCHAR2(32);
+
+  BEGIN
+      SELECT U.GSS_USER INTO GSS_USER_
+      FROM   VMO_BASE_GSS_USERMAP U
+      WHERE  U.GSS_ID    = GSS_ID_
+        AND  U.VMO_TABLE = VMO_TABLE_
+        AND  U.GSS_TABLE = GSS_TABLE_
+        AND  U.VMO_USER  = VMO_USER_
+        AND  U.ACTIVE = 1;
+
+    RETURN  GSS_USER_;
+
+    EXCEPTION WHEN OTHERS THEN
+        RETURN NULL; --Should not be happen in working configuration.
+
+  END GET_GSS_USER;
+
+begin
+
+  IF :newREC.GSS_USER IS NULL THEN
+    :newREC.GSS_USER := GET_GSS_USER(:newREC.GSS_ID, :newREC.VMO_TABLE, :newREC.GSS_TABLE, :newREC.IDUSER);
+  END IF;
+
+end;
+/
+
+
+UPDATE search_domain_attribute_tab
+SET    model_datatype = CASE datatype
+                           WHEN 'VARCHAR2' THEN 'TEXT'
+                           WHEN 'CHAR' THEN 'TEXT'
+                           WHEN 'NUMBER' THEN 'NUMBER'
+                           WHEN 'DATE' THEN 'DATE'
+                           WHEN 'CLOB' THEN 'LONG_TEXT'
+                           WHEN 'BLOB' THEN 'BINARY'
+                           ELSE 'TEXT'
+                        END
+WHERE  model_datatype IS NULL
+/
+
+

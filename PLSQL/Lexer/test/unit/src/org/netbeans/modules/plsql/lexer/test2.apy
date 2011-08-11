@@ -1,0 +1,916 @@
+
+PROCEDURE Evaluate_Level___ (
+   evaluation_rec_        IN OUT evaluation_record,
+   eval_log_rec_          IN OUT config_evaluation_api.evaluation_log_record,
+   complete_eval_log_rec_ IN OUT config_evaluation_api.complete_evaluation_log_record,
+   parent_part_           IN VARCHAR2 )
+IS
+   operation_rec_              Routing_Int_API.operation_record;
+   oper_work_guide_rec_        Routing_Int_API.oper_work_guide_record;
+   oper_tool_rec_              Routing_Int_API.oper_tool_record;
+   component_rec_              Manuf_Structure_Int_API.component_record;
+   comp_work_guide_rec_        Manuf_Structure_Int_API.comp_work_guide_record;
+   config_spec_rec_            Config_Evaluation_API.eval_config_spec_record;
+   parent_supply_rec_          interim_order_tab%ROWTYPE;
+   --
+   oper_valid_                 BOOLEAN;
+   supply_interim_order_no_    interim_order_tab.interim_order_no%TYPE;
+   configurable_               VARCHAR2(20);
+   dop_part_                   VARCHAR2(20);
+   part_type_code_             VARCHAR2(20);
+   comp_bom_type_db_           VARCHAR2(20);
+   comp_bom_type_              VARCHAR2(200);
+   comp_eng_chg_level_         manuf_structure_tab.eng_chg_level%TYPE;
+   structure_alternative_no_   manuf_struct_alternate_tab.alternative_no%TYPE;
+   comp_struct_alternative_no_ manuf_struct_alternate_tab.alternative_no%TYPE;
+   comp_routing_revision_      routing_head_tab.routing_revision%TYPE;
+   routing_alternative_no_     routing_alternate_tab.alternative_no%TYPE;
+   comp_rout_alternative_no_   routing_alternate_tab.alternative_no%TYPE;
+
+
+   e_row_                      NUMBER;
+   comp_alt_state_             manuf_struct_alternate_tab.rowstate%TYPE;
+   comp_rout_alt_state_        routing_alternate_tab.rowstate%TYPE;
+   get_comp_flag_              BOOLEAN;
+   qty_avail_                  NUMBER;
+   primary_comp_qty_           NUMBER;
+   phatom_part_exist_          BOOLEAN;
+   parent_interim_order_no_    VARCHAR2(12);
+   Parent_part_mrp_Code_       VARCHAR2(2);
+
+
+   multi_site_part_exist_      BOOLEAN := FALSE;
+   stmt_                       VARCHAR2(2000);
+   check_source_               VARCHAR2(5) := 'FALSE';
+
+   interim_required_date_      Date;--interim_demand_head_tab.required_date%TYPE;
+   interim_start_date_         interim_order_tab.start_date%TYPE;
+   parent_supply_date_         interim_order_tab.supply_date%TYPE;
+   parent_start_date_          interim_order_tab.start_date%TYPE;
+   parent_order_no_            interim_order_tab.interim_order_no%TYPE;
+   line_item_no_               interim_order_component_tab.line_item_no%TYPE;
+   calendar_id_                work_time_calendar_tab.calendar_id%TYPE;
+   leadtime_offset_            NUMBER;
+   operation_no_               NUMBER;
+   found_                      BOOLEAN;
+
+   CURSOR get_line_item_no(interim_header_ IN VARCHAR2,interim_order_no_ IN VARCHAR2) IS
+      SELECT leadtime_offset,line_item_no, supply_interim_order_no
+      FROM   interim_order_component_tab
+      WHERE  interim_header_id = interim_header_
+      AND    interim_order_no = interim_order_no_;
+   CURSOR get_parent_supply IS
+      SELECT *
+      FROM   interim_order_tab
+      WHERE  interim_header_id = evaluation_rec_.interim_header_id
+      AND    interim_structure_level = evaluation_rec_.current_level;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Evaluate_Level___',TRUE);
+
+-- FOR-LOOP #1: Loop thru interim order records inserted by calling method.
+   FOR parent_supply_ IN get_parent_supply LOOP
+      -- Set parent_supply_rec_ as Parent_supply_
+      parent_supply_rec_ := parent_supply_;
+      --
+      configurable_ := Part_Catalog_API.Get_Configurable_Db(parent_supply_.part_no);
+      --
+      dop_part_ := Inventory_Part_Planning_API.Get_Order_Requisition_Db(
+                      parent_supply_.contract,
+                      parent_supply_.part_no);
+      --
+      part_type_code_ := Inventory_Part_API.Get_type_code_Db(parent_supply_.contract,
+                                                             parent_supply_.part_no);
+
+    dbms_output.put_line('-----> parent supply part no =  ' ||parent_supply_.part_no );
+    dbms_output.put_line('---> before ctp planned = .... '|| evaluation_rec_.ctp_planned);
+      --
+      IF (part_type_code_ IN ( '1','2')) THEN
+         comp_bom_type_db_ := 'M';
+      ELSIF (part_type_code_ IN ('3', '4')) THEN
+         comp_bom_type_db_ := 'P';
+      END IF;
+      comp_bom_type_ := Shop_Ord_Code_API.Decode(comp_bom_type_db_);
+      --
+-- begin CTP
+      dbms_output.put_line('---> before ctp part struct level = .... '|| parent_supply_.interim_structure_level);
+
+-- If ctp planned, check multi-site and if true, create interim demand.
+      multi_site_part_exist_ := FALSE;
+      IF evaluation_rec_.ctp_planned = 1 AND
+         --parent_supply_.interim_structure_level > 0 AND
+         part_type_code_ IN ('3','4') THEN
+
+       -- check for multi-site supplies...
+         dbms_output.put_line('---> before check_source installed = .... ');
+         check_source_ := 'FALSE';
+         IF Dictionary_SYS.Logical_Unit_Is_Installed('SupplySourcePartManager') THEN
+            stmt_ := 'BEGIN :check_source := Supply_Source_Part_Manager_API.Is_Part_Internally_Sourced(:contract, :part_no); END;';
+            -- ifs_assert_safe pemase 20051221
+            EXECUTE IMMEDIATE stmt_
+            USING OUT check_source_,
+                   IN parent_supply_.contract,
+                   IN parent_supply_.part_no;
+         END IF;
+         dbms_output.put_line('---> check source  = '|| check_source_);
+
+         IF check_source_ = 'TRUE'  THEN
+            multi_site_part_exist_ := TRUE;
+
+            Interim_Ctp_Manager_API.Create_Child_Interim_Demand(evaluation_rec_.interim_header_id,
+                                                               parent_supply_.interim_order_no,
+                                                               parent_supply_.part_no,
+                                                               parent_supply_.configuration_id,
+                                                               parent_supply_.supply_date,
+                                                               parent_supply_.supply_qty,
+                                                               evaluation_rec_.interim_demand_usage_type_db,
+                                                               evaluation_rec_.identity1,
+                                                               evaluation_rec_.identity2,
+                                                               evaluation_rec_.identity3,
+                                                               evaluation_rec_.identity4,
+                                                               NULL, -- lot_batch_no_
+                                                               NULL, -- serial_begin
+                                                               NULL, -- serial_end
+                                                               'COMPANY OWNED', -- part_ownership
+                                                               NULL, -- owning_customer_no_
+                                                               parent_supply_.interim_structure_level,
+                                                               evaluation_rec_.ctp_level
+                                                               );
+
+         END IF; -- check_source = TRUE
+
+      END IF; -- IF evaluation_rec_.ctp_planned = 1  AND parent_supply_.interim_structure_level > 0 THEN
+
+-- No further evaluation if multisite part.
+    IF NOT multi_site_part_exist_ THEN
+       dbms_output.put_line('---> not multi site  part  = ');
+
+-- IF-ELSIF #1: If configured/manufactured or DOP requistion/manufactured,
+-- get buildable manuf structure revision.
+      IF ((configurable_ = 'CONFIGURED') AND (part_type_code_ = '1')) OR
+         ((dop_part_ = 'D') AND (part_type_code_ = '1')) THEN
+         IF (evaluation_rec_.alternate_status = 'Buildable') THEN
+            comp_eng_chg_level_ := NULL;
+            comp_struct_alternative_no_ := NULL;
+
+            IF Manuf_Part_Attribute_API.Get_Structure_Effectivity(parent_supply_.contract, parent_supply_.part_no)
+               = Effectivity_Control_API.Decode('SERIAL') THEN
+
+               Manuf_Structure_Util_API.Get_Buildable_Date_Alt (comp_eng_chg_level_,
+                                                               comp_struct_alternative_no_,
+                                                               parent_supply_.contract,
+                                                               parent_supply_.part_no,
+                                                               comp_bom_type_,
+                                                               parent_supply_.start_date );
+
+
+            ELSE
+               Manuf_Structure_Int_API.Get_Buildable_Alternative (comp_eng_chg_level_,
+                                                               comp_struct_alternative_no_,
+                                                               parent_supply_.contract,
+                                                               parent_supply_.part_no,
+                                                               comp_bom_type_,
+                                                               parent_supply_.start_date,
+                                                               evaluation_rec_.serial_begin,
+                                                               evaluation_rec_.serial_end );
+            END IF;
+
+         END IF;
+         evaluation_rec_.configuration_id := parent_supply_.configuration_id;
+         config_spec_rec_ := NULL;
+         config_spec_rec_.spec_row_count := 0;
+
+-- Retrieve configured part routing if manufactured part.
+         IF (comp_bom_type_db_ = 'M') THEN
+            Config_Evaluation_API.Determine_Routing (routing_alternative_no_,
+                                                     parent_supply_.routing_revision,
+                                                     operation_rec_,
+                                                     oper_work_guide_rec_,
+                                                     oper_tool_rec_,
+                                                     config_spec_rec_,
+                                                     complete_eval_log_rec_,
+                                                     eval_log_rec_,
+                                                     parent_supply_.contract,
+                                                     parent_supply_.part_no,
+                                                     parent_supply_.start_date,
+                                                     parent_supply_.order_code,
+                                                     evaluation_rec_.alternate_status,
+                                                     evaluation_rec_.configuration_id );
+            IF (NVL(operation_rec_.operation_row_count,0) > 0) THEN
+               IF (routing_alternative_no_ IS NOT NULL) THEN
+
+                  FOR ops IN 1..operation_rec_.operation_row_count LOOP
+                     dbms_output.Put_Line('>>>>>> ' ||operation_rec_.operation_no_tab(ops) || operation_rec_.mach_run_factor_tab(ops));
+                  END LOOP;
+                  -- Note; Set Routing_alternative on InterimOrder After DetermineRouting
+                  Interim_Order_API.Set_Rout_Rev_Alternative__(evaluation_rec_.interim_header_id,
+                                                               parent_supply_.interim_order_no,
+                                                               parent_supply_.routing_revision,
+                                                               routing_alternative_no_ );
+                  --
+                  IF (NOT Routing_Int_API.Is_Routing_Buildable(parent_supply_.contract,
+                                                               parent_supply_.part_no,
+                                                               parent_supply_.routing_revision,
+                                                               comp_bom_type_,
+                                                               routing_alternative_no_)) THEN
+                     Set_Rout_Rev_Alt_Warning___ (complete_eval_log_rec_,
+                                                  parent_supply_.contract,
+                                                  parent_supply_.part_no,
+                                                  parent_supply_.routing_revision,
+                                                  routing_alternative_no_,
+                                                  comp_bom_type_db_);
+                  END IF;
+                  --
+               END IF;
+            END IF;
+            -- Note; Create Operations that is evaluated
+            Create_Interim_Routing___ (operation_rec_,
+                                       oper_work_guide_rec_,
+                                       oper_tool_rec_,
+                                       evaluation_rec_.interim_header_id,
+                                       parent_supply_.interim_order_no);
+
+         END IF;   -- of IF (comp_bom_type_db_ = 'M') THEN
+         -- Correct the top order start date before determine the structure
+         IF parent_supply_.interim_order_no ='1'  THEN
+            Interim_Order_API.Set_Interim_Order_Dates__ (evaluation_rec_.interim_header_id,
+                                                         parent_supply_.interim_order_no,
+                                                         parent_supply_.supply_date);
+            parent_start_date_ := interim_order_api.get_start_date( evaluation_rec_.interim_header_id, parent_supply_.interim_order_no);
+         ELSE
+            parent_start_date_ := parent_supply_.start_date;
+         END IF;
+
+-- Retrieve the components for configured part.
+         Config_Evaluation_API.Determine_Structure (structure_alternative_no_,
+                                                    parent_supply_.eng_chg_level,
+                                                    component_rec_,
+                                                    comp_work_guide_rec_,
+                                                    config_spec_rec_,
+                                                    complete_eval_log_rec_,
+                                                    eval_log_rec_,
+                                                    evaluation_rec_.contract,
+                                                    parent_supply_.part_no,
+                                                    parent_start_date_,
+                                                    parent_supply_.supply_qty,
+                                                    parent_supply_.order_code,
+                                                    evaluation_rec_.alternate_status,
+                                                    evaluation_rec_.configuration_id );
+         --
+         -- Note; Set Structure_alternative on InterimOrder After DetermineStructure
+         IF (structure_alternative_no_ IS NOT NULL) THEN
+            Interim_Order_API.Set_Struct_Alternative_No__(evaluation_rec_.interim_header_id,
+                                                          parent_supply_.interim_order_no,
+                                                          structure_alternative_no_ );
+         END IF;
+
+-- IF-ELSIF #1: Else if not configured part, get routing and manuf structure.
+      ELSIF (Part_Catalog_API.Get_Configurable_Db(evaluation_rec_.part_no) = 'NOT CONFIGURED') THEN
+         -- Note; If interim demand head part is not configured then do normal explosion
+         -- Note; otherwise only explode Configured and manufactured Dop parts.
+         evaluation_rec_.configuration_id := NULL;
+         config_spec_rec_ := NULL;
+         config_spec_rec_.spec_row_count := 0;
+
+-- Get routing revision and alternate for non-configured manufactured part.
+         comp_routing_revision_ := NULL;
+         comp_rout_alternative_no_ := NULL;
+         IF (comp_bom_type_db_ = 'M') THEN
+            IF (evaluation_rec_.alternate_status = 'Buildable') THEN
+               Routing_Int_API.Get_Buildable_Alternative( comp_routing_revision_,
+                                                          comp_rout_alternative_no_,
+                                                          parent_supply_.contract,
+                                                          parent_supply_.part_no,
+                                                          comp_bom_type_,
+                                                          parent_supply_.start_date,
+                                                          evaluation_rec_.serial_begin,
+                                                          evaluation_rec_.serial_end );
+
+               IF comp_routing_revision_ IS NULL THEN
+                   Error_Sys.Record_General(lu_name_, 'NOBUILDALTFOUND: No Buildable routing revision/alternative exists for part :P1 site :P2 on the date :P3.'
+                                           ,parent_supply_.part_no,parent_supply_.contract,parent_supply_.start_date);
+               END IF ;
+            ELSE
+
+               Routing_Int_API.Get_Any_Revision_Alternative( comp_routing_revision_,
+                                                             comp_rout_alternative_no_,
+                                                             comp_rout_alt_state_,
+                                                             parent_supply_.contract,
+                                                             parent_supply_.part_no,
+                                                             evaluation_rec_.mfg_order_code,
+                                                             parent_supply_.start_date,
+                                                             evaluation_rec_.serial_begin,
+                                                             evaluation_rec_.serial_end );
+
+              IF comp_routing_revision_ IS NULL THEN
+                 Error_Sys.Record_General(lu_name_, 'NOREVALTFOUND: No Tentative/Plannable/Buildable structure revision/alternative exists for part :P1 site :P2 on the date :P3.'
+                                         ,parent_supply_.part_no,parent_supply_.contract,parent_supply_.start_date);
+              END IF ;
+            END IF;
+
+            Manuf_Structure_Int_API.Get_Buildable_Alternative(comp_eng_chg_level_,
+                                                              comp_struct_alternative_no_,
+                                                              parent_supply_.contract,
+                                                              parent_supply_.part_no,
+                                                              comp_bom_type_,
+                                                              parent_supply_.start_date,
+                                                              evaluation_rec_.serial_begin,
+                                                              evaluation_rec_.serial_end );
+            IF comp_struct_alternative_no_ IS NULL THEN
+               Error_Sys.Record_General(lu_name_, 'NOBUILDSTRUCTFOUND: No Buildable Structure/Alternate exists for part :P1 site :P2 on the date :P3 .',
+                                        parent_supply_.part_no, parent_supply_.contract, parent_supply_.start_date);
+            END IF;
+         -- Get routing revision and alternate for non-configured purchased part.
+         ELSIF (comp_bom_type_db_ = 'P') THEN
+            comp_routing_revision_ := Routing_Int_API.Get_Revision_By_Date (parent_supply_.contract,
+                                                                            parent_supply_.part_no,
+                                                                            comp_bom_type_,
+                                                                            parent_supply_.start_date );
+         END IF;   -- of IF (comp_bom_type_db_ = 'M') THEN
+
+-- If manufactured, retrieve routing operations for non-configured part.
+         IF (comp_bom_type_db_ = 'M') THEN
+            Routing_Int_API.Determine_Mfgstd_Routing (operation_rec_,
+                                                      oper_work_guide_rec_,
+                                                      oper_tool_rec_,
+                                                      parent_supply_.contract,
+                                                      parent_supply_.part_no,
+                                                      NVL(comp_routing_revision_,parent_supply_.routing_revision),
+                                                      Shop_Ord_Code_API.Decode(parent_supply_.order_code),
+                                                      NVL(comp_rout_alternative_no_,parent_supply_.routing_alternative_no));
+            --
+            IF (NVL(operation_rec_.operation_row_count,0) > 0) THEN
+               IF (comp_rout_alternative_no_ IS NOT NULL) THEN
+                  -- Note; Set Routing_alternative on InterimOrder After DetermineRouting
+                  Interim_Order_API.Set_Rout_Rev_Alternative__(evaluation_rec_.interim_header_id,
+                                                               parent_supply_.interim_order_no,
+                                                               comp_routing_revision_,
+                                                               comp_rout_alternative_no_ );
+               END IF;
+            END IF;
+
+            -- Note; Create Operations that is evaluated
+            Create_Interim_Routing___ (operation_rec_,
+                                       oper_work_guide_rec_,
+                                       oper_tool_rec_,
+                                       evaluation_rec_.interim_header_id,
+                                       parent_supply_.interim_order_no);
+         END IF;
+
+-- Retrieve components for non-configured part.
+         Manuf_Structure_Int_API.Determine_Mfgstd_Structure (component_rec_,
+                                                             comp_work_guide_rec_,
+                                                             parent_supply_.contract,
+                                                             parent_supply_.part_no,
+                                                             parent_supply_.eng_chg_level,
+                                                             Shop_Ord_Code_API.Decode(parent_supply_.order_code),
+                                                             parent_supply_.structure_alternative_no,
+                                                             parent_supply_.start_date,
+                                                             parent_supply_.supply_qty);
+      END IF;  -- of IF ((configurable_ = 'CONFIGURED') AND (part_type_code_ = '1')) OR...
+-- End of IF-ELSIF #1
+
+      calendar_id_ := Site_Api.Get_Manuf_Calendar_Id(evaluation_rec_.contract);
+
+-- If top-level order, set dates from there, else calculate from top-level order.
+      IF parent_supply_.interim_order_no ='1' THEN
+         Interim_Order_API.Set_Interim_Order_Dates__ ( evaluation_rec_.interim_header_id,
+           parent_supply_.interim_order_no, parent_supply_.supply_date);
+         parent_start_date_  := Interim_Order_API.Get_Start_Date( evaluation_rec_.interim_header_id, parent_supply_.interim_order_no);
+      ELSE
+         parent_order_no_    := interim_order_api.get_parent_interim_order_no( evaluation_rec_.interim_header_id, parent_supply_.interim_order_no);
+         parent_supply_date_ := interim_order_api.get_supply_date( evaluation_rec_.interim_header_id, parent_order_no_);
+         parent_start_date_  := interim_order_api.get_start_date( evaluation_rec_.interim_header_id, parent_order_no_);
+
+         FOR component_line_item_rec_ IN get_line_item_no(evaluation_rec_.interim_header_id, parent_order_no_) LOOP
+            IF  (component_line_item_rec_.supply_interim_order_no = parent_supply_.interim_order_no) THEN
+               line_item_no_ :=  component_line_item_rec_.line_item_no;
+               leadtime_offset_ := component_line_item_rec_.leadtime_offset;
+            END IF;
+         END LOOP;
+         IF (leadtime_offset_ > 0) THEN
+            interim_required_date_ := work_time_calendar_api.get_next_work_day(calendar_id_, calculate_start_date__(evaluation_rec_.contract,parent_supply_date_ , leadtime_offset_));
+            interim_required_date_ := Greatest(interim_required_date_, parent_start_date_);
+         ELSE
+            interim_required_date_ := parent_start_date_;
+         END IF;
+         Interim_Order_API.Set_Interim_Order_Dates__(evaluation_rec_.interim_header_id,
+           parent_supply_.interim_order_no,
+           Work_time_Calendar_API.Get_Previous_Work_Day(calendar_id_,interim_required_date_));
+      END IF;
+
+-- FOR-LOOP #2: Loop thru retrieved component records.
+      FOR i IN 1..NVL(component_rec_.comp_row_count,0) LOOP
+         evaluation_rec_.interim_supply_date := parent_supply_.supply_date;
+         part_type_code_ := Inventory_Part_API.Get_type_code_Db(component_rec_.contract_tab(i),
+                                                                component_rec_.component_part_tab(i));
+
+         calendar_id_ := Site_Api.Get_Manuf_Calendar_Id(component_rec_.contract_tab(i));
+
+         configurable_ := Part_Catalog_API.Get_Configurable_Db(component_rec_.component_part_tab(i));
+
+         dop_part_ := Inventory_Part_Planning_API.Get_Order_Requisition_Db(
+                         component_rec_.contract_tab(i),
+                         component_rec_.component_part_tab(i));
+
+         comp_routing_revision_ := NULL;
+         comp_rout_alternative_no_ := NULL;
+
+-- If by-product component line, then create warning and ignore.
+         IF (component_rec_.qty_per_assembly_tab(i) < 0) THEN
+             e_row_ := NVL(complete_eval_log_rec_.warning.warning_row_count,0) + 1;
+             complete_eval_log_rec_.warning.warning_row_count  := e_row_;
+
+             complete_eval_log_rec_.warning.explosion_row_type_db(e_row_) := 'PartRevision';
+             complete_eval_log_rec_.warning.contract(e_row_)                 := component_rec_.contract_tab(i);
+             complete_eval_log_rec_.warning.part_no(e_row_)                  := parent_part_;
+             complete_eval_log_rec_.warning.eng_chg_level(e_row_)            := NULL;
+             complete_eval_log_rec_.warning.routing_revision(e_row_)         := NULL;
+             complete_eval_log_rec_.warning.bom_type_db(e_row_)              := NULL;
+             complete_eval_log_rec_.warning.routing_alternative_no(e_row_)   := NULL;
+             complete_eval_log_rec_.warning.operation_id(e_row_)             := NULL;
+             complete_eval_log_rec_.warning.routing_guideline_no(e_row_)     := NULL;
+             complete_eval_log_rec_.warning.tool_sequence(e_row_)            := NULL;
+             complete_eval_log_rec_.warning.structure_alternative_no(e_row_) := NULL;
+             complete_eval_log_rec_.warning.line_item_no(e_row_)             := NULL;
+             complete_eval_log_rec_.warning.structure_guideline_no(e_row_)   := NULL;
+             complete_eval_log_rec_.warning.action_id(e_row_)                := NULL;
+             complete_eval_log_rec_.warning.action_line_no(e_row_)           := NULL;
+             complete_eval_log_rec_.warning.condition_id(e_row_)             := NULL;
+             complete_eval_log_rec_.warning.condition_line_no(e_row_)        := NULL;
+             complete_eval_log_rec_.warning.formula_id(e_row_)               := NULL;
+
+             complete_eval_log_rec_.warning.warning_message(e_row_)          :=
+                Language_SYS.Translate_Constant(lu_name_, 'IOMNOBYPRODUCTS: Component part :P1 as a by-product is not handled by DOP. Hence ignored.',
+                  Fnd_Session_API.Get_Language, component_rec_.component_part_tab(i));
+         END IF;  -- of IF (component_rec_.qty_per_assembly_tab(i) < 0) THEN...
+
+         phatom_part_exist_ := FALSE;
+         parent_interim_order_no_ := parent_supply_.interim_order_no;
+         WHILE (parent_interim_order_no_ > 0) and (NOT phatom_part_exist_ ) LOOP
+            parent_part_mrp_code_ := Inventory_Part_Planning_API.Get_Mrp_Order_Code(evaluation_rec_.contract,Interim_Order_Api.Get_Part_No(parent_supply_.interim_header_id,parent_interim_order_no_));
+            IF parent_part_mrp_code_ = 'P' then
+               phatom_part_exist_ := TRUE;
+            END IF;
+            parent_interim_order_no_ := Interim_Order_Api.Get_Parent_Interim_Order_No(parent_supply_.interim_header_id,parent_interim_order_no_);
+         END LOOP;
+
+-- If expense component line, then create warning and ignore.
+         IF (part_type_code_ = '6') THEN
+            e_row_ := NVL(complete_eval_log_rec_.warning.warning_row_count,0) + 1;
+            complete_eval_log_rec_.warning.warning_row_count := e_row_;
+
+            complete_eval_log_rec_.warning.explosion_row_type_db(e_row_) := 'ExpensePart';
+            complete_eval_log_rec_.warning.contract(e_row_)                 := component_rec_.contract_tab(i);
+            complete_eval_log_rec_.warning.part_no(e_row_)                  := component_rec_.component_part_tab(i);
+            complete_eval_log_rec_.warning.eng_chg_level(e_row_)            := NULL;
+            complete_eval_log_rec_.warning.routing_revision(e_row_)         := NULL;
+            complete_eval_log_rec_.warning.bom_type_db(e_row_)              := NULL;
+            complete_eval_log_rec_.warning.routing_alternative_no(e_row_)   := NULL;
+            complete_eval_log_rec_.warning.operation_id(e_row_)             := NULL;
+            complete_eval_log_rec_.warning.routing_guideline_no(e_row_)     := NULL;
+            complete_eval_log_rec_.warning.tool_sequence(e_row_)            := NULL;
+            complete_eval_log_rec_.warning.structure_alternative_no(e_row_) := NULL;
+            complete_eval_log_rec_.warning.line_item_no(e_row_)             := NULL;
+            complete_eval_log_rec_.warning.structure_guideline_no(e_row_)   := NULL;
+            complete_eval_log_rec_.warning.action_id(e_row_)                := NULL;
+            complete_eval_log_rec_.warning.action_line_no(e_row_)           := NULL;
+            complete_eval_log_rec_.warning.condition_id(e_row_)             := NULL;
+            complete_eval_log_rec_.warning.condition_line_no(e_row_)        := NULL;
+            complete_eval_log_rec_.warning.formula_id(e_row_)               := NULL;
+
+            complete_eval_log_rec_.warning.warning_message(e_row_)          :=
+               Language_SYS.Translate_Constant(lu_name_, 'IOMINVPARTTYPE: Component part :P1 with part type Expense is not handled by DOP. Hence ignored.',
+                 Fnd_Session_API.Get_Language, component_rec_.component_part_tab(i));
+
+-- Else if not phantom parent part, process.
+         ELSIF (parent_interim_order_no_ = 0) THEN
+            IF (part_type_code_ IN ( '1','2')) THEN
+               comp_bom_type_db_ := 'M';
+            ELSIF (part_type_code_ IN ('3', '4')) THEN
+               comp_bom_type_db_ := 'P';
+            END IF;
+            comp_bom_type_ := Shop_Ord_Code_API.Decode(comp_bom_type_db_);
+
+-- IF-ELSE #4 If phantom/blow-thru, process.
+            IF (component_rec_.mrp_order_code_tab(i) IN ('P','K') AND
+             (part_type_code_ = '1')) THEN
+               operation_no_:=component_rec_.comp_operation_no_tab(i);
+               get_comp_flag_ := TRUE;
+               IF component_rec_.mrp_order_code_tab(i) = 'P' THEN
+                   qty_avail_ :=
+                   inventory_part_in_stock_api.Get_Inventory_Qty_Onhand( component_rec_.contract_tab(i),   component_rec_.component_part_tab(i), NULL) -
+                   inventory_part_in_stock_api.Get_Inventory_Qty_Reserved( component_rec_.contract_tab(i),component_rec_.component_part_tab(i), NULL)-
+                   inventory_part_in_stock_api.Get_Inventory_Qty_Rejected( component_rec_.contract_tab(i), component_rec_.component_part_tab(i),NULL, NULL);
+
+                   primary_comp_qty_ := (((( component_rec_.qty_required_tab(i))
+                                         / (1 - ( component_rec_.shrinkage_factor_tab(i) / 100)))
+                                         +  component_rec_.component_scrap_tab(i)));
+                   IF (qty_avail_ >=  primary_comp_qty_ ) OR (component_rec_.consumption_item_db_tab(i) = 'Not Consumed') THEN
+                      get_comp_flag_ := FALSE;
+                   ELSE
+                      get_comp_flag_ := TRUE;
+                   END IF;
+               END IF;
+
+               IF get_comp_flag_ = TRUE THEN
+                    Process_Evaluate_Phantom___ (evaluation_rec_,
+                                                 parent_supply_rec_,
+                                                 config_spec_rec_,
+                                                 eval_log_rec_,
+                                                 complete_eval_log_rec_,
+                                                 component_rec_.contract_tab(i),
+                                                 component_rec_.component_part_tab(i),
+                                                 component_rec_.date_required_tab(i),
+                                                 component_rec_.qty_required_tab(i),
+                                                 comp_bom_type_db_,
+                                                 evaluation_rec_.alternate_status,
+                                                 component_rec_.configuration_id_tab(i),
+                                                 operation_no_);
+               ELSIF  get_comp_flag_ = FALSE THEN
+                  interim_required_date_ := Work_time_Calendar_API.Get_Previous_Work_Day(calendar_id_,interim_order_api.get_start_date(evaluation_rec_.interim_header_id,parent_supply_.interim_order_no));
+                  interim_start_date_ := Least( interim_required_date_,
+                                                 component_rec_.date_required_tab(i) );
+                  supply_interim_order_no_ := NULL;
+                  Interim_Order_API.New(supply_interim_order_no_,
+                                        evaluation_rec_.interim_header_id,
+                                        parent_supply_.interim_order_no,
+                                        evaluation_rec_.next_level,
+                                        component_rec_.contract_tab(i),
+                                        component_rec_.component_part_tab(i),
+                                        component_rec_.qty_required_tab(i),
+                                        interim_required_date_,
+                                        interim_start_date_,
+                                        comp_eng_chg_level_,
+                                        comp_bom_type_db_,
+                                        comp_struct_alternative_no_,
+                                        comp_routing_revision_,
+                                        comp_rout_alternative_no_,
+                                        component_rec_.promise_planned_db_tab(i),
+                                        component_rec_.configuration_id_tab(i),
+                                        NULL,
+                                        evaluation_rec_.part_ownership,
+                                        evaluation_rec_.owning_customer_no );
+                  Trace_SYS.Message('Supply created for : '||component_rec_.component_part_tab(i));
+                  evaluation_rec_.line_item_no := NVL(evaluation_rec_.line_item_no,0) + 1;
+     -- Create InterimOrderComponent
+                  Interim_Order_Component_API.New(evaluation_rec_.line_item_no,
+                                                  evaluation_rec_.interim_header_id,
+                                                  parent_supply_.interim_order_no,
+                                                  evaluation_rec_.line_item_no,
+                                                  evaluation_rec_.contract,
+                                                  component_rec_.component_part_tab(i),
+                                                  supply_interim_order_no_,
+                                                  component_rec_.qty_required_tab(i),
+                                                  interim_required_date_,
+                                                  component_rec_.qty_per_assembly_tab(i),
+                                                  component_rec_.component_scrap_tab(i),
+                                                  component_rec_.shrinkage_factor_tab(i),
+                                                  component_rec_.comp_operation_no_tab(i),
+                                                  component_rec_.leadtime_offset_tab(i),
+                                                  component_rec_.consumption_item_db_tab(i),
+                                                  evaluation_rec_.line_item_no,
+                                                  component_rec_.issue_to_loc_tab(i),
+                                                  component_rec_.draw_pos_no_tab(i),
+                                                  component_rec_.note_text_tab(i),
+                                                  component_rec_.configuration_id_tab(i) );
+                  Trace_SYS.Message('Component created for : '||component_rec_.component_part_tab(i));
+               END IF;  -- of IF get_comp_flag_ = TRUE THEN
+
+               IF (evaluation_rec_.single_level_explosion = 0) THEN
+                  evaluation_rec_.orders_exist_to_evaluate := TRUE;
+               ELSE
+                  evaluation_rec_.orders_exist_to_evaluate := FALSE;
+               END IF;
+
+-- IF-ELSE #4 Else process non-phantom/blow-thru part.
+            ELSE
+               -- If ctp planned record check for orders to evaluate.
+               IF evaluation_rec_.ctp_planned = 1 THEN
+                  IF configurable_ = 'CONFIGURED' THEN
+                     IF part_type_code_ IN ('3','4') THEN
+                        IF Dictionary_SYS.Logical_Unit_Is_Installed('SupplySourcePartManager') THEN
+                           stmt_ := 'BEGIN
+                                       :check_source := Supply_Source_Part_Manager_API.Is_Part_Internally_Sourced(:contract, :part_no);
+                                     END;';
+                           -- ifs_assert_safe pemase 20051221
+                           EXECUTE IMMEDIATE stmt_
+                              USING OUT check_source_,
+                                     IN evaluation_rec_.contract,
+                                     IN component_rec_.component_part_tab(i);
+                        END IF;
+
+                        IF check_source_ = 'TRUE'  THEN
+                           evaluation_rec_.orders_exist_to_evaluate := TRUE;
+                        ELSE
+                           evaluation_rec_.orders_exist_to_evaluate := FALSE;
+                        END IF;
+                     ELSE
+                        IF (evaluation_rec_.single_level_explosion = 0) THEN
+                           evaluation_rec_.orders_exist_to_evaluate := TRUE;
+                        ELSE
+                           evaluation_rec_.orders_exist_to_evaluate := FALSE;
+                        END IF;
+                     END IF;
+                  ELSE
+                     IF (evaluation_rec_.single_level_explosion = 0) THEN
+                        evaluation_rec_.orders_exist_to_evaluate := TRUE;
+                     ELSE
+                        evaluation_rec_.orders_exist_to_evaluate := FALSE;
+                     END IF;
+                  END IF;
+               -- Not ctp planned, check for orders to evaluate.
+               ELSE
+                  IF ((configurable_ = 'CONFIGURED') AND (part_type_code_ = '1')) OR
+                     ((dop_part_ = 'D') AND (part_type_code_ = '1')) THEN
+
+                     IF (evaluation_rec_.single_level_explosion = 0) THEN
+                        evaluation_rec_.orders_exist_to_evaluate := TRUE;
+                     ELSE
+                        evaluation_rec_.orders_exist_to_evaluate := FALSE;
+                     END IF;
+
+                  END IF;
+               END IF;   -- of IF evaluation_rec_.ctp_planned = 1 THEN..ELSE..
+
+               interim_required_date_ := Work_time_Calendar_API.Get_Previous_Work_Day(calendar_id_,parent_start_date_);
+
+               interim_start_date_ := Least( interim_required_date_,
+                                             component_rec_.date_required_tab(i) );
+
+               supply_interim_order_no_ := NULL;
+
+               -- Note; Create InterimOrder
+               -- Note; Get revision and alternate both for routing and structure
+               comp_eng_chg_level_ := NULL;
+               comp_struct_alternative_no_ := NULL;
+
+               IF (comp_bom_type_db_ = 'M') THEN
+                  -- Note; For Component part even tentative alternative is allowed as a leaf.
+                  -- Note; Component as a leaf will always be 'Tentative'
+
+                  IF Manuf_Part_Attribute_API.Get_Structure_Effectivity(component_rec_.contract_tab(i), component_rec_.component_part_tab(i))
+                     = Effectivity_Control_API.Decode('SERIAL') THEN
+                     Manuf_Structure_Util_API.Get_Any_Date_Revision_Alt(comp_eng_chg_level_,
+                                                                       comp_struct_alternative_no_,
+                                                                       comp_alt_state_,
+                                                                       component_rec_.contract_tab(i),
+                                                                       component_rec_.component_part_tab(i),
+                                                                       comp_bom_type_,
+                                                                       interim_required_date_ );
+
+                     e_row_ := NVL(complete_eval_log_rec_.warning.warning_row_count,0) + 1;
+                     complete_eval_log_rec_.warning.warning_row_count := e_row_;
+
+                     complete_eval_log_rec_.warning.explosion_row_type_db(e_row_) := 'PartRevision';
+                     complete_eval_log_rec_.warning.contract(e_row_)                 := component_rec_.contract_tab(i);
+                     complete_eval_log_rec_.warning.part_no(e_row_)                  := component_rec_.component_part_tab(i);
+                     complete_eval_log_rec_.warning.eng_chg_level(e_row_)            := NULL;
+                     complete_eval_log_rec_.warning.routing_revision(e_row_)         := NULL;
+                     complete_eval_log_rec_.warning.bom_type_db(e_row_)              := NULL;
+                     complete_eval_log_rec_.warning.routing_alternative_no(e_row_)   := NULL;
+                     complete_eval_log_rec_.warning.operation_id(e_row_)             := NULL;
+                     complete_eval_log_rec_.warning.routing_guideline_no(e_row_)     := NULL;
+                     complete_eval_log_rec_.warning.tool_sequence(e_row_)            := NULL;
+                     complete_eval_log_rec_.warning.structure_alternative_no(e_row_) := NULL;
+                     complete_eval_log_rec_.warning.line_item_no(e_row_)             := NULL;
+                     complete_eval_log_rec_.warning.structure_guideline_no(e_row_)   := NULL;
+                     complete_eval_log_rec_.warning.action_id(e_row_)                := NULL;
+                     complete_eval_log_rec_.warning.action_line_no(e_row_)           := NULL;
+                     complete_eval_log_rec_.warning.condition_id(e_row_)             := NULL;
+                     complete_eval_log_rec_.warning.condition_line_no(e_row_)        := NULL;
+                     complete_eval_log_rec_.warning.formula_id(e_row_)               := NULL;
+
+                     complete_eval_log_rec_.warning.warning_message(e_row_)          :=
+                        Language_SYS.Translate_Constant(lu_name_, 'STRUCTSERIALEFF: Component part :P1 uses serial structure effectivity which is not handled. Date effectivity is used instead.',
+                                                        Fnd_Session_API.Get_Language,
+                                                        component_rec_.component_part_tab(i));
+
+
+                  ELSE
+                     Manuf_Structure_Int_API.Get_Any_Revision_Alternative(comp_eng_chg_level_,
+                                                                       comp_struct_alternative_no_,
+                                                                       comp_alt_state_,
+                                                                       component_rec_.contract_tab(i),
+                                                                       component_rec_.component_part_tab(i),
+                                                                       comp_bom_type_,
+                                                                       interim_required_date_,
+                                                                       evaluation_rec_.serial_begin,
+                                                                       evaluation_rec_.serial_end );
+
+                     IF (evaluation_rec_.alternate_status = 'Buildable') THEN
+                        Routing_Int_API.Get_Buildable_Alternative( comp_routing_revision_,
+                                                          comp_rout_alternative_no_,
+                                                          component_rec_.contract_tab(i),
+                                                          component_rec_.component_part_tab(i),
+                                                          comp_bom_type_,
+                                                          interim_required_date_,
+                                                          evaluation_rec_.serial_begin,
+                                                          evaluation_rec_.serial_end );
+
+                        IF comp_routing_revision_ IS NULL THEN
+                           Error_Sys.Record_General(lu_name_, 'NOBUILDALTFOUND: No Buildable routing revision/alternative exists for part :P1 site :P2 on the date :P3.'
+                                               ,component_rec_.component_part_tab(i),component_rec_.contract_tab(i),interim_required_date_);
+                        END IF ;
+
+                     ELSE
+                        Routing_Int_API.Get_Any_Revision_Alternative( comp_routing_revision_,
+                                                             comp_rout_alternative_no_,
+                                                             comp_rout_alt_state_,
+                                                             component_rec_.contract_tab(i),
+                                                             component_rec_.component_part_tab(i),
+                                                             comp_bom_type_,
+                                                             interim_required_date_,
+                                                             evaluation_rec_.serial_begin,
+                                                             evaluation_rec_.serial_end );
+
+                        IF comp_routing_revision_ IS NULL THEN
+                           Error_Sys.Record_General(lu_name_, 'NOREVALTFOUND: No Tentative/Plannable/Buildable structure revision/alternative exists for part :P1 site :P2 on the date :P3.'
+                                           ,component_rec_.component_part_tab(i),component_rec_.contract_tab(i),interim_required_date_);
+                        END IF ;
+
+                     END IF;
+                  END IF; -- = Effectivity_Control_API.Decode('SERIAL') THEN
+
+               ELSIF (comp_bom_type_db_ = 'P') THEN
+
+                  comp_eng_chg_level_ := Part_Revision_API.Get_Revision_By_Date (component_rec_.contract_tab(i),
+                                                                                 component_rec_.component_part_tab(i),
+                                                                                 interim_required_date_);
+                  -- Bug 77319, start
+                  Calculate_Purch_Dates___ (interim_required_date_,
+                                            interim_start_date_,
+                                            evaluation_rec_,
+                                            component_rec_.contract_tab(i),
+                                            component_rec_.component_part_tab(i),
+                                            parent_supply_.interim_order_no,
+                                            component_rec_.leadtime_offset_tab(i));
+                  -- Bug 77319, end
+               END IF; --IF (comp_bom_type_db_ = 'M') THEN
+
+               IF (comp_eng_chg_level_ IS NULL) THEN
+                  -- Note; Set a error message for part revision being null for component
+                  e_row_ := NVL(complete_eval_log_rec_.error.error_row_count,0) + 1;
+                  complete_eval_log_rec_.error.error_row_count  := e_row_;
+
+                  complete_eval_log_rec_.error.explosion_row_type_db(e_row_) := 'PartRevision';
+                  complete_eval_log_rec_.error.contract(e_row_)                 := component_rec_.contract_tab(i);
+                  complete_eval_log_rec_.error.part_no(e_row_)                  := component_rec_.component_part_tab(i);
+                  complete_eval_log_rec_.error.eng_chg_level(e_row_)            := NULL;
+                  complete_eval_log_rec_.error.routing_revision(e_row_)         := NULL;
+                  complete_eval_log_rec_.error.bom_type_db(e_row_)              := NULL;
+                  complete_eval_log_rec_.error.routing_alternative_no(e_row_)   := NULL;
+                  complete_eval_log_rec_.error.operation_id(e_row_)             := NULL;
+                  complete_eval_log_rec_.error.routing_guideline_no(e_row_)     := NULL;
+                  complete_eval_log_rec_.error.tool_sequence(e_row_)            := NULL;
+                  complete_eval_log_rec_.error.structure_alternative_no(e_row_) := NULL;
+                  complete_eval_log_rec_.error.line_item_no(e_row_)             := NULL;
+                  complete_eval_log_rec_.error.structure_guideline_no(e_row_)   := NULL;
+                  complete_eval_log_rec_.error.action_id(e_row_)                := NULL;
+                  complete_eval_log_rec_.error.action_line_no(e_row_)           := NULL;
+                  complete_eval_log_rec_.error.condition_id(e_row_)             := NULL;
+                  complete_eval_log_rec_.error.condition_line_no(e_row_)        := NULL;
+                  complete_eval_log_rec_.error.formula_id(e_row_)               := NULL;
+
+                  complete_eval_log_rec_.error.error_message(e_row_)            :=
+                     Language_SYS.Translate_Constant(lu_name_, 'IOMNOREV: Part revision does not exist for component part :P1 contract :P2 required date :P3',
+                       Fnd_Session_API.Get_Language,
+                       component_rec_.component_part_tab(i),
+                       component_rec_.contract_tab(i),
+                       interim_required_date_);
+               END IF;  -- of IF (comp_eng_chg_level_ IS NULL) THEN
+               --
+               --
+               found_:=FALSE;
+               FOR j IN 1..NVL(operation_rec_.operation_row_count,0) LOOP
+                  IF (component_rec_.comp_operation_no_tab(i)=operation_rec_.operation_no_tab(j)) THEN
+                     found_ := TRUE;
+                     EXIT;
+                  END IF;
+               END LOOP;
+               IF (NOT found_) THEN
+                  component_rec_.comp_operation_no_tab(i):=NULL;
+               END IF;
+
+               IF (component_rec_.comp_operation_no_tab(i) IS NOT NULL) THEN
+                  Validate_Oper_On_Comp___(oper_valid_,
+                                           complete_eval_log_rec_,
+                                           operation_rec_,
+                                           component_rec_.contract_tab(i),
+                                           component_rec_.component_part_tab(i),
+                                           component_rec_.line_item_no_tab(i),
+                                           component_rec_.comp_operation_no_tab(i),
+                                           parent_supply_.eng_chg_level,
+                                           parent_supply_.structure_alternative_no,
+                                           parent_supply_.order_code,
+                                           parent_supply_.routing_revision,
+                                           parent_supply_.routing_alternative_no,
+                                           parent_part_);
+               END IF;
+               --
+               IF ( ( (component_rec_.comp_operation_no_tab(i) IS NULL) OR
+                      ( (component_rec_.comp_operation_no_tab(i) IS NOT NULL) AND
+                        (oper_valid_) ) ) AND
+                    ( (component_rec_.qty_per_assembly_tab(i) > 0) OR
+                      (component_rec_.consumption_item_db_tab(i) = 'Not Consumed') ) ) THEN
+                  IF component_rec_.consumption_item_db_tab(i) = 'Not Consumed' THEN
+                     component_rec_.qty_required_tab(i) := 0;
+                  END IF;
+                  Interim_Order_API.New(supply_interim_order_no_,
+                                        evaluation_rec_.interim_header_id,
+                                        parent_supply_.interim_order_no,
+                                        evaluation_rec_.next_level,
+                                        component_rec_.contract_tab(i),
+                                        component_rec_.component_part_tab(i),
+                                        component_rec_.qty_required_tab(i),
+                                        interim_required_date_,
+                                        interim_start_date_,
+                                        comp_eng_chg_level_,
+                                        comp_bom_type_db_,
+                                        comp_struct_alternative_no_,
+                                        comp_routing_revision_,
+                                        comp_rout_alternative_no_,
+                                        component_rec_.promise_planned_db_tab(i),
+                                        component_rec_.configuration_id_tab(i),
+                                        NULL,
+                                        evaluation_rec_.part_ownership,
+                                        evaluation_rec_.owning_customer_no );
+
+                  evaluation_rec_.line_item_no := NVL(evaluation_rec_.line_item_no,0) + 1;
+
+                  -- Note; Create InterimOrderComponent
+                  Interim_Order_Component_API.New(evaluation_rec_.line_item_no,
+                                                  evaluation_rec_.interim_header_id,
+                                                  parent_supply_.interim_order_no,
+                                                  evaluation_rec_.line_item_no,
+                                                  evaluation_rec_.contract,
+                                                  component_rec_.component_part_tab(i),
+                                                  supply_interim_order_no_,
+                                                  component_rec_.qty_required_tab(i),
+                                                  interim_required_date_,
+                                                  component_rec_.qty_per_assembly_tab(i),
+                                                  component_rec_.component_scrap_tab(i),
+                                                  component_rec_.shrinkage_factor_tab(i),
+                                                  component_rec_.comp_operation_no_tab(i),
+                                                  component_rec_.leadtime_offset_tab(i),
+                                                  component_rec_.consumption_item_db_tab(i),
+                                                  evaluation_rec_.line_item_no,
+                                                  component_rec_.issue_to_loc_tab(i),
+                                                  component_rec_.draw_pos_no_tab(i),
+                                                  component_rec_.note_text_tab(i),
+                                                  component_rec_.configuration_id_tab(i),
+                                                  NULL,
+                                                  evaluation_rec_.part_ownership,
+                                                  evaluation_rec_.owning_customer_no );
+
+                  -- Note; Create InterimCompWorkGuide
+                  FOR j IN 1..comp_work_guide_rec_.comp_work_guide_count LOOP
+                     IF (component_rec_.line_item_no_tab(i) = comp_work_guide_rec_.comp_line_item_no_tab(j)) THEN
+                        --
+                        Interim_Comp_Work_Guide_API.NEW(comp_work_guide_rec_.comp_guideline_no_tab(j),
+                                                        evaluation_rec_.interim_header_id,
+                                                        parent_supply_.interim_order_no,
+                                                        evaluation_rec_.line_item_no, -- component_rec_.line_item_no_tab(i),
+                                                        comp_work_guide_rec_.comp_guideline_seq_tab(j),
+                                                        comp_work_guide_rec_.comp_guideline_desc_tab(j),
+                                                        comp_work_guide_rec_.comp_guideline_text_tab(j),
+                                                        comp_work_guide_rec_.comp_guideline_type_tab(j),
+                                                        comp_work_guide_rec_.x_coordinate_tab(j),
+                                                        comp_work_guide_rec_.y_coordinate_tab(j),
+                                                        comp_work_guide_rec_.z_coordinate_tab(j),
+                                                        comp_work_guide_rec_.reference_qty_tab(j) );
+                     END IF;
+                  END LOOP;   -- comp_work_guide_rec loop
+               END IF; -- of IF ( ( (component_rec_.comp_operation_no_tab(i) IS NULL) OR
+
+            END IF;  -- of IF (component_rec_.mrp_order_code_tab(i) IN ('P','K') AND
+-- End IF-ELSE #4
+
+         END IF;  -- of IF (part_type_code_ = '6') THEN..ELSIF (NOT phatom_part_exist_) THEN..
+
+      END LOOP;
+-- End FOR-LOOP #2: Loop thru retrieved component records.
+
+   END IF;  --of IF NOT multi_site_part_exist_ THEN
+
+-- Note; Initialize all records for the next interim order
+      operation_rec_       := NULL;
+      operation_rec_.operation_row_count := 0;
+      oper_work_guide_rec_ := NULL;
+      oper_work_guide_rec_.oper_work_guide_row_count := 0;
+      oper_tool_rec_       := NULL;
+      oper_tool_rec_.oper_tool_row_count := 0;
+      component_rec_       := NULL;
+      component_rec_.comp_row_count := 0;
+      comp_work_guide_rec_ := NULL;
+      comp_work_guide_rec_.comp_work_guide_count := 0;
+      config_spec_rec_     := NULL;
+      config_spec_rec_.spec_row_count := 0;
+      --
+      evaluation_rec_.line_item_no := 0;
+      -- Bug 74483, start
+      comp_eng_chg_level_ := NULL;
+      comp_struct_alternative_no_ := NULL;
+      -- Bug 74483, end
+   END LOOP;
+-- End FOR-LOOP #1: Loop thru interim order records inserted by calling method.
+END Evaluate_Level___;

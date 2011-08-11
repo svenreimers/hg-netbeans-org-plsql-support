@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE type PUBLIC
+"-//NetBeans//DTD annotation type 1.1//EN"
+"http://www.netbeans.org/dtds/annotation-type-1_1.dtd">
+
+<type name="Plsql-wrong-param-annotation"
+      description_key="wrong_param_annotation"
+      localizing_bundle="org.netbeans.modules.plsql.annotation.annotations.Bundle"
+      visible="true"
+      glyph="nbresloc:/org/netbeans/modules/plsql/annotation/resources/error-sg.gif"
+      severity="error"
+      browseable="true"
+      type="line"/>

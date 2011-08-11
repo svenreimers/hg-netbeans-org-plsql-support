@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+To change this template, choose Tools | Templates
+and open the template in the editor.
+-->
+<!DOCTYPE MIME-resolver PUBLIC "-//NetBeans//DTD MIME Resolver 1.0//EN" "http://www.netbeans.org/dtds/mime-resolver-1_0.dtd">
+<MIME-resolver>
+    <file>
+        <ext name="apy"/>
+        <ext name="APY"/>
+        <ext name="api"/>
+        <ext name="API"/>
+        <ext name="body"/>
+        <ext name="BODY"/>
+        <ext name="spec"/>
+        <ext name="SPEC"/>
+        <ext name="db"/>
+        <ext name="DB"/>
+        <ext name="sql"/>
+        <ext name="SQL"/>
+        <ext name="cre"/>
+        <ext name="CRE"/>
+        <ext name="upg"/>
+        <ext name="UPG"/>
+        <ext name="cdb"/>
+        <ext name="CDB"/>
+        <ext name="ins"/>
+        <ext name="INS"/>
+        <ext name="rdf"/>
+        <ext name="RDF"/>
+        <ext name="dbl"/>
+        <ext name="DBL"/>
+        <ext name="tdb"/>
+        <ext name="TDB"/>
+        <ext name="func"/>
+        <ext name="FUNC"/>
+        <ext name="proc"/>
+        <ext name="PROC"/>
+        <ext name="pls"/>
+        <ext name="PLS"/>
+        <resolver mime="text/x-plsql"/>
+    </file>
+</MIME-resolver>

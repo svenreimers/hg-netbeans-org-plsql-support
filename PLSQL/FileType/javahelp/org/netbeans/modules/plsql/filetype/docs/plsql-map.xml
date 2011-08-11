@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE map PUBLIC "-//Sun Microsystems Inc.//DTD JavaHelp Map Version 2.0//EN" "http://java.sun.com/products/javahelp/map_2_0.dtd">
+<map version="2.0">
+    <mapID target="org.netbeans.modules.plsql.creating" url="plsql-creating.html"/>
+    <mapID target="org.netbeans.modules.plsql.editing" url="plsql-editing.html"/>
+    <mapID target="org.netbeans.modules.plsql.navigating" url="plsql-navigating.html"/>
+    <mapID target="org.netbeans.modules.plsql.completion" url="plsql-completion.html"/>
+    <mapID target="org.netbeans.modules.plsql.deploying" url="plsql-deploying.html"/>
+    <mapID target="org.netbeans.modules.plsql.auto.commit" url="plsql-auto-commit.html"/>
+    <mapID target="org.netbeans.modules.plsql.testing" url="plsql-testing.html"/>
+    <mapID target="org.netbeans.modules.plsql.usages" url="plsql-usages.html"/>
+    <mapID target="org.netbeans.modules.plsql.annotation" url="plsql-annotation.html"/>
+    <mapID target="org.netbeans.modules.plsql.annotation.colcomment" url="plsql-annotation-colcomment.html"/>
+    <mapID target="org.netbeans.modules.plsql.annotation.comment" url="plsql-annotation-comment.html"/>
+    <mapID target="org.netbeans.modules.plsql.annotation.constant" url="plsql-annotation-constants.html"/>
+    <mapID target="org.netbeans.modules.plsql.annotation.cursor" url="plsql-annotation-cursor.html"/>
+    <mapID target="org.netbeans.modules.plsql.annotation.function" url="plsql-annotation-function.html"/>
+    <mapID target="org.netbeans.modules.plsql.annotation.if" url="plsql-annotation-if.html"/>
+    <mapID target="org.netbeans.modules.plsql.annotation.method" url="plsql-annotation-method.html"/>
+    <mapID target="org.netbeans.modules.plsql.annotation.stmt" url="plsql-annotation-statement.html"/>
+    <mapID target="org.netbeans.modules.plsql.annotation.table" url="plsql-annotation-table.html"/>
+    <mapID target="org.netbeans.modules.plsql.annotation.tag" url="plsql-annotation-tags.html"/>
+    <mapID target="org.netbeans.modules.plsqlsupport.options.PLSQLAnnotationsOptionsPanelController" url="plsql-options.html"/>
+</map>

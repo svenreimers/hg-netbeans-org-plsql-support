@@ -1,0 +1,712 @@
+-----------------------------------------------------------------------------
+--
+--  Logical unit: FavoriteSchedules
+--
+--  Purpose:
+--
+--  IFS/Design Template Version 2.3
+--
+--  Date    Sign    History
+--  ------  ------  ---------------------------------------------------------
+--  050224  VYPELK  Created
+-----------------------------------------------------------------------------
+
+DEFINE MODULE        = WRKSCH
+DEFINE LU            = FavoriteSchedules
+DEFINE TABLE         = FAVORITE_SCHEDULES_TAB
+DEFINE VIEW          = FAVORITE_SCHEDULES
+DEFINE PKG           = FAVORITE_SCHEDULES_API
+
+DEFINE OBJID         = rowid
+DEFINE OBJVERSION    = to_char(rowversion)
+
+-----------------------------------------------------------------------------
+-------------------- VIEWS FOR SELECTS --------------------------------------
+-----------------------------------------------------------------------------
+
+PROMPT Creating &VIEW view
+
+CREATE OR REPLACE FORCE VIEW &VIEW AS
+SELECT identity                       identity,
+       schedule_type                  schedule_type,
+       schedule_code                  schedule_code,
+       company_id                     company_id,
+       wage_class                     wage_class,
+       &OBJID                         objid,
+       &OBJVERSION                    objversion
+FROM   favorite_schedules_tab
+WITH   read only;
+
+COMMENT ON TABLE &VIEW
+   IS 'LU=&LU^PROMPT=Favorite Schedules^MODULE=&MODULE^';
+
+COMMENT ON COLUMN &VIEW..identity
+   IS 'FLAGS=PMI--^DATATYPE=STRING(30)/UPPERCASE^PROMPT=Identity^REF=ApplicationUser^';
+COMMENT ON COLUMN &VIEW..schedule_type
+   IS 'FLAGS=KMI-L^DATATYPE=STRING(10)^PROMPT=Schedule Type^';
+COMMENT ON COLUMN &VIEW..schedule_code
+   IS 'FLAGS=KMI--^DATATYPE=STRING(10)^PROMPT=Schedule Code^';
+COMMENT ON COLUMN &VIEW..company_id
+   IS 'FLAGS=KMI-L^DATATYPE=STRING(20)/UPPERCASE^PROMPT=Company ID^';
+COMMENT ON COLUMN &VIEW..wage_class
+   IS 'FLAGS=KMI-L^DATATYPE=STRING(10)/UPPERCASE^PROMPT=Wage Class^REF=WageClass(company_id)^';
+
+-----------------------------------------------------------------------------
+-------------------- PACKAGES FOR METHODS -----------------------------------
+-----------------------------------------------------------------------------
+
+PROMPT Creating &PKG implementation
+
+CREATE OR REPLACE PACKAGE BODY &PKG IS
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC IMPLEMENTATION METHOD DECLARATIONS ---------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS ----------------------------
+-----------------------------------------------------------------------------
+-- Lock_By_Id___
+--    Client-support to lock a specific instance of the logical unit.
+--
+-- Lock_By_Keys___
+--    Server support to lock a specific instance of the logical unit.
+--
+-- Get_Object_By_Id___
+--    Get LU-record from the database with a specified object identity.
+--
+-- Get_Object_By_Keys___
+--    Get LU-record from the database with specified key columns.
+--
+-- Check_Exist___
+--    Check if a specific LU-instance already exist in the database.
+--
+-- Get_Id_Version_By_Keys___
+--    Get the current OBJID and OBJVERSION for a specific LU-instance.
+-----------------------------------------------------------------------------
+
+FUNCTION Lock_By_Id___ (
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2 ) RETURN &TABLE%ROWTYPE
+IS
+   row_changed EXCEPTION;
+   row_deleted EXCEPTION;
+   row_locked  EXCEPTION;
+   PRAGMA      exception_init(row_locked, -0054);
+   rec_        &TABLE%ROWTYPE;
+   dummy_      NUMBER;
+   CURSOR lock_control IS
+      SELECT *
+      FROM   &TABLE
+      WHERE  &OBJID = objid_
+      AND    &OBJVERSION = objversion_
+      FOR UPDATE NOWAIT;
+   CURSOR exist_control IS
+      SELECT 1
+      FROM   &TABLE
+      WHERE  &OBJID = objid_;
+BEGIN
+   OPEN lock_control;
+   FETCH lock_control INTO rec_;
+   IF (lock_control%FOUND) THEN
+      CLOSE lock_control;
+      RETURN rec_;
+   END IF;
+   CLOSE lock_control;
+   OPEN exist_control;
+   FETCH exist_control INTO dummy_;
+   IF (exist_control%FOUND) THEN
+      CLOSE exist_control;
+      RAISE row_changed;
+   ELSE
+      CLOSE exist_control;
+      RAISE row_deleted;
+   END IF;
+EXCEPTION
+   WHEN row_locked THEN
+      Error_SYS.Record_Locked(lu_name_);
+   WHEN row_changed THEN
+      Error_SYS.Record_Modified(lu_name_);
+   WHEN row_deleted THEN
+      Error_SYS.Record_Removed(lu_name_);
+END Lock_By_Id___;
+
+FUNCTION Lock_By_Keys___ (
+   identity_ IN VARCHAR2,
+   schedule_type_ IN VARCHAR2,
+   schedule_code_ IN VARCHAR2,
+   company_id_ IN VARCHAR2,
+   wage_class_ IN VARCHAR2 ) RETURN &TABLE%ROWTYPE
+IS
+   row_deleted EXCEPTION;
+   rec_        &TABLE%ROWTYPE;
+   CURSOR lock_control IS
+      SELECT *
+      FROM  &TABLE
+      WHERE identity = identity_
+      AND   schedule_type = schedule_type_
+      AND   schedule_code = schedule_code_
+      AND   company_id = company_id_
+      AND   wage_class = wage_class_
+      FOR UPDATE;
+BEGIN
+   OPEN lock_control;
+   FETCH lock_control INTO rec_;
+   IF (lock_control%FOUND) THEN
+      CLOSE lock_control;
+      RETURN rec_;
+   ELSE
+      CLOSE lock_control;
+      RAISE row_deleted;
+   END IF;
+EXCEPTION
+   WHEN row_deleted THEN
+      Error_SYS.Record_Removed(lu_name_);
+END Lock_By_Keys___;
+
+FUNCTION Get_Object_By_Id___ (
+   objid_ IN VARCHAR2 ) RETURN &TABLE%ROWTYPE
+IS
+   lu_rec_ &TABLE%ROWTYPE;
+   CURSOR getrec IS
+      SELECT *
+      FROM   &TABLE
+      WHERE  &OBJID = objid_;
+BEGIN
+   OPEN getrec;
+   FETCH getrec INTO lu_rec_;
+   IF (getrec%NOTFOUND) THEN
+      CLOSE getrec;
+      Error_SYS.Record_Removed(lu_name_);
+   END IF;
+   CLOSE getrec;
+   RETURN(lu_rec_);
+END Get_Object_By_Id___;
+
+
+FUNCTION Get_Object_By_Keys___ (
+   identity_ IN VARCHAR2,
+   schedule_type_ IN VARCHAR2,
+   schedule_code_ IN VARCHAR2,
+   company_id_ IN VARCHAR2,
+   wage_class_ IN VARCHAR2 ) RETURN &TABLE%ROWTYPE
+IS
+   lu_rec_ &TABLE%ROWTYPE;
+   CURSOR getrec IS
+      SELECT *
+      FROM  &TABLE
+      WHERE identity = identity_
+      AND   schedule_type = schedule_type_
+      AND   schedule_code = schedule_code_
+      AND   company_id = company_id_
+      AND   wage_class = wage_class_;
+BEGIN
+   OPEN getrec;
+   FETCH getrec INTO lu_rec_;
+   CLOSE getrec;
+   RETURN(lu_rec_);
+END Get_Object_By_Keys___;
+
+FUNCTION Check_Exist___ (
+   identity_ IN VARCHAR2,
+   schedule_type_ IN VARCHAR2,
+   schedule_code_ IN VARCHAR2,
+   company_id_ IN VARCHAR2,
+   wage_class_ IN VARCHAR2 ) RETURN BOOLEAN
+IS
+   dummy_ NUMBER;
+   CURSOR exist_control IS
+      SELECT 1
+      FROM   &TABLE
+      WHERE identity = identity_
+      AND   schedule_type = schedule_type_
+      AND   schedule_code = schedule_code_
+      AND   company_id = company_id_
+      AND   wage_class = wage_class_;
+BEGIN
+   OPEN exist_control;
+   FETCH exist_control INTO dummy_;
+   IF (exist_control%FOUND) THEN
+      CLOSE exist_control;
+      RETURN(TRUE);
+   END IF;
+   CLOSE exist_control;
+   RETURN(FALSE);
+END Check_Exist___;
+
+PROCEDURE Get_Id_Version_By_Keys___ (
+   objid_      IN OUT VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   identity_ IN VARCHAR2,
+   schedule_type_ IN VARCHAR2,
+   schedule_code_ IN VARCHAR2,
+   company_id_ IN VARCHAR2,
+   wage_class_ IN VARCHAR2)
+IS
+   CURSOR get_version IS
+   SELECT &OBJID, &OBJVERSION
+      FROM  &TABLE
+      WHERE identity = identity_
+      AND   schedule_type = schedule_type_
+      AND   schedule_code = schedule_code_
+      AND   company_id = company_id_
+      AND   wage_class = wage_class_;
+BEGIN
+   OPEN get_version;
+   FETCH get_version INTO objid_, objversion_;
+   CLOSE get_version;
+END Get_Id_Version_By_Keys___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR INSERT -----------------
+-----------------------------------------------------------------------------
+-- Prepare_Insert___
+--    Set all default values for a new instance (ON-NEW-RECORD) of this
+--    logical unit by calling procedure Add_Attr.
+--
+-- Unpack_Check_Insert___
+--    Unpack the attribute list, check all attributes from the client
+--    and generate all default values before creation of the new object.
+--
+-- Insert___
+--    Insert a new LU-instance into the database and return the values
+--    for OBJID and OBJVERSION.
+-----------------------------------------------------------------------------
+
+PROCEDURE Prepare_Insert___ (
+   attr_ IN OUT VARCHAR2 )
+IS
+BEGIN
+   Client_SYS.Clear_Attr(attr_);
+END Prepare_Insert___;
+
+
+PROCEDURE Unpack_Check_Insert___ (
+   attr_   IN OUT VARCHAR2,
+   newrec_ IN OUT &TABLE%ROWTYPE )
+IS
+   ptr_   NUMBER;
+   name_  VARCHAR2(30);
+   value_ VARCHAR2(2000);
+BEGIN
+   ptr_ := NULL;
+   WHILE (Client_SYS.Get_Next_From_Attr(attr_, ptr_, name_, value_)) LOOP
+      IF (name_ = 'IDENTITY') THEN
+         newrec_.identity := value_;
+         Application_User_API.Exist(newrec_.identity);
+      ELSIF (name_ = 'SCHEDULE_TYPE') THEN
+         newrec_.schedule_type := value_;
+      ELSIF (name_ = 'SCHEDULE_CODE') THEN
+         newrec_.schedule_code := value_;
+      ELSIF (name_ = 'COMPANY_ID') THEN
+         newrec_.company_id := value_;
+      ELSIF (name_ = 'WAGE_CLASS') THEN
+         newrec_.wage_class := value_;
+         Wage_Class_API.Exist(newrec_.company_id, newrec_.wage_class);
+      ELSE
+         Error_SYS.Item_Not_Exist(lu_name_, name_, value_);
+      END IF;
+   END LOOP;
+   Client_SYS.Clear_Attr(attr_);
+   Error_SYS.Check_Not_Null(lu_name_, 'IDENTITY', newrec_.identity);
+   Error_SYS.Check_Not_Null(lu_name_, 'SCHEDULE_TYPE', newrec_.schedule_type);
+   Error_SYS.Check_Not_Null(lu_name_, 'SCHEDULE_CODE', newrec_.schedule_code);
+   Error_SYS.Check_Not_Null(lu_name_, 'COMPANY_ID', newrec_.company_id);
+   Error_SYS.Check_Not_Null(lu_name_, 'WAGE_CLASS', newrec_.wage_class);
+EXCEPTION
+   WHEN value_error THEN
+      Error_SYS.Item_Format(lu_name_, name_, value_);
+END Unpack_Check_Insert___;
+
+
+PROCEDURE Insert___ (
+   objid_      OUT    VARCHAR2,
+   objversion_ OUT    VARCHAR2,
+   newrec_     IN OUT &TABLE%ROWTYPE,
+   attr_       IN OUT VARCHAR2 )
+IS
+BEGIN
+   newrec_.rowversion := 1;
+   objversion_ := to_char(newrec_.rowversion);
+   INSERT
+      INTO favorite_schedules_tab (
+         identity,
+         schedule_type,
+         schedule_code,
+         company_id,
+         wage_class,
+         rowversion)
+      VALUES (
+         newrec_.identity,
+         newrec_.schedule_type,
+         newrec_.schedule_code,
+         newrec_.company_id,
+         newrec_.wage_class,
+         newrec_.rowversion)
+   RETURNING &OBJID INTO objid_;
+EXCEPTION
+   WHEN dup_val_on_index THEN
+      Error_SYS.Record_Exist(lu_name_);
+END Insert___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR UPDATE -----------------
+-----------------------------------------------------------------------------
+-- Unpack_Check_Update___
+--    Unpack the attribute list, check all attributes from the client
+--    and generate all default values before modifying the object.
+--
+-- Update___
+--    Update an existing LU-instance in the database and return the
+--    the new OBJVERSION.
+-----------------------------------------------------------------------------
+
+PROCEDURE Unpack_Check_Update___ (
+   attr_   IN OUT VARCHAR2,
+   newrec_ IN OUT &TABLE%ROWTYPE,
+   objid_  IN     VARCHAR2 )
+IS
+   ptr_   NUMBER;
+   name_  VARCHAR2(30);
+   value_ VARCHAR2(2000);
+BEGIN
+   ptr_ := NULL;
+   WHILE (Client_SYS.Get_Next_From_Attr(attr_, ptr_, name_, value_)) LOOP
+      IF (name_ = 'IDENTITY') THEN
+         Error_SYS.Item_Update(lu_name_, 'IDENTITY');
+      ELSIF (name_ = 'SCHEDULE_TYPE') THEN
+         Error_SYS.Item_Update(lu_name_, 'SCHEDULE_TYPE');
+      ELSIF (name_ = 'SCHEDULE_CODE') THEN
+         Error_SYS.Item_Update(lu_name_, 'SCHEDULE_CODE');
+      ELSIF (name_ = 'COMPANY_ID') THEN
+         Error_SYS.Item_Update(lu_name_, 'COMPANY_ID');
+      ELSIF (name_ = 'WAGE_CLASS') THEN
+         Error_SYS.Item_Update(lu_name_, 'WAGE_CLASS');
+      ELSE
+         Error_SYS.Item_Not_Exist(lu_name_, name_, value_);
+      END IF;
+   END LOOP;
+   Client_SYS.Clear_Attr(attr_);
+EXCEPTION
+   WHEN value_error THEN
+      Error_SYS.Item_Format(lu_name_, name_, value_);
+END Unpack_Check_Update___;
+
+
+PROCEDURE Update___ (
+   objid_      IN     VARCHAR2,
+   oldrec_     IN     &TABLE%ROWTYPE,
+   newrec_     IN OUT &TABLE%ROWTYPE,
+   attr_       IN OUT VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   by_keys_    IN BOOLEAN DEFAULT FALSE )
+IS
+BEGIN
+   newrec_.rowversion := newrec_.rowversion + 1;
+   objversion_ := to_char(newrec_.rowversion);
+   IF by_keys_ THEN
+      UPDATE favorite_schedules_tab
+      SET identity = newrec_.identity,
+          schedule_type = newrec_.schedule_type,
+          schedule_code = newrec_.schedule_code,
+          company_id = newrec_.company_id,
+          wage_class = newrec_.wage_class,
+          rowversion = newrec_.rowversion
+      WHERE identity = newrec_.identity
+      AND   schedule_type = newrec_.schedule_type
+      AND   schedule_code = newrec_.schedule_code
+      AND   company_id = newrec_.company_id
+      AND   wage_class = newrec_.wage_class;
+   ELSE
+      UPDATE favorite_schedules_tab
+      SET identity = newrec_.identity,
+          schedule_type = newrec_.schedule_type,
+          schedule_code = newrec_.schedule_code,
+          company_id = newrec_.company_id,
+          wage_class = newrec_.wage_class,
+          rowversion = newrec_.rowversion
+      WHERE &OBJID = objid_;
+   END IF;
+EXCEPTION
+   WHEN dup_val_on_index THEN
+      Error_SYS.Record_Exist(lu_name_);
+END Update___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR DELETE -----------------
+-----------------------------------------------------------------------------
+-- Check_Delete___
+--    Checks whether a specific LU-record may be removed or not.
+--    The procedure should check business rules like attribute values
+--    as well as database constraints (defined or not).
+--
+-- Delete___
+--    Deletion of the specific LU-object from the database.
+-----------------------------------------------------------------------------
+
+PROCEDURE Check_Delete___ (
+   remrec_ IN &TABLE%ROWTYPE )
+IS
+   key_ VARCHAR2(2000);
+BEGIN
+   key_ := remrec_.identity || '^' || remrec_.schedule_type || '^' || remrec_.schedule_code || '^' || remrec_.company_id || '^' || remrec_.wage_class || '^';
+   Reference_SYS.Check_Restricted_Delete(lu_name_, key_);
+END Check_Delete___;
+
+
+PROCEDURE Delete___ (
+   objid_  IN VARCHAR2,
+   remrec_ IN &TABLE%ROWTYPE )
+IS
+   key_ VARCHAR2(2000);
+BEGIN
+   key_ := remrec_.identity || '^' || remrec_.schedule_type || '^' || remrec_.schedule_code || '^' || remrec_.company_id || '^' || remrec_.wage_class || '^';
+   Reference_SYS.Do_Cascade_Delete(lu_name_, key_);
+   DELETE
+      FROM  favorite_schedules_tab
+      WHERE &OBJID = objid_;
+END Delete___;
+
+-----------------------------------------------------------------------------
+-------------------- PRIVATE BASE METHODS -----------------------------------
+-----------------------------------------------------------------------------
+-- Lock__
+--    Client-support to lock a specific instance of the logical unit.
+--
+-- New__
+--    Client-support interface to create LU instances.
+--       action_ = 'PREPARE'
+--          Default values and handle of information to client.
+--          The default values are set in procedure Prepare_Insert___.
+--       action_ = 'CHECK'
+--          Check all attributes before creating new object and handle of
+--          information to client. The attribute list is unpacked, checked
+--          and prepared (defaults) in procedure Unpack_Check_Insert___.
+--       action_ = 'DO'
+--          Creation of new instances of the logical unit and handle of
+--          information to client. The attribute list is unpacked, checked
+--          and prepared (defaults) in procedure Unpack_Check_Insert___
+--          before calling procedure Insert___.
+--
+-- Modify__
+--    Client-support interface to modify attributes for LU instances.
+--       action_ = 'CHECK'
+--          Check all attributes before modifying an existing object and
+--          handle of information to client. The attribute list is unpacked,
+--          checked and prepared(defaults) in procedure Unpack_Check_Update___.
+--       action_ = 'DO'
+--          Modification of an existing instance of the logical unit. The
+--          procedure unpacks the attributes, checks all values before
+--          procedure Update___ is called.
+--
+-- Remove__
+--    Client-support interface to remove LU instances.
+--       action_ = 'CHECK'
+--          Check whether a specific LU-instance may be removed or not.
+--          The procedure fetches the complete record by calling procedure
+--          Get_Object_By_Id___. Then the check is made by calling procedure
+--          Check_Delete___.
+--       action_ = 'DO'
+--          Remove an existing instance of the logical unit. The procedure
+--          fetches the complete LU-record, checks for a delete and then
+--          deletes the record by calling procedure Delete___.
+-----------------------------------------------------------------------------
+
+PROCEDURE Lock__ (
+   info_       OUT VARCHAR2,
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2 )
+IS
+   dummy_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Lock__');
+   dummy_ := Lock_By_Id___(objid_, objversion_);
+   info_ := Client_SYS.Get_All_Info;
+END Lock__;
+
+
+PROCEDURE New__ (
+   info_       OUT    VARCHAR2,
+   objid_      OUT    VARCHAR2,
+   objversion_ OUT    VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   newrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'New__');
+   IF (action_ = 'PREPARE') THEN
+      Prepare_Insert___(attr_);
+   ELSIF (action_ = 'CHECK') THEN
+      Unpack_Check_Insert___(attr_, newrec_);
+   ELSIF (action_ = 'DO') THEN
+      Unpack_Check_Insert___(attr_, newrec_);
+      Insert___(objid_, objversion_, newrec_, attr_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END New__;
+
+
+PROCEDURE Modify__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   oldrec_ &TABLE%ROWTYPE;
+   newrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Modify__');
+   IF (action_ = 'CHECK') THEN
+      newrec_ := Get_Object_By_Id___(objid_);
+      Unpack_Check_Update___(attr_, newrec_, objid_);
+   ELSIF (action_ = 'DO') THEN
+      oldrec_ := Lock_By_Id___(objid_, objversion_);
+      newrec_ := oldrec_;
+      Unpack_Check_Update___(attr_, newrec_, objid_);
+      Update___(objid_, oldrec_, newrec_, attr_, objversion_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Modify__;
+
+
+PROCEDURE Remove__ (
+   info_       OUT VARCHAR2,
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2,
+   action_     IN  VARCHAR2 )
+IS
+   remrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Remove__');
+   IF (action_ = 'CHECK') THEN
+      remrec_ := Get_Object_By_Id___(objid_);
+      Check_Delete___(remrec_);
+   ELSIF (action_ = 'DO') THEN
+      remrec_ := Lock_By_Id___(objid_, objversion_);
+      Check_Delete___(remrec_);
+      Delete___(objid_, remrec_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Remove__;
+
+-----------------------------------------------------------------------------
+-------------------- PUBLIC BASE METHODS ------------------------------------
+-----------------------------------------------------------------------------
+-- Exist
+--   Checks if given pointer (e.g. primary key) to an instance of this
+--   logical unit exists. If not an exception will be raised.
+-----------------------------------------------------------------------------
+
+PROCEDURE Exist (
+   identity_ IN VARCHAR2,
+   schedule_type_ IN VARCHAR2,
+   schedule_code_ IN VARCHAR2,
+   company_id_ IN VARCHAR2,
+   wage_class_ IN VARCHAR2 )
+IS
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Exist', TRUE);
+   IF (NOT Check_Exist___(identity_, schedule_type_, schedule_code_, company_id_, wage_class_)) THEN
+      Error_SYS.Record_Not_Exist(lu_name_);
+   END IF;
+END Exist;
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC IMPLEMENTATION METHODS ---------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PRIVATE METHODS ----------------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PROTECTED METHODS --------------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PUBLIC METHODS -----------------------------
+-----------------------------------------------------------------------------
+
+PROCEDURE Add_Remove (
+   identity_ IN VARCHAR2,
+   schedule_type_ IN VARCHAR2,
+   schedule_code_ IN VARCHAR2,
+   company_id_ IN VARCHAR2,
+   wage_class_ IN VARCHAR2,
+   favorite_  IN NUMBER )
+IS
+   info_            VARCHAR2(1000);
+   objid_           FAVORITE_SCHEDULES.objid%TYPE;
+   objversion_      FAVORITE_SCHEDULES.objversion%TYPE;
+   attr_            VARCHAR2(1000);
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Add_Remove');
+   IF favorite_ = 1 THEN
+      IF (NOT Check_Exist___(identity_, schedule_type_, schedule_code_, company_id_, wage_class_)) THEN
+         Client_SYS.Clear_Attr(attr_);
+         Client_SYS.Add_To_Attr('COMPANY_ID', company_id_, attr_);
+         Client_SYS.Add_To_Attr('WAGE_CLASS', wage_class_, attr_);
+         Client_SYS.Add_To_Attr('IDENTITY', identity_, attr_);
+         Client_SYS.Add_To_Attr('SCHEDULE_TYPE', schedule_type_, attr_);
+         Client_SYS.Add_To_Attr('SCHEDULE_CODE', schedule_code_, attr_);
+         New__( info_, objid_, objversion_, attr_, 'DO');
+      END IF;
+   ELSE
+      IF (Check_Exist___(identity_, schedule_type_, schedule_code_, company_id_, wage_class_)) THEN
+         Get_Id_Version_By_Keys___(objid_, objversion_, identity_, schedule_type_, schedule_code_, company_id_, wage_class_);
+         Remove__(info_, objid_, objversion_, 'DO');
+      END IF;
+   END IF;
+
+END Add_Remove;
+
+
+FUNCTION Get_Favorite (
+   identity_ IN VARCHAR2,
+   schedule_type_ IN VARCHAR2,
+   schedule_code_ IN VARCHAR2,
+   company_id_ IN VARCHAR2,
+   wage_class_ IN VARCHAR2 ) RETURN NUMBER
+IS
+BEGIN
+   IF (Check_Exist___(identity_, schedule_type_, schedule_code_, company_id_, wage_class_)) THEN
+      RETURN 1;
+   END IF;
+   RETURN 0;
+END Get_Favorite;
+
+-----------------------------------------------------------------------------
+-------------------- FOUNDATION1 METHODS ------------------------------------
+-----------------------------------------------------------------------------
+-- Init
+--   Dummy procedure that can be called at database startup to ensure that
+--   this package is loaded into memory for performance reasons only.
+-----------------------------------------------------------------------------
+
+PROCEDURE Init
+IS
+BEGIN
+   NULL;
+END Init;
+
+
+END &PKG;
+/
+SHOW ERROR
+
+UNDEFINE MODULE
+UNDEFINE LU
+UNDEFINE TABLE
+UNDEFINE VIEW
+UNDEFINE PKG
+
+UNDEFINE OBJID
+UNDEFINE OBJVERSION
+
+-----------------------------------------------------------------------------

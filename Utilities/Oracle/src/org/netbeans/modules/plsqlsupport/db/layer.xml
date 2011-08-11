@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE filesystem PUBLIC "-//NetBeans//DTD Filesystem 1.2//EN" "http://www.netbeans.org/dtds/filesystem-1_2.dtd">
+<filesystem>    
+   <folder name="Databases">
+      <folder name="JDBCDrivers">
+         <file name="OracleThin.xml" url="resources/oracle-thin.xml"/>
+      </folder>
+      <folder name="Nodes">
+         <folder name="Oracle">
+            <file name="org-netbeans-modules-plsqlsupport-db-ui-SQLExecutionAction.instance">
+               <attr name="position" intvalue="100"/>
+            </file>
+            <file name="org-netbeans-modules-plsqlsupport-db-ui-ListObjectsAction-separatorBefore.instance">
+               <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
+               <attr name="position" intvalue="290"/>
+            </file>
+            <file name="org-netbeans-modules-plsqlsupport-db-ui-ListObjectsAction$Packages.instance">
+               <attr name="position" intvalue="300"/>
+            </file>
+            <file name="org-netbeans-modules-plsqlsupport-db-ui-ListObjectsAction$Tables.instance">
+               <attr name="position" intvalue="310"/>
+            </file>
+            <file name="org-netbeans-modules-plsqlsupport-db-ui-ListObjectsAction$Views.instance">
+               <attr name="position" intvalue="320"/>
+            </file>
+            <file name="org-netbeans-modules-plsqlsupport-db-ui-UpdateCacheAction-separatorBefore.instance">
+               <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
+               <attr name="position" intvalue="390"/>
+            </file>
+            <file name="org-netbeans-modules-plsqlsupport-db-ui-UpdateCacheAction.instance">
+               <attr name="position" intvalue="400"/>
+            </file>
+            <file name="org-netbeans-modules-plsqlsupport-db-ui-RebuildCacheAction.instance">
+               <attr name="position" intvalue="410"/>
+            </file>
+            <file name="org-netbeans-modules-plsqlsupport-db-ui-OracleOnlineAction-separatorBefore.instance">
+               <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
+               <attr name="position" intvalue="490"/>
+            </file>
+            <file name="org-netbeans-modules-plsqlsupport-db-ui-OracleOnlineAction.instance">
+               <attr name="position" intvalue="500"/>
+            </file>
+         </folder>
+      </folder>
+   </folder>
+   <!-- <folder name="Databases">
+      <folder name="Explorer">
+         <folder name="Root">
+            <folder name="NodeProviders">
+               <file name="ConnectionNodeProviderFactory.instance_hidden"/>
+            </folder>
+         </folder>
+      </folder>
+   </folder> -->
+</filesystem>

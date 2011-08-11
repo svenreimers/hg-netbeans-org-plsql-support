@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE index PUBLIC "-//Sun Microsystems Inc.//DTD JavaHelp Index Version 2.0//EN" "http://java.sun.com/products/javahelp/index_2_0.dtd">
+<index version="2.0">
+   <indexitem text="Creating PL/SQL Source Files" target="org.netbeans.modules.plsql.creating"/>
+   <indexitem text="About Editing PL/SQL Source Files" target="org.netbeans.modules.plsql.editing"/>
+   <indexitem text="Navigating PL/SQL Code" target="org.netbeans.modules.plsql.navigating"/>
+   <indexitem text="Using PL/SQL Code Completion" target="org.netbeans.modules.plsql.completion"/>
+   <indexitem text="Deploying PL/SQL Source Files" target="org.netbeans.modules.plsql.deploying"/>
+   <indexitem text="Auto Commit - ON/OFF" target="org.netbeans.modules.plsql.auto.commit"/>
+   <indexitem text="Testing PL/SQL Functions and Procedures" target="org.netbeans.modules.plsql.testing"/>
+   <indexitem text="Using PL/SQL Find Usages" target="org.netbeans.modules.plsql.usages"/>
+   <indexitem text="Annotations in  PL/SQL Code" target="org.netbeans.modules.plsql.annotation"/>
+   <indexitem text="Annotations on Column Comments" target="org.netbeans.modules.plsql.annotation.colcomment"/>
+   <indexitem text="Annotations on Comments" target="org.netbeans.modules.plsql.annotation.comment"/>
+   <indexitem text="Annotations on Constants" target="org.netbeans.modules.plsql.annotation.constant"/>
+   <indexitem text="Annotations on Cursors" target="org.netbeans.modules.plsql.annotation.cursor"/>
+   <indexitem text="Annotations on Function Return" target="org.netbeans.modules.plsql.annotation.function"/>
+   <indexitem text="Annotations on If Condition" target="org.netbeans.modules.plsql.annotation.if"/>
+   <indexitem text="Annotations on Methods" target="org.netbeans.modules.plsql.annotation.method"/>
+   <indexitem text="Annotations on Statements" target="org.netbeans.modules.plsql.annotation.stmt"/>
+   <indexitem text="Annotations on Tables/Views Used" target="org.netbeans.modules.plsql.annotation.table"/>
+   <indexitem text="Annotations on Tags" target="org.netbeans.modules.plsql.annotation.tag"/>
+   <indexitem text="IFS Options" target="org.netbeans.modules.plsqlsupport.options.PLSQLAnnotationsOptionsPanelController"/>
+</index>

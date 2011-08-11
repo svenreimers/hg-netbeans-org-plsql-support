@@ -1,0 +1,1103 @@
+-----------------------------------------------------------------------------
+--
+--  Logical unit: <<<LU: Put your LU name here>>>
+--
+--  Purpose:
+--
+--  IFS/Design Template Version 2.3
+--
+--  Date    Sign  History
+--  ------  ----  -----------------------------------------------------------
+-----------------------------------------------------------------------------
+
+define MODULE        = <<<MODULE:   Put your module name here>>>
+define LU            = <<<LU:       Put your lu name here>>>
+define SERVICE       = <<<SERVICE:  Put your system service name here>>>
+define TABLE         = <<<TABLE:    Put your TABLE name here>>>
+define VIEW          = <<<VIEW:     Put your view name here>>>
+define PKG           = <<<PKG:      Put your package name here>>>
+define STATEPKG      = <<<STATEPKG: Put your statepackage name here>>>
+define DOMAIN        = <<<DOMAIN:   Put your domain name here>>>
+
+define OBJID         = <<<OBJID:    Put your object key (or rowid) here>>>
+define OBJVERSION    = <<<OBJVER:   Put your objversion column (or list) here>>>
+define OBJSTATE      = <<<OBJSTA:   Put your object state column here>>>
+define OBJEVENTS     = <<<OBJEVE:   Put your object events column here>>>
+define STATE         = <<<STATE:    Put your encoded object state column here>>>
+define DB_VALUES     = <<<DBVAL:    Put your database stored domain values here>>>
+define CLIENT_VALUES = <<<PROGVAL:  Put your client PROG domain values here>>>
+
+-----------------------------------------------------------------------------
+-------------------- VIEWS FOR SELECTS --------------------------------------
+-----------------------------------------------------------------------------
+
+PROMPT Creating &VIEW view
+
+CREATE OR REPLACE VIEW &VIEW AS
+SELECT <<<VIEWCOL: Put your view column here>>>
+FROM   <<<VIEWTAB: Put your view table(s) here>>>
+WHERE  <<<VIEWSEC: Put your security restrictions on rows here>>>
+WITH   read only;
+
+-----------------------------------------------------------------------------
+-------------------- PACKAGES FOR METHODS -----------------------------------
+-----------------------------------------------------------------------------
+
+PROMPT Creating &PKG implementation
+
+CREATE OR REPLACE PACKAGE BODY &PKG IS
+
+-----------------------------------------------------------------------------
+-------------------- DOMAIN DECLARATIONS ------------------------------------
+-----------------------------------------------------------------------------
+
+db_value_list_     CONSTANT VARCHAR2(<<<DBLENGTH: Length of db_value_list_>>>) := '&DB_VALUES';
+client_value_list_ CONSTANT VARCHAR2(<<<CLENGTH: Length of client_value_list_>>>) := '&CLIENT_VALUES';
+active_value_list_          VARCHAR2(<<<ALENGTH: Length of active_value_list_>>>) := Language_SYS.Translate_Iid_(lu_name_, client_value_list_);
+
+-----------------------------------------------------------------------------
+-------------------- FINITE STATE DECLARATIONS ------------------------------
+-----------------------------------------------------------------------------
+
+db_state_list_     CONSTANT VARCHAR2(<<<DBSTATEL: Length of db_state_list_>>>) := '&DB_STATES';
+client_state_list_ CONSTANT VARCHAR2(<<<CSTATEL: Length of client_state_list_>>>) := '&CLIENT_STATES';
+active_state_list_          VARCHAR2(<<<ASTATEL: Length of active_state_list_>>>) := Language_SYS.Translate_State_(lu_name_, client_state_list_);
+state_separator_   CONSTANT VARCHAR2(1)     := Client_SYS.field_separator_;
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC IMPLEMENTATION METHOD DECLARATIONS ---------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- SERVICE SPECIFIC IMPLEMENTATION METHOD DECLARATIONS ----
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS ----------------------------
+-----------------------------------------------------------------------------
+-- Lock_By_Id___
+--    Client-support to lock a specific instance of the logical unit.
+--
+-- Lock_By_Keys___
+--    Server support to lock a specific instance of the logical unit.
+--
+-- Get_Object_By_Id___
+--    Get LU-record from the database with a specified object identity.
+--
+-- Get_Object_By_Keys___
+--    Get LU-record from the database with specified key columns.
+--
+-- Check_Exist___
+--    Check if a specific LU-instance already exist in the database.
+--
+-- Get_Id_Version_By_Keys___
+--    Get the current OBJID and OBJVERSION for a specific LU-instance.
+-----------------------------------------------------------------------------
+
+FUNCTION Lock_By_Id___ (
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2 ) RETURN &TABLE%ROWTYPE
+IS
+   row_changed EXCEPTION;
+   row_deleted EXCEPTION;
+   row_locked  EXCEPTION;
+   PRAGMA      exception_init(row_locked, -0054);
+   rec_        &TABLE%ROWTYPE;
+   dummy_      NUMBER;
+   CURSOR lock_control IS
+      SELECT *
+      FROM   &TABLE
+      WHERE  &OBJID = objid_
+      AND    &OBJVERSION = objversion_
+      FOR UPDATE NOWAIT;
+   CURSOR exist_control IS
+      SELECT 1
+      FROM   &TABLE
+      WHERE  &OBJID = objid_;
+BEGIN
+   OPEN lock_control;
+   FETCH lock_control INTO rec_;
+   IF (lock_control%FOUND) THEN
+      CLOSE lock_control;
+      RETURN rec_;
+   END IF;
+   CLOSE lock_control;
+   OPEN exist_control;
+   FETCH exist_control INTO dummy_;
+   IF (exist_control%FOUND) THEN
+      CLOSE exist_control;
+      RAISE row_changed;
+   ELSE
+      CLOSE exist_control;
+      RAISE row_deleted;
+   END IF;
+EXCEPTION
+   WHEN row_locked THEN
+      Error_SYS.Record_Locked(lu_name_);
+   WHEN row_changed THEN
+      Error_SYS.Record_Modified(lu_name_);
+   WHEN row_deleted THEN
+      Error_SYS.Record_Removed(lu_name_);
+END Lock_By_Id___;
+
+FUNCTION Lock_By_Keys___ (
+   <<<DBKARG: Put your primary key parameters here>>> ) RETURN &TABLE%ROWTYPE
+IS
+   row_deleted EXCEPTION;
+   rec_        &TABLE%ROWTYPE;
+   CURSOR lock_control IS
+      SELECT *
+      FROM  &TABLE
+      WHERE <<<KEYWH2: Put your primary key condition here>>>
+      FOR UPDATE;
+BEGIN
+   OPEN lock_control;
+   FETCH lock_control INTO rec_;
+   IF (lock_control%FOUND) THEN
+      CLOSE lock_control;
+      RETURN rec_;
+   ELSE
+      CLOSE lock_control;
+      RAISE row_deleted;
+   END IF;
+EXCEPTION
+   WHEN row_deleted THEN
+      Error_SYS.Record_Removed(lu_name_);
+END Lock_By_Keys___;
+
+FUNCTION Get_Object_By_Id___ (
+   objid_ IN VARCHAR2 ) RETURN &TABLE%ROWTYPE
+IS
+   lu_rec_ &TABLE%ROWTYPE;
+   CURSOR getrec IS
+      SELECT *
+      FROM   &TABLE
+      WHERE  &OBJID = objid_;
+BEGIN
+   OPEN getrec;
+   FETCH getrec INTO lu_rec_;
+   IF (getrec%NOTFOUND) THEN
+      CLOSE getrec;
+      Error_SYS.Record_Removed(lu_name_);
+   END IF;
+   CLOSE getrec;
+   RETURN(lu_rec_);
+END Get_Object_By_Id___;
+
+
+FUNCTION Get_Object_By_Keys___ (
+   <<<DBKARG: Put your primary key parameters here>>> ) RETURN &TABLE%ROWTYPE
+IS
+   lu_rec_ &TABLE%ROWTYPE;
+   CURSOR getrec IS
+      SELECT *
+      FROM  &TABLE
+      WHERE <<<KEYWH2: Put your primary key condition here>>>;
+BEGIN
+   OPEN getrec;
+   FETCH getrec INTO lu_rec_;
+   CLOSE getrec;
+   RETURN(lu_rec_);
+END Get_Object_By_Keys___;
+
+FUNCTION Check_Exist___ (
+   <<<DBKARG: Put your primary key parameters here>>> ) RETURN BOOLEAN
+IS
+   dummy_ NUMBER;
+   CURSOR exist_control IS
+      SELECT 1
+      FROM   &TABLE
+      WHERE <<<KEYWH2: Put your primary key condition here>>>;
+BEGIN
+   OPEN exist_control;
+   FETCH exist_control INTO dummy_;
+   IF (exist_control%FOUND) THEN
+      CLOSE exist_control;
+      RETURN(TRUE);
+   END IF;
+   CLOSE exist_control;
+   RETURN(FALSE);
+END Check_Exist___;
+
+PROCEDURE Get_Id_Version_By_Keys___ (
+   objid_      IN OUT VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   <<<DBKARG: Put your primary key parameters here>>>)
+IS
+   CURSOR get_version IS
+   SELECT &OBJID, &OBJVERSION
+      FROM  &TABLE
+      WHERE <<<KEYWH2: Put your primary key condition here>>>;
+BEGIN
+   OPEN get_version;
+   FETCH get_version INTO objid_, objversion_;
+   CLOSE get_version;
+END Get_Id_Version_By_Keys___;
+
+-----------------------------------------------------------------------------
+------------ STATEPACKAGE: IMPLEMENTATION FINITE STATE MACHINE --------------
+-----------------------------------------------------------------------------
+-- This set of Implementation Finite State Machine methods should be used if
+-- a separate package is used for the Finite State Machine implementation.
+--
+-- Finite_State_Machine___
+--    Redirect call to separate Finite State Machine Package
+--
+-- Finite_State_Add_To_Attr___
+--    Adds the current state and allowed events to the attribute string.
+--
+-- Finite_State_Init___
+--    Sets the initial finite state indicator for an existing LU-instance
+--    and processes any automatic events.
+-----------------------------------------------------------------------------
+
+PROCEDURE Finite_State_Machine___ (
+   rec_   IN OUT &TABLE%ROWTYPE,
+   event_ IN     VARCHAR2,
+   attr_  IN OUT VARCHAR2 )
+IS
+BEGIN
+   &STATEPKG..Finite_State_Machine___(rec_, event_, attr_);
+END Finite_State_Machine___;
+
+
+PROCEDURE Finite_State_Add_To_Attr___ (
+   rec_   IN     &TABLE%ROWTYPE,
+   attr_  IN OUT VARCHAR2 )
+IS
+   state_ VARCHAR2(30);
+BEGIN
+   <<<FSFETCH: Put your own SQL-statement here to fetch the current state>>>;
+   Client_SYS.Add_To_Attr('__OBJSTATE', state_, attr_);
+   Client_SYS.Add_To_Attr('__OBJEVENTS', Finite_State_Events__(state_), attr_);
+   Client_SYS.Add_To_Attr('STATE', Finite_State_Decode__(state_), attr_);
+END Finite_State_Add_To_Attr___;
+
+
+PROCEDURE Finite_State_Init___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 )
+IS
+   state_ VARCHAR2(30);
+BEGIN
+   Finite_State_Machine___(rec_, NULL, attr_);
+   Finite_State_Add_To_Attr___(rec_, attr_);
+END Finite_State_Init___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION FINITE STATE MACHINE --------------------
+-----------------------------------------------------------------------------
+-- Finite_State_Set___
+--    Updates the finite state indicator for an existing LU-instance.
+--
+-- Finite_State_Machine___
+--    Processes an event by:
+--    1. Fetching the current state
+--    2. Evaluating any conditions for given event at current state
+--    3. executing any exit code for the old state
+--    4. Performing any action associated with given event
+--    5. update the database to the new state
+--    6. execute any entry code for the new state
+--    7. Executing a state change to the new state
+--
+-- Finite_State_Add_To_Attr___
+--    Adds the current state and allowed events to the attribute string.
+--
+-- Finite_State_Init___
+--    Sets the initial finite state indicator for an existing LU-instance
+--    and processes any automatic events.
+-----------------------------------------------------------------------------
+
+PROCEDURE Finite_State_Set___ (
+   rec_   IN OUT &TABLE%ROWTYPE,
+   state_ IN     VARCHAR2 )
+IS
+BEGIN
+   <<<FSUPDATE: Put your own SQL-statement here to set the new state>>>;
+END Finite_State_Set___;
+
+
+PROCEDURE Finite_State_Machine___ (
+   rec_   IN OUT &TABLE%ROWTYPE,
+   event_ IN     VARCHAR2,
+   attr_  IN OUT VARCHAR2 )
+IS
+   state_ VARCHAR2(30);
+BEGIN
+   <<<FSFETCH: Put your own SQL-statement here to fetch the current state>>>;
+   <<<FSEVENT: Code for processing of events>>>;
+END Finite_State_Machine___;
+
+
+PROCEDURE Finite_State_Add_To_Attr___ (
+   rec_   IN     &TABLE%ROWTYPE,
+   attr_  IN OUT VARCHAR2 )
+IS
+   state_ VARCHAR2(30);
+BEGIN
+   <<<FSFETCH: Put your own SQL-statement here to fetch the current state>>>;
+   Client_SYS.Add_To_Attr('__OBJSTATE', state_, attr_);
+   Client_SYS.Add_To_Attr('__OBJEVENTS', Finite_State_Events__(state_), attr_);
+   Client_SYS.Add_To_Attr('STATE', Finite_State_Decode__(state_), attr_);
+END Finite_State_Add_To_Attr___;
+
+
+PROCEDURE Finite_State_Init___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 )
+IS
+   state_ VARCHAR2(30);
+BEGIN
+   Finite_State_Machine___(rec_, NULL, attr_);
+   Finite_State_Add_To_Attr___(rec_, attr_);
+END Finite_State_Init___;
+
+-----------------------------------------------------------------------------
+-------------- STATEPACKAGE: PRIVATE FINITE STATE MACHINE -------------------
+-----------------------------------------------------------------------------
+-- This set of Private Finite State Machine methods should be used if a
+-- separate package is used for the Finite State Machine implementation.
+--
+-- Finite_State_Decode__
+--    Redirect call to separate Finite State Machine Package
+--
+-- Finite_State_Encode__
+--    Redirect call to separate Finite State Machine Package
+--
+-- Enumerate_States__
+--    Redirect call to separate Finite State Machine Package
+--
+-- Finite_State_Events__
+--    Redirect call to separate Finite State Machine Package
+--
+-- Enumerate_Events__
+--    Redirect call to separate Finite State Machine Package
+-----------------------------------------------------------------------------
+
+FUNCTION Finite_State_Decode__ (
+   db_state_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+BEGIN
+   RETURN(&STATEPKG..Finite_State_Decode__(db_state_));
+END Finite_State_Decode__;
+
+
+FUNCTION Finite_State_Encode__ (
+   client_state_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+BEGIN
+   RETURN(&STATEPKG..Finite_State_Encode__(client_state_));
+END Finite_State_Encode__;
+
+
+PROCEDURE Enumerate_States__ (
+   client_values_ OUT VARCHAR2 )
+IS
+BEGIN
+   &STATEPKG..Enumerate_States__(client_values_);
+END Enumerate_States__;
+
+
+FUNCTION Finite_State_Events__ (
+   db_state_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+BEGIN
+   RETURN(&STATEPKG..Finite_State_Events__(db_state_));
+END Finite_State_Events__;
+
+
+PROCEDURE Enumerate_Events__ (
+   db_events_ OUT VARCHAR2 )
+IS
+BEGIN
+   &STATEPKG..Enumerate_Events__(db_events_);
+END Enumerate_Events__;
+
+-----------------------------------------------------------------------------
+-------------------- PRIVATE FINITE STATE MACHINE ---------------------------
+-----------------------------------------------------------------------------
+-- Finite_State_Decode__
+--   Returns the client equivalent for any database representation of
+--   a state name = objstate.
+--
+-- Finite_State_Encode__
+--   Returns the database equivalent for any client representation of
+--   a state name = state.
+--
+-- Enumerate_States__
+--   Returns a list of all possible finite states in client terminology.
+--
+-- Finite_State_Events__
+--   Returns a list of allowed events for a given state
+--   NOTE! Regardless of conditions if not otherwize encoded
+--
+-- Enumerate_Events__
+--   Returns a list of all possible events.
+-----------------------------------------------------------------------------
+
+FUNCTION Finite_State_Decode__ (
+   db_state_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+BEGIN
+   RETURN(Domain_SYS.Decode_(active_state_list_, db_state_list_, db_state_));
+END Finite_State_Decode__;
+
+
+FUNCTION Finite_State_Encode__ (
+   client_state_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+BEGIN
+   RETURN(Domain_SYS.Encode_(active_state_list_, db_state_list_, client_state_));
+END Finite_State_Encode__;
+
+
+PROCEDURE Enumerate_States__ (
+   client_values_ OUT VARCHAR2)
+IS
+BEGIN
+   client_values_ := Domain_SYS.Enumerate_(active_state_list_);
+END Enumerate_States__;
+
+
+FUNCTION Finite_State_Events__ (
+   db_state_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+BEGIN
+   <<<FSEVALID: Put your code for returning valid event list here>>>;
+END Finite_State_Events__;
+
+
+PROCEDURE Enumerate_Events__ (
+   db_events_ OUT VARCHAR2 )
+IS
+BEGIN
+   db_events_ := '<<<FSELIST: Put your code for returning complete event list here>>>';
+END Enumerate_Events__;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR INSERT -----------------
+-----------------------------------------------------------------------------
+-- Prepare_Insert___
+--    Set all default values for a new instance (ON-NEW-RECORD) of this
+--    logical unit by calling procedure Add_Attr.
+--
+-- Unpack_Check_Insert___
+--    Unpack the attribute list, check all attributes from the client
+--    and generate all default values before creation of the new object.
+--
+-- Insert___
+--    Insert a new LU-instance into the database and return the values
+--    for OBJID and OBJVERSION.
+-----------------------------------------------------------------------------
+
+PROCEDURE Prepare_Insert___ (
+   attr_ IN OUT VARCHAR2 )
+IS<<<PRPBD1: Declare a temp variable if needed>>>
+BEGIN
+   <<<PRPBDY: Put the call to the superclass here>>>;
+END Prepare_Insert___;
+
+
+PROCEDURE Unpack_Check_Insert___ (
+   attr_   IN OUT VARCHAR2,
+   newrec_ IN OUT &TABLE%ROWTYPE )
+IS
+   ptr_   NUMBER;
+   name_  VARCHAR2(30);
+   value_ VARCHAR2(2000);
+BEGIN
+   <<<UCIBDY: Put your code here to unpack and do all checkings needed before insert>>>;
+EXCEPTION
+   WHEN value_error THEN
+      Error_SYS.Item_Format(lu_name_, name_, value_);
+END Unpack_Check_Insert___;
+
+
+PROCEDURE Insert___ (
+   objid_      OUT    VARCHAR2,
+   objversion_ OUT    VARCHAR2,
+   newrec_     IN OUT &TABLE%ROWTYPE,
+   attr_       IN OUT VARCHAR2 )
+IS
+BEGIN
+   <<<SETVER2: Code for setting the rowversion>>>
+   <<<INSERT: Put your own SQL-statement here to insert the new record>>>;
+   Finite_State_Init___(newrec_, attr_);
+EXCEPTION
+   WHEN dup_val_on_index THEN
+      Error_SYS.Record_Exist(lu_name_);
+END Insert___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR UPDATE -----------------
+-----------------------------------------------------------------------------
+-- Unpack_Check_Update___
+--    Unpack the attribute list, check all attributes from the client
+--    and generate all default values before modifying the object.
+--
+-- Update___
+--    Update an existing LU-instance in the database and return the
+--    the new OBJVERSION.
+-----------------------------------------------------------------------------
+
+PROCEDURE Unpack_Check_Update___ (
+   attr_   IN OUT VARCHAR2,
+   newrec_ IN OUT &TABLE%ROWTYPE,
+   objid_  IN     VARCHAR2 )
+IS
+   ptr_   NUMBER;
+   name_  VARCHAR2(30);
+   value_ VARCHAR2(2000);
+BEGIN
+   <<<UCUBDY: Put your code here to unpack and do all checkings needed before update>>>;
+EXCEPTION
+   WHEN value_error THEN
+      Error_SYS.Item_Format(lu_name_, name_, value_);
+END Unpack_Check_Update___;
+
+
+PROCEDURE Update___ (
+   objid_      IN     VARCHAR2,
+   oldrec_     IN     &TABLE%ROWTYPE,
+   newrec_     IN OUT &TABLE%ROWTYPE,
+   attr_       IN OUT VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   by_keys_    IN BOOLEAN DEFAULT FALSE )
+IS
+BEGIN
+   <<<SETVER: Code for setting the rowversion>>>
+   IF by_keys_ THEN
+      <<<UPDATE: Put your own SQL-statement here to update the new record>>>
+      WHERE <<<RECWHR: Put your primary key condition here>>>;
+   ELSE
+      <<<UPDATE: Put your own SQL-statement here to update the new record>>>
+      WHERE &OBJID = objid_;
+   END IF;
+EXCEPTION
+   WHEN dup_val_on_index THEN
+      Error_SYS.Record_Exist(lu_name_);
+END Update___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR DELETE -----------------
+-----------------------------------------------------------------------------
+-- Check_Delete___
+--    Checks whether a specific LU-record may be removed or not.
+--    The procedure should check business rules like attribute values
+--    as well as database constraints (defined or not).
+--
+-- Delete___
+--    Deletion of the specific LU-object from the database.
+-----------------------------------------------------------------------------
+
+PROCEDURE Check_Delete___ (
+   remrec_ IN &TABLE%ROWTYPE )
+IS
+   key_ VARCHAR2(2000);
+BEGIN
+   key_ := <<<KEYCAT: Put your primary keys here>>>;
+   Reference_SYS.Check_Restricted_Delete(lu_name_, key_);
+END Check_Delete___;
+
+
+PROCEDURE Delete___ (
+   objid_  IN VARCHAR2,
+   remrec_ IN &TABLE%ROWTYPE )
+IS
+   key_ VARCHAR2(2000);
+BEGIN
+   key_ := <<<KEYCAT: Put your primary keys here>>>;
+   Reference_SYS.Do_Cascade_Delete(lu_name_, key_);
+   <<<DELETE: Put your own SQL-statement here to delete the old record>>>;
+END Delete___;
+
+-----------------------------------------------------------------------------
+-------------------- PRIVATE BASE METHODS -----------------------------------
+-----------------------------------------------------------------------------
+-- Lock__
+--    Client-support to lock a specific instance of the logical unit.
+--
+-- New__
+--    Client-support interface to create LU instances.
+--       action_ = 'PREPARE'
+--          Default values and handle of information to client.
+--          The default values are set in procedure Prepare_Insert___.
+--       action_ = 'CHECK'
+--          Check all attributes before creating new object and handle of
+--          information to client. The attribute list is unpacked, checked
+--          and prepared (defaults) in procedure Unpack_Check_Insert___.
+--       action_ = 'DO'
+--          Creation of new instances of the logical unit and handle of
+--          information to client. The attribute list is unpacked, checked
+--          and prepared (defaults) in procedure Unpack_Check_Insert___
+--          before calling procedure Insert___.
+--
+-- Modify__
+--    Client-support interface to modify attributes for LU instances.
+--       action_ = 'CHECK'
+--          Check all attributes before modifying an existing object and
+--          handle of information to client. The attribute list is unpacked,
+--          checked and prepared(defaults) in procedure Unpack_Check_Update___.
+--       action_ = 'DO'
+--          Modification of an existing instance of the logical unit. The
+--          procedure unpacks the attributes, checks all values before
+--          procedure Update___ is called.
+--
+-- Remove__
+--    Client-support interface to remove LU instances.
+--       action_ = 'CHECK'
+--          Check whether a specific LU-instance may be removed or not.
+--          The procedure fetches the complete record by calling procedure
+--          Get_Object_By_Id___. Then the check is made by calling procedure
+--          Check_Delete___.
+--       action_ = 'DO'
+--          Remove an existing instance of the logical unit. The procedure
+--          fetches the complete LU-record, checks for a delete and then
+--          deletes the record by calling procedure Delete___.
+-----------------------------------------------------------------------------
+
+PROCEDURE Lock__ (
+   info_       OUT VARCHAR2,
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2 )
+IS
+   dummy_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Lock__');
+   dummy_ := Lock_By_Id___(objid_, objversion_);
+   info_ := Client_SYS.Get_All_Info;
+END Lock__;
+
+
+PROCEDURE New__ (
+   info_       OUT    VARCHAR2,
+   objid_      OUT    VARCHAR2,
+   objversion_ OUT    VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   newrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'New__');
+   IF (action_ = 'PREPARE') THEN
+      Prepare_Insert___(attr_);
+   ELSIF (action_ = 'CHECK') THEN
+      Unpack_Check_Insert___(attr_, newrec_);
+   ELSIF (action_ = 'DO') THEN
+      Unpack_Check_Insert___(attr_, newrec_);
+      Insert___(objid_, objversion_, newrec_, attr_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END New__;
+
+
+PROCEDURE Modify__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   oldrec_ &TABLE%ROWTYPE;
+   newrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Modify__');
+   IF (action_ = 'CHECK') THEN
+      newrec_ := Get_Object_By_Id___(objid_);
+      Unpack_Check_Update___(attr_, newrec_, objid_);
+   ELSIF (action_ = 'DO') THEN
+      oldrec_ := Lock_By_Id___(objid_, objversion_);
+      newrec_ := oldrec_;
+      Unpack_Check_Update___(attr_, newrec_, objid_);
+      Update___(objid_, oldrec_, newrec_, attr_, objversion_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Modify__;
+
+
+PROCEDURE Remove__ (
+   info_       OUT VARCHAR2,
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2,
+   action_     IN  VARCHAR2 )
+IS
+   remrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Remove__');
+   IF (action_ = 'CHECK') THEN
+      remrec_ := Get_Object_By_Id___(objid_);
+      Check_Delete___(remrec_);
+   ELSIF (action_ = 'DO') THEN
+      remrec_ := Lock_By_Id___(objid_, objversion_);
+      Check_Delete___(remrec_);
+      Delete___(objid_, remrec_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Remove__;
+
+-----------------------------------------------------------------------------
+-------------------- PUBLIC BASE METHODS ------------------------------------
+-----------------------------------------------------------------------------
+-- Exist
+--   Checks if given pointer (e.g. primary key) to an instance of this
+--   logical unit exists. If not an exception will be raised.
+-----------------------------------------------------------------------------
+
+PROCEDURE Exist (
+   <<<KEYARG: Put your primary key parameters here>>> )
+IS
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Exist', TRUE);
+   IF (NOT Check_Exist___(<<<KEYLS2: Put your parameters here>>>)) THEN
+      Error_SYS.Record_Not_Exist(lu_name_);
+   END IF;
+END Exist;
+
+PROCEDURE Exist_Db (
+   <<<DBKARG: Put your primary key parameters here>>> )
+IS
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Exist', TRUE);
+   IF (NOT Check_Exist___(<<<KEYLDB: Put your parameters here>>>)) THEN
+      Error_SYS.Record_Not_Exist(lu_name_);
+   END IF;
+END Exist_Db;
+
+-----------------------------------------------------------------------------
+-------------------- PUBLIC DOMAIN METHODS ----------------------------------
+-----------------------------------------------------------------------------
+-- Exist
+--   Checks if given pointer (e.g. domain value) to an instance of this
+--   logical unit exists. If not an exception will be raised.
+--
+-- Enumerate
+--   Returns a list of all domain values.
+--
+-- Exist_Db
+--   Checks if an instance corresponding to a given database value exists.
+--   If not an exception will be raised.
+-----------------------------------------------------------------------------
+
+PROCEDURE Exist (
+   client_value_ IN VARCHAR2 )
+IS
+BEGIN
+   General_SYS.Init_Method('&LU', '&PKG', 'Exist', TRUE);
+   Domain_SYS.Exist_(lu_name_, active_value_list_, client_value_);
+END Exist;
+
+
+PROCEDURE Enumerate (
+   client_values_ OUT VARCHAR2)
+IS
+BEGIN
+   client_values_ := Domain_SYS.Enumerate_(active_value_list_);
+END Enumerate;
+
+PROCEDURE Exist_Db (
+   db_value_ IN VARCHAR2 )
+IS
+BEGIN
+   General_SYS.Init_Method('&LU', '&PKG', 'Exist_Db', TRUE);
+   Domain_SYS.Exist_(lu_name_, db_value_list_, db_value_);
+END Exist_Db;
+
+-----------------------------------------------------------------------------
+-------------------- PUBLIC DOMAIN METHODS ----------------------------------
+-----------------------------------------------------------------------------
+-- Encode
+--   Returns the stored database representation of a domain value given the
+--   client value in current language.
+--
+-- Decode
+--   Returns the client representation of a domain value in the
+--   current client language.
+--
+-- Get_Db_Value
+--   Returns the database representation a domain value given its index.
+--
+-- Get_Client_Value
+--   Returns the client representation a domain value given its index.
+-----------------------------------------------------------------------------
+
+FUNCTION Encode (
+   client_value_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+BEGIN
+   RETURN(Domain_SYS.Encode_(active_value_list_, db_value_list_, client_value_));
+END Encode;
+
+
+FUNCTION Decode (
+   db_value_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+BEGIN
+   RETURN(Domain_SYS.Decode_(active_value_list_, db_value_list_, db_value_));
+END Decode;
+
+
+FUNCTION Get_Db_Value (
+   index_ IN NUMBER ) RETURN VARCHAR2
+IS
+BEGIN
+   RETURN(Domain_SYS.Get_Db_Value_(db_value_list_, index_));
+END Get_Db_Value;
+
+
+FUNCTION Get_Client_Value (
+   index_ IN NUMBER ) RETURN VARCHAR2
+IS
+BEGIN
+   RETURN(Domain_SYS.Get_Client_Value_(active_value_list_, index_));
+END Get_Client_Value;
+
+-----------------------------------------------------------------------------
+-------------------- PUBLIC TRANSLATION METHODS -----------------------------
+-----------------------------------------------------------------------------
+
+PROCEDURE Language_Refreshed
+IS
+BEGIN
+   active_value_list_ := Language_SYS.Translate_Iid_(lu_name_, client_value_list_);
+   active_state_list_ := Language_SYS.Translate_State_(lu_name_, client_state_list_);
+END Language_Refreshed;
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC IMPLEMENTATION METHODS ---------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PRIVATE METHODS ----------------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PROTECTED METHODS --------------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PUBLIC METHODS -----------------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- SERVICE SPECIFIC IMPLEMENTATION METHODS ----------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- SERVICE SPECIFIC PRIVATE METHODS -----------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- SERVICE SPECIFIC PROTECTED METHODS ---------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- SERVICE SPECIFIC PUBLIC METHODS ------------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- FOUNDATION1 METHODS ------------------------------------
+-----------------------------------------------------------------------------
+-- Init
+--   Dummy procedure that can be called at database startup to ensure that
+--   this package is loaded into memory for performance reasons only.
+-----------------------------------------------------------------------------
+
+PROCEDURE Init
+IS
+BEGIN
+   NULL;
+END Init;
+
+
+END &PKG;
+/
+SHOW ERROR
+
+undefine MODULE
+undefine LU
+undefine SERVICE
+undefine TABLE
+undefine VIEW
+undefine PKG
+undefine STATEPKG
+undefine DOMAIN
+
+undefine OBJID
+undefine OBJVERSION
+undefine OBJSTATE
+undefine OBJEVENTS
+undefine STATE
+undefine DB_VALUES
+undefine CLIENT_VALUES
+
+-----------------------------------------------------------------------------
+------------------------------- STATEPACKAGE --------------------------------
+-----------------------------------------------------------------------------
+-- Separate Finite State Machine Package.
+-----------------------------------------------------------------------------
+
+PROMPT Creating &STATEPKG implementation
+
+CREATE OR REPLACE PACKAGE BODY &STATEPKG IS
+
+-----------------------------------------------------------------------------
+----------------------- STATEPACKAGE DECLARATIONS ---------------------------
+-----------------------------------------------------------------------------
+
+db_state_list_     CONSTANT VARCHAR2(32000) := '&DB_STATES';
+client_state_list_ CONSTANT VARCHAR2(32000) := '&CLIENT_STATES';
+active_state_list_          VARCHAR2(32000) := Language_SYS.Translate_State_(lu_name_, client_state_list_);
+state_separator_   CONSTANT VARCHAR2(1)     := Client_SYS.field_separator_;
+
+-----------------------------------------------------------------------------
+--------------- LU SPECIFIC STATEPACKAGE ACTION DECLARATIONS ----------------
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+------------- LU SPECIFIC STATEPACKAGE CONDITION DECLARATIONS ---------------
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION STATEPACKAGE METHODS --------------------
+-----------------------------------------------------------------------------
+-- Finite_State_Set___
+--    Updates the finite state indicator for an existing LU-instance.
+--
+-- Finite_State_Machine___
+--    Processes an event by:
+--    1. Fetching the current state
+--    2. Evaluating any conditions for given event at current state
+--    3. executing any exit code for the old state
+--    4. Performing any action associated with given event
+--    5. update the database to the new state
+--    6. execute any entry code for the new state
+--    7. Executing a state change to the new state
+-----------------------------------------------------------------------------
+
+PROCEDURE Finite_State_Set___ (
+   rec_   IN OUT &TABLE%ROWTYPE,
+   state_ IN     VARCHAR2 )
+IS
+BEGIN
+   <<<FSUPDATE: Put your own SQL-statement here to set the new state>>>;
+END Finite_State_Set___;
+
+
+PROCEDURE Finite_State_Machine___ (
+   rec_   IN OUT &TABLE%ROWTYPE,
+   event_ IN     VARCHAR2,
+   attr_  IN OUT VARCHAR2 )
+IS
+   state_ VARCHAR2(30);
+BEGIN
+   <<<FSFETCH: Put your own SQL-statement here to fetch the current state>>>;
+   <<<FSEVENT: Code for processing of events>>>;
+END Finite_State_Machine___;
+
+-----------------------------------------------------------------------------
+-------------------- PRIVATE STATEPACKAGE METHODS ---------------------------
+-----------------------------------------------------------------------------
+-- Finite_State_Decode__
+--   Returns the client equivalent for any database representation of
+--   a state name = objstate.
+--
+-- Finite_State_Encode__
+--   Returns the database equivalent for any client representation of
+--   a state name = state.
+--
+-- Enumerate_States__
+--   Returns a list of all possible finite states in client terminology.
+--
+-- Finite_State_Events__
+--   Returns a list of allowed events for a given state
+--   NOTE! Regardless of conditions if not otherwize encoded
+--
+-- Enumerate_Events__
+--   Returns a list of all possible events.
+-----------------------------------------------------------------------------
+
+FUNCTION Finite_State_Decode__ (
+   db_state_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+BEGIN
+   RETURN(Domain_SYS.Decode_(active_state_list_, db_state_list_, db_state_));
+END Finite_State_Decode__;
+
+
+FUNCTION Finite_State_Encode__ (
+   client_state_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+BEGIN
+   RETURN(Domain_SYS.Encode_(active_state_list_, db_state_list_, client_state_));
+END Finite_State_Encode__;
+
+
+PROCEDURE Enumerate_States__ (
+   client_values_ OUT VARCHAR2)
+IS
+BEGIN
+   client_values_ := Domain_SYS.Enumerate_(active_state_list_);
+END Enumerate_States__;
+
+
+FUNCTION Finite_State_Events__ (
+   db_state_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+BEGIN
+   <<<FSEVALID: Put your code for returning valid event list here>>>;
+END Finite_State_Events__;
+
+
+PROCEDURE Enumerate_Events__ (
+   db_events_ OUT VARCHAR2 )
+IS
+BEGIN
+   db_events_ := '<<<FSELIST: Put your code for returning complete event list here>>>';
+END Enumerate_Events__;
+
+-----------------------------------------------------------------------------
+----------------- STATEPACKAGE PUBLIC TRANSLATION METHODS -------------------
+-----------------------------------------------------------------------------
+
+PROCEDURE Language_Refreshed
+IS
+BEGIN
+   active_state_list_ := Language_SYS.Translate_State_(lu_name_, client_state_list_);
+END Language_Refreshed;
+
+-----------------------------------------------------------------------------
+------------------- LU SPECIFIC STATEPACKAGE ACTIONS ------------------------
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+------------------ LU SPECIFIC STATEPACKAGE CONDITIONS ----------------------
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+-------------------- STATEPACKAGE FOUNDATION1 METHODS -----------------------
+-----------------------------------------------------------------------------
+-- Init
+--   Dummy procedure that can be called at database startup to ensure that
+--   this package is loaded into memory for performance reasons only.
+-----------------------------------------------------------------------------
+
+PROCEDURE Init
+IS
+BEGIN
+   NULL;
+END Init;
+
+
+END &STATEPKG;
+/
+SHOW ERROR

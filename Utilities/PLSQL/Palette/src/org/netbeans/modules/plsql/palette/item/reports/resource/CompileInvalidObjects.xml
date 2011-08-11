@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE editor_palette_item PUBLIC "-//NetBeans//Editor Palette Item 1.0//EN" "http://www.netbeans.org/dtds/editor-palette-item-1_0.dtd">
+<editor_palette_item version="1.0">
+     <body>
+        <![CDATA[
+DECLARE
+   error_count_ NUMBER:=0;
+   row_count_   NUMBER:=0;
+   CURSOR get_invalid_objects IS
+   SELECT * FROM (
+    SELECT object_name, object_type, 'alter ' || object_type || ' ' || object_name || ' compile' text
+     FROM  all_objects
+     WHERE object_type IN ('PACKAGE', 'VIEW', 'MATERIALIZED VIEW', 'TRIGGER', 'PROCEDURE', 'FUNCTION')
+     AND   status='INVALID'
+     AND   owner = USER
+    UNION ALL
+    SELECT object_name, object_type, 'alter package ' || object_name || ' compile body' text
+     FROM  all_objects
+     WHERE object_type = 'PACKAGE BODY'
+     AND   status='INVALID'
+     AND   owner = USER)
+    ORDER BY DECODE(object_type, 'PACKAGE', 1, 'VIEW', 2, 'MATERIALIZED VIEW', 3, 4);
+BEGIN
+   FOR invalid_object_ IN get_invalid_objects LOOP
+      row_count_:=row_count_+1;
+      BEGIN
+         EXECUTE IMMEDIATE invalid_object_.text;
+      EXCEPTION
+         WHEN OTHERS THEN
+            error_count_:=error_count_+1;
+            dbms_output.Put_Line('Error while compiling ' || invalid_object_.object_type || ' ' || invalid_object_.object_name);
+      END;
+   END LOOP;
+   Dbms_Output.Put_Line('===');
+   IF error_count_=0 THEN
+      Dbms_Output.Put_Line('All objects compiled successfully');
+   ELSE
+      Dbms_Output.Put_Line(row_count_-error_count_ || ' objects compiled successfully.');
+      Dbms_Output.Put_Line(error_count_ || ' objects compiled with compilation errors.');
+   END IF;
+END;
+        ]]>
+    </body>
+    <icon16 urlvalue="org/netbeans/modules/palette/resources/unknown16.gif" />
+    <icon32 urlvalue="org/netbeans/modules/palette/resources/unknown32.gif" />
+    <description localizing-bundle="org.netbeans.modules.plsql.palette.item.reports.resource.Bundle"
+                 display-name-key="NAME_Compile_Invalid_Objects"
+                 tooltip-key="HINT_Compile_Invalid_Objects" />
+</editor_palette_item>

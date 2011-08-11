@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE filesystem PUBLIC "-//NetBeans//DTD Filesystem 1.1//EN" "http://www.netbeans.org/dtds/filesystem-1_1.dtd">
+<filesystem>
+   <folder name="Actions">
+      <folder name="PLSQL">
+         <file name="org-netbeans-modules-plsql-execution-ViewDataAction.instance"/>
+         <file name="org-netbeans-modules-plsql-execution-DescribeAction.instance"/>
+         <file name="org-netbeans-modules-plsql-execution-CreateTestBlockAction.instance"/>
+         <file name="org-netbeans-modules-plsql-execution-CopyAsJavaStringAction.instance"/>
+         <file name="org-netbeans-modules-plsql-execution-PasteAsSqlCommandAction.instance"/>
+         <file name="org-netbeans-modules-plsql-execution-PlsqlExecuteAction.instance">
+            <attr name="instanceClass" stringvalue="org.netbeans.modules.plsql.execution.PlsqlExecuteAction"/>
+         </file>
+         <file name="org-netbeans-modules-plsql-execution-PlsqlCommitAction.instance">
+            <attr name="instanceClass" stringvalue="org.netbeans.modules.plsql.execution.PlsqlCommitAction"/>
+         </file>
+         <file name="org-netbeans-modules-plsql-execution-PlsqlRollbackAction.instance">
+            <attr name="instanceClass" stringvalue="org.netbeans.modules.plsql.execution.PlsqlRollbackAction"/>
+         </file>
+         <file name="org-netbeans-modules-plsql-execution-PlsqlExecutionHistoryAction.instance"/>
+         <file name="org-netbeans-modules-plsql-execution-PlsqlExecutionHistoryNextAction.instance"/>
+         <file name="org-netbeans-modules-plsql-execution-PlsqlExecutionHistoryPreviousAction.instance"/>
+         <file name="org-netbeans-modules-plsql-execution-PlsqlExplainPlanAction.instance"/>
+         <file name="org-netbeans-modules-plsql-execution-PlsqlMultipleExecuteAction.instance"/>
+         <file name="org-netbeans-modules-plsql-execution-SQLExecutionAction.instance"/>
+         <file name="org-netbeans-modules-plsql-execution-actions-DeploySelectedCodeAction.instance"/>
+         <file name="org-netbeans-modules-plsql-execution-PlsqlSaveCommandAction.instance"/>
+      </folder>
+   </folder>
+   <folder name="Databases">
+      <folder name="Nodes">
+         <folder name="Oracle">
+            <file name="org-netbeans-modules-plsql-execution-actions-DeployFilesAction.instance">
+               <attr name="position" intvalue="110"/>
+            </file>
+         </folder>
+      </folder>
+   </folder>
+   <folder name="Loaders">
+      <folder name="text">
+         <folder name="x-plsql">
+            <folder name="Actions">
+               <file name="org-netbeans-modules-plsql-execution-PlsqlMultipleExecuteAction-separatorBefore.instance">
+                  <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
+                  <attr name="position" intvalue="225"/>
+               </file>
+               <file name="org-netbeans-modules-plsql-execution-PlsqlMultipleExecuteAction.shadow">
+                  <attr name="originalFile" stringvalue="Actions/PLSQL/org-netbeans-modules-plsql-execution-PlsqlMultipleExecuteAction.instance"/>
+                  <attr name="position" intvalue="250"/>
+               </file>
+            </folder>
+         </folder>
+      </folder>
+   </folder>
+   <folder name="Shortcuts">
+      <file name="AS-B.instance">
+         <attr name="instanceClass" stringvalue="org.netbeans.modules.plsql.execution.CreateTestBlockAction"/>
+      </file>
+      <file name="AS-N.instance">
+         <attr name="instanceClass" stringvalue="org.netbeans.modules.plsql.execution.PlsqlExecutionHistoryNextAction"/>
+      </file>
+      <file name="AS-P.instance">
+         <attr name="instanceClass" stringvalue="org.netbeans.modules.plsql.execution.PlsqlExecutionHistoryPreviousAction"/>
+      </file>
+      <file name="AS-E.instance">
+         <attr name="instanceClass" stringvalue="org.netbeans.modules.plsql.execution.PlsqlExecuteAction"/>
+      </file>
+   </folder>
+   <folder name="Editors">
+      <folder name="text">
+         <folder name="x-plsql">
+            <folder name="Popup">
+               <file name="org-netbeans-modules-plsql-execution-separatorBefore.instance">
+                  <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
+                  <attr name="position" intvalue="273"/>
+               </file>     
+               <file name="org-netbeans-modules-plsql-execution-action-DeploySelectedCodeAction.shadow">
+                  <attr name="originalFile" stringvalue="Actions/PLSQL/org-netbeans-modules-plsql-execution-actions-DeploySelectedCodeAction.instance"/>
+                  <attr name="position" intvalue="280"/>
+               </file>
+               <file name="org-netbeans-modules-plsql-execution-CreateTestBlockAction.shadow">
+                  <attr name="originalFile" stringvalue="Actions/PLSQL/org-netbeans-modules-plsql-execution-CreateTestBlockAction.instance"/>
+                  <attr name="position" intvalue="281"/>
+               </file>
+               <file name="org-netbeans-modules-plsql-execution-ViewDataAction.shadow">
+                  <attr name="originalFile" stringvalue="Actions/PLSQL/org-netbeans-modules-plsql-execution-ViewDataAction.instance"/>
+                  <attr name="position" intvalue="282"/>
+               </file>
+               <file name="org-netbeans-modules-plsql-execution-DescribeAction.shadow">
+                  <attr name="originalFile" stringvalue="Actions/PLSQL/org-netbeans-modules-plsql-execution-DescribeAction.instance"/>
+                  <attr name="position" intvalue="283"/>
+               </file>  
+               <file name="org-netbeans-modules-plsql-execution-separatorBefore.instance">
+                  <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
+                  <attr name="position" intvalue="284"/>
+               </file>
+               <file name="org-netbeans-modules-plsql-execution-CopyAsJavaStringAction.shadow">
+                  <attr name="originalFile" stringvalue="Actions/PLSQL/org-netbeans-modules-plsql-execution-CopyAsJavaStringAction.instance"/>
+                  <attr name="position" intvalue="285"/>
+               </file>  
+               <file name="org-netbeans-modules-plsql-execution-PasteAsSqlCommandAction.shadow">
+                  <attr name="originalFile" stringvalue="Actions/PLSQL/org-netbeans-modules-plsql-execution-PasteAsSqlCommandAction.instance"/>
+                  <attr name="position" intvalue="286"/>
+               </file>  
+               <file name="org-netbeans-modules-plsql-execution-separatorAfter.instance">
+                  <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
+                  <attr name="position" intvalue="290"/>
+               </file>
+            </folder>
+            <folder name="Toolbars">
+               <folder name="Default">
+                  <file name="Separator1.instance">
+                     <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
+                     <attr name="position" intvalue="19400"/>
+                  </file>
+                  <file name="org-netbeans-modules-plsql-execution-PlsqlExecuteAction.instance">
+                     <attr name="position" intvalue="19500"/>
+                  </file>
+                <!-- <file name="org-netbeans-modules-plsql-execution-PlsqlCommitAction.instance">
+                     <attr name="position" intvalue="19600"/>
+                  </file>-->
+                  <!--Commit and Rollback-->
+                  <file name="Separator2.instance">
+                     <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
+                     <attr name="position" intvalue="19600"/>
+                  </file>
+                  <file name="org-netbeans-modules-plsql-execution-PlsqlCommitAction.instance">
+                     <attr name="position" intvalue="19650"/>
+                  </file>
+                  <file name="org-netbeans-modules-plsql-execution-PlsqlRollbackAction.instance">
+                     <attr name="position" intvalue="19750"/>
+                  </file>
+                  <file name="Separator2.instance">
+                     <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
+                     <attr name="position" intvalue="19850"/>
+                  </file>
+                  <!--End Commit and Rollback-->
+                  <file name="org-netbeans-modules-plsql-execution-PlsqlExplainPlanAction.instance">
+                     <attr name="position" intvalue="19900"/>
+                  </file>
+                  <file name="org-netbeans-modules-plsql-execution-PlsqlExecutionHistoryAction.instance">
+                     <attr name="position" intvalue="20000"/>
+                  </file>
+                  <file name="Separator2.instance">
+                     <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
+                     <attr name="position" intvalue="20100"/>
+                  </file>
+                  <file name="org-netbeans-modules-plsql-execution-PlsqlSaveCommandAction.instance">
+                     <attr name="position" intvalue="20200"/>
+                  </file>
+                  <file name="Separator3.instance">
+                     <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
+                     <attr name="position" intvalue="20300"/>
+                  </file>
+                  <file name="org-netbeans-modules-plsql-execution-CurrentDatabaseToolbarInfo.instance">
+                     <attr name="position" intvalue="20350"/>
+                  </file>
+
+               </folder> <!-- Default -->
+
+
+               </folder> <!-- Default -->
+            </folder> <!-- Toolbars -->
+         </folder>
+      </folder> 
+</filesystem>

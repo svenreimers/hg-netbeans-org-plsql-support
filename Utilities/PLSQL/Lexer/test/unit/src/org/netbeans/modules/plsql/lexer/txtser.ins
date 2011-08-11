@@ -1,0 +1,322 @@
+-----------------------------------------------------------------------------
+--
+-- File: txtser.ins
+--
+-- Purpose: Creates the Java Implementation of AltaVista Search. (The Source comes from Oracle).
+--          Creates Schedules for Index Synchronization AND Optimization.
+--
+--  Date    Sign  History
+--  ------  ----  -----------------------------------------------------------
+--  040701  NiSilk Version 1.0.0 Created.
+--  040713  ChCrlk Removed input values for parameter "parameters_" in method call to Batch_SYS.New_Batch_Schedule.
+--  041203  ChCrlk Add statements to create datastore preferences and content indexes
+--  050110  ChCrlk Modified creation of datastore preferences.
+--  050125  Nifrse  Moved the Oracle Text indexes from CALLKS to PCM and CALLC modules.
+--  070410  NIJALK Bug 64641, Added check on scheduled tasks to avoid duplicates. 
+--  070621  ILSOLK Merged Bug Id 64641.
+-----------------------------------------------------------------------------
+
+set define off
+
+create or replace java source named "AvQuery" as 
+
+  import java.util.*;
+
+  class WordData {
+    String text;
+    String fieldName;
+    }
+
+  public class AvQuery {
+
+  static Vector reqWords = new Vector();
+  static Vector optWords = new Vector();
+  static Vector notWords = new Vector();
+
+  public static final int required  = 1;
+  public static final int optional  = 2;
+  public static final int notwanted = 3;
+
+  public static String translate (String input) {
+    processString(input);
+    return getQuery();
+    }
+
+  private static void addWord (String word, int wordType, String field) {
+
+    WordData wd = new WordData();
+
+    wd.text = word;
+    wd.fieldName = field;
+
+    switch (wordType) {
+    case required:
+      reqWords.addElement(wd);
+      break;
+    case optional:
+      optWords.addElement(wd);
+      break;
+    case notwanted:
+      notWords.addElement(wd);
+      break;
+    }
+  }
+
+  public static void processString (String input) {
+    int p = 0;
+    int pp;
+    int startWord;
+    int flag;
+    String theWord;
+    String fieldName;
+
+
+    reqWords = new Vector();
+    optWords = new Vector();
+    notWords = new Vector();
+
+    while (true) {       // Loop over all words
+
+      startWord = p;
+      while (p < input.length() && input.charAt(p) != ' ') {
+        // Check for quoted phrase
+        if (input.charAt(p) == '"') {   // Quote - skip to next or end
+          p++;  // skip the actual quote
+          while (p < input.length() && input.charAt(p) != '"') {
+            p++;
+            }
+          if (p < input.length()) p++;   // Skip the final quote if found
+          }
+        else {
+          p++;
+          }
+        }
+
+      // Got a word. Check for required/not wanted flags (+-)
+
+      theWord = input.substring(startWord, p);
+
+      flag = optional;
+      fieldName = "";
+
+      if (theWord.charAt(0) == '+') {
+        flag = required;
+        theWord = theWord.substring(1);
+        }
+
+      else if (theWord.charAt(0) == '-') {
+        flag = notwanted;
+        theWord = theWord.substring(1);
+        }
+
+      // Replace * wild cards with %
+
+      theWord = theWord.replace('*', '%');
+
+      // Find field indicator ":"
+
+      pp = theWord.indexOf(":");
+      if (pp > 0) {
+        fieldName = theWord.substring(0, pp);
+        theWord = theWord.substring(pp+1, theWord.length());
+        }
+
+      addWord(theWord, flag, fieldName);
+
+      p++;
+      if (p >= input.length()) break;
+      }
+    }
+
+  // Get word gets a single word from the "words" vector,
+  //  surrounds it in braces (to avoid reserved words)
+  //  and attaches a WITHIN clause if appropriate.
+
+  private static String getWord (Vector words, int pos) {
+
+    String ts = "{" + ((WordData) words.elementAt(pos)).text + "}";
+    if (((WordData)words.elementAt(pos)).fieldName.length() > 0) {
+      ts += " WITHIN " + ((WordData)words.elementAt(pos)).fieldName;
+      }
+    return ts;
+    }
+
+
+  // getQuery returns a formatted, ready-to-run ConText query.
+  // In order to satisfy the altavista syntax, we have to generate
+  // the following query:
+
+  //  ( req1 & req2 & ... reqN)
+  //   | ( (req1 & req2 & .. reqN)*10*10
+  //       & (req1, req2 , ... reqN , opt1 , opt2 , ... optN) )
+  //   NOT (not1 | not2 | ... notN)
+
+  public static String getQuery () {
+    String tempString = "";
+
+    String boolOp = "";   //  AND, OR, NOT operator
+    int reqCount;         //  Count of required words
+    int optCount;         //  Count of optional words
+    int notCount;         //  Count of not wanted words
+    int i;                //  Loop control
+
+    boolOp = "";
+    reqCount = reqWords.size();
+    optCount = optWords.size();
+    notCount = notWords.size();
+
+    if (reqWords.size() > 0) {
+      // Required words - first time
+
+      tempString = "((";
+      for (i = 0; i < reqCount; i++) {
+        tempString += boolOp + getWord(reqWords,i);
+        boolOp = " & ";
+        }
+
+      if (reqCount > 0 && optCount > 0) {
+        tempString += ") | ";
+        tempString += "((";
+        // Required words - second time (anded with optional words)
+        boolOp = "";
+        for (i = 0; i < reqCount; i++) {
+          tempString += boolOp + getWord(reqWords,i);
+          boolOp = " & ";
+          }
+        tempString += ")*10*10";
+
+        tempString += " & (";
+
+        // Required words - third time as part of accumulate
+        boolOp = "";
+        for (i = 0; i < reqCount; i++) {
+          tempString += boolOp + getWord(reqWords,i);
+          // tempString += "*2";// Uncomment to double weight of required words
+          boolOp = " , ";
+          }
+        }
+      }
+    else
+      tempString = "(";
+
+    // Optional words
+    // Don't reset boolOp
+    for (i = 0; i < optCount; i++) {
+      tempString += boolOp + getWord(optWords,i);
+      boolOp = " , ";  // Accumulate
+      }
+
+    if (reqCount > 0)
+      if (optCount > 0 )
+        tempString += ")) )";
+      else
+        tempString += ")) ";
+    else
+      tempString += ")";
+
+    if (tempString.length() > 0) 
+      boolOp = " NOT ";
+    else
+      boolOp = "";
+
+    for (i = 0; i < notCount; i++) {
+      tempString += boolOp + getWord(notWords,i);
+      boolOp = " NOT ";
+      }
+    return tempString;
+  }
+}
+/
+
+
+-- Creation of Schedules
+
+Prompt Creating Schedules for Index Synchronization AND Optimization
+DECLARE
+   schedule_id_        NUMBER;
+   action_             VARCHAR2(200); 
+   description_        VARCHAR2(200);
+   execution_date_     DATE := SYSDATE + 30/86400;
+   plan_               VARCHAR2(200);
+   msg_                VARCHAR2(2000);
+   schedule_method_id_ NUMBER;
+   start_date_         DATE := SYSDATE;
+   dummy_              NUMBER;               
+
+   CURSOR check_exist IS
+   SELECT 1
+   FROM BATCH_SCHEDULE_TAB
+   WHERE SCHEDULE_NAME = description_;
+   	
+BEGIN     
+   --------------- Sync Index
+   action_ := 'Text_Search_Indexer_API.Sync_Index';       
+   description_ := 'Synchronize Context Indexes';
+   plan_ := 'EVERY 00:10'; 
+   
+   OPEN check_exist;
+   FETCH check_exist INTO dummy_;
+   IF (check_exist%NOTFOUND) THEN
+      msg_ := Message_SYS.Construct('');
+      Message_SYS.Add_Attribute (msg_, 'METHOD_NAME', 'Text_Search_Indexer_API.Sync_Index');
+      Message_SYS.Add_Attribute (msg_, 'DESCRIPTION', 'Synchronize Context Indexes');
+      Message_SYS.Add_Attribute (msg_, 'MODULE', 'TXTSER');
+      Message_SYS.Add_Attribute (msg_, 'SINGLE_EXECUTION_DB', 'FALSE');
+      Message_SYS.Add_Attribute (msg_, 'ARGUMENT_TYPE_DB', 'ATTRIBUTE');
+      Batch_SYS.Register_Batch_Schedule_Method (schedule_method_id_, msg_);
+      Batch_SYS.New_Batch_Schedule (schedule_id_, execution_date_, start_date_, NULL, description_, action_, 'TRUE', plan_);
+   END IF;
+   CLOSE check_exist;
+
+   
+
+   --------------- Optimize Index
+   action_ := 'Text_Search_Indexer_API.Optimize_Index';       
+   description_ := 'Optimize Context Indexes';
+   plan_ := 'WEEKLY ON sun AT 00:00';
+   schedule_method_id_ := NULL;
+   
+   OPEN check_exist;
+   FETCH check_exist INTO dummy_;
+   IF (check_exist%NOTFOUND) THEN
+      msg_ := Message_SYS.Construct('');
+      Message_SYS.Add_Attribute (msg_, 'METHOD_NAME', 'Text_Search_Indexer_API.Optimize_Index');
+      Message_SYS.Add_Attribute (msg_, 'DESCRIPTION', 'Optimize Context Indexes');
+      Message_SYS.Add_Attribute (msg_, 'MODULE', 'TXTSER');
+      Message_SYS.Add_Attribute (msg_, 'SINGLE_EXECUTION_DB', 'FALSE');
+      Message_SYS.Add_Attribute (msg_, 'ARGUMENT_TYPE_DB', 'ATTRIBUTE');
+      Batch_SYS.Register_Batch_Schedule_Method (schedule_method_id_, msg_);
+      Batch_SYS.New_Batch_Schedule (schedule_id_, execution_date_, start_date_, NULL, description_, action_, 'TRUE', plan_);
+   END IF;
+   CLOSE check_exist;
+   
+   ---------------- Delete old Search Results         
+   -- To run Text_Search_API.Delete_Old_Results with a value for save_days that 
+   -- isn't default, create a parameters_ string to pass to New_Batch_Schedule.
+   action_ := 'Text_Search_API.Delete_Old_Results';       
+   description_ := 'Delete old Text Search Results';
+   plan_ := 'DAILY AT 00:00';
+   schedule_method_id_ := NULL;
+  
+   OPEN check_exist;
+   FETCH check_exist INTO dummy_;
+   IF (check_exist%NOTFOUND) THEN
+      msg_ := Message_SYS.Construct('');
+      Message_SYS.Add_Attribute (msg_, 'METHOD_NAME', 'Text_Search_API.Delete_Old_Results');
+      Message_SYS.Add_Attribute (msg_, 'DESCRIPTION', 'Delete old Text Search Results');
+      Message_SYS.Add_Attribute (msg_, 'MODULE', 'TXTSER');
+      Message_SYS.Add_Attribute (msg_, 'SINGLE_EXECUTION_DB', 'FALSE');
+      Message_SYS.Add_Attribute (msg_, 'ARGUMENT_TYPE_DB', 'ATTRIBUTE');
+      Batch_SYS.Register_Batch_Schedule_Method (schedule_method_id_, msg_);
+      Batch_SYS.New_Batch_Schedule (schedule_id_,execution_date_, start_date_, NULL, description_, action_, 'TRUE', plan_);
+   END IF;
+   CLOSE check_exist;
+
+ END;
+/
+
+COMMIT;
+/
+
+
+

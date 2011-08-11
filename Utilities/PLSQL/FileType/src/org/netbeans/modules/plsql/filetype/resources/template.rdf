@@ -1,0 +1,99 @@
+-----------------------------------------------------------------------------
+--
+--  Logical unit: <<< Enter your logical unit description here >>>
+--
+--  File:         TEMPLATE.RDF
+--  Version:      Foundation1 2.2
+--
+--  Date    Sign  History
+--  ------  ----  -----------------------------------------------------------
+--
+-----------------------------------------------------------------------------
+
+define MODULE      = <<<MODULE:  Put your module name here>>>
+define LU          = <<<LU: Put your logical unit here>>>
+define PKG         = <<<PKG: Put your Package name here>>>
+
+define TABLE       = <<<TABLE: Put your generic Report Table here>>>
+define RAWVIEW     = <<<RAWVIEW: Put your view showing Report Table here>>>
+define VIEW        = <<<VIEW: Put your Report View here>>>
+define METHOD      = <<<METHOD: Put your Report Method here>>>
+
+-----------------------------------------------------------------------------
+-- PACKAGE SPECIFICATION:     
+-----------------------------------------------------------------------------
+
+PROMPT Creating &PKG specification
+
+CREATE OR REPLACE PACKAGE &PKG IS
+
+module_ CONSTANT VARCHAR2(6) := '&MODULE';
+lu_name_ CONSTANT VARCHAR2(25) := '&LU';
+
+PROCEDURE &METHOD (
+   report_attr_    IN VARCHAR2,
+   parameter_attr_ IN VARCHAR2 );
+
+END &PKG;
+/
+SHOW ERROR
+
+-----------------------------------------------------------------------------
+-- REPORTS                     
+-----------------------------------------------------------------------------
+
+PROMPT Refreshing RPV view &RAWVIEW
+
+BEGIN
+   Report_SYS.Refresh_RPV_View ('&RAWVIEW', '&TABLE');
+END;
+/
+
+PROMPT Creating report view &VIEW
+
+CREATE OR REPLACE VIEW &VIEW AS
+SELECT RESULT_KEY                    RESULT_KEY,
+       ROW_NO                        ROW_NO
+FROM   &RAWVIEW
+WITH   read only;
+
+COMMENT ON TABLE &VIEW IS
+   'MODULE=&MODULE^LU=&LU^PROMPT=&LU^
+   ^METHOD=&PKG..&METHOD^MODE=PLSQL1.2^TABLE=&TABLE^';
+
+COMMENT ON COLUMN &VIEW..RESULT_KEY IS
+   'FLAGS=M----^DATATYPE=NUMBER^';
+COMMENT ON COLUMN &VIEW..ROW_NO IS
+   'FLAGS=M----^DATATYPE=NUMBER^';
+
+
+begin
+   Report_SYS.Refresh_('&VIEW');   
+end;   
+/
+-----------------------------------------------------------------------------
+-- PACKAGE IMPLEMENTATION     
+-----------------------------------------------------------------------------
+
+PROMPT Creating &PKG implementation
+
+CREATE OR REPLACE PACKAGE BODY &PKG IS
+
+PROCEDURE &METHOD (
+   report_attr_    IN VARCHAR2,
+   parameter_attr_ IN VARCHAR2 )
+IS
+   result_key_ NUMBER;
+   row_no_     NUMBER := 1;
+BEGIN
+   result_key_ := Client_SYS.Attr_Value_To_Number(Client_SYS.Get_Item_Value('RESULT_KEY', report_attr_));
+END &METHOD;
+
+END &PKG;
+/
+SHOW ERROR
+
+-----------------------------------------------------------------------------
+-- END
+-----------------------------------------------------------------------------
+

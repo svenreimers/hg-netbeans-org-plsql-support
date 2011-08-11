@@ -1,0 +1,82 @@
+-----------------------------------------------------------------------------
+--
+--  Logical unit: IalObjectSlave
+--
+--  IFS/Design Template Version 2.2
+--
+--  Date    Sign  History
+--  ------  ----  -----------------------------------------------------------
+--  990301  MANY  Project Invader for IAL (ToDo #3177).
+--  030131  ROOD  Removed unused public interfaces (Bug#35022).
+--  030225  ROOD  Changed module to FNDBAS (ToDo#4149).
+-----------------------------------------------------------------------------
+
+DEFINE MODULE        = FNDBAS
+DEFINE LU            = IalObjectSlave
+DEFINE PKG           = IAL_OBJECT_SLAVE_API
+
+
+
+PROMPT Creating &INFO_OWNER..&PKG specification
+
+CREATE OR REPLACE PACKAGE &INFO_OWNER..&PKG IS
+
+module_  CONSTANT VARCHAR2(25) := '&MODULE';
+lu_name_ CONSTANT VARCHAR2(25) := '&LU';
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PRIVATE METHODS ----------------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PROTECTED METHODS --------------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PUBLIC METHODS -----------------------------
+-----------------------------------------------------------------------------
+
+PROCEDURE Exec_Ddl_Statement (
+   stmt_        IN VARCHAR2 );
+
+PROCEDURE Enumerate_Column_Info (
+   attr_ OUT VARCHAR2,
+   name_ IN  VARCHAR2 );
+
+PROCEDURE Enumerate_Index_Info (
+   index_list_ OUT VARCHAR2,
+   name_       IN  VARCHAR2 );
+
+PROCEDURE Add_Index (
+   name_        IN VARCHAR2,
+   column_name_ IN VARCHAR2 );
+
+PROCEDURE Remove_Index (
+   name_        IN VARCHAR2,
+   column_name_ IN VARCHAR2 );
+
+PROCEDURE Get_Object_Info (
+   attr_    OUT VARCHAR2,
+   name_    IN  VARCHAR2 );
+
+FUNCTION Check_Index (
+   name_        IN VARCHAR2,
+   column_name_ IN VARCHAR2 ) RETURN VARCHAR2;
+
+PROCEDURE Get_Table_Info (
+   table_info_ OUT VARCHAR2,
+   name_       IN  VARCHAR2 );
+
+-----------------------------------------------------------------------------
+-------------------- FOUNDATION1 METHODS ------------------------------------
+-----------------------------------------------------------------------------
+
+PROCEDURE Init;
+
+END &PKG;
+/
+SHOW ERROR
+
+-----------------------------------------------------------------------------

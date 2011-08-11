@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE filesystem PUBLIC "-//NetBeans//DTD Filesystem 1.1//EN" "http://www.netbeans.org/dtds/filesystem-1_1.dtd">
+<filesystem>   
+    <folder name="Editors">
+        <folder name="text">
+            <folder name="x-plsql">
+                <file name="PaletteController.instance">
+                        <attr name="instanceOf" stringvalue="org.netbeans.spi.palette.PaletteController"/>
+                        <attr name="instanceCreate" methodvalue="org.netbeans.modules.plsql.palette.PlsqlPaletteFactory.getPalette"/>
+                </file>
+            </folder>
+        </folder>
+    </folder>
+   <folder name="Menu">
+      <folder name="Tools">
+         <folder name="PaletteManager">
+            <file name="org-netbeans-modules-plsql-palette-PlsqlPaletteCustomizerAction.instance">
+               <attr name="position" intvalue="1"/>
+            </file>
+         </folder>
+      </folder>
+   </folder>
+   <folder name="PlsqlPalette">
+      <folder name="Loops">
+         <file name="BasicLoop.xml" url="item/loop/resource/BasicLoop.xml"/>
+         <file name="CollectionLoop.xml" url="item/loop/resource/CollectionLoop.xml"/>
+         <file name="ExplicitCursorLoop.xml" url="item/loop/resource/ExplicitCursorLoop.xml"/>
+         <file name="ImplicitCursorLoop.xml" url="item/loop/resource/ImplicitCursorLoop.xml"/>
+         <file name="IntegerForLoop.xml" url="item/loop/resource/IntegerForLoop.xml"/>
+      </folder>
+      <folder name="Constants">
+         <file name="BinaryIntegerConst.xml" url="item/constant/resource/BinaryIntegerConst.xml"/>
+         <file name="DateConst.xml" url="item/constant/resource/DateConst.xml"/>
+         <file name="ColumnTypeConst.xml" url="item/constant/resource/ColumnTypeConst.xml"/>
+         <file name="IntegerConst.xml" url="item/constant/resource/IntegerConst.xml"/>
+         <file name="NumberConst.xml" url="item/constant/resource/NumberConst.xml"/>
+         <file name="Varchar2Const.xml" url="item/constant/resource/Varchar2Const.xml"/>
+      </folder>
+      <folder name="DML Statements">
+         <file name="DeleteStmt.xml" url="item/stmt/resource/DeleteStmt.xml"/>
+         <file name="InsertStmt.xml" url="item/stmt/resource/InsertStmt.xml"/>
+         <file name="LockRecordStmt.xml" url="item/stmt/resource/LockRecordStmt.xml"/>
+         <file name="SelectStmt.xml" url="item/stmt/resource/SelectStmt.xml"/>
+         <file name="SelectIntoStmt.xml" url="item/stmt/resource/SelectIntoStmt.xml"/>
+         <file name="SequenceStmt.xml" url="item/stmt/resource/SequenceStmt.xml"/>
+         <file name="UpdateStmt.xml" url="item/stmt/resource/UpdateStmt.xml"/>
+      </folder>
+      <folder name="Error Handling">
+         <file name="ExceptionBlock.xml" url="item/errorhandling/resource/ExceptionBlock.xml"/>
+         <file name="ExceptionInit.xml" url="item/errorhandling/resource/ExceptionInit.xml"/>
+         <file name="IFSItemGeneral.xml" url="item/errorhandling/resource/IFSItemGeneral.xml"/>
+         <file name="IFSRecordGeneral.xml" url="item/errorhandling/resource/IFSRecordGeneral.xml"/>
+      </folder>
+      <folder name="Package elements">
+         <file name="FunctionDeclaration.xml" url="item/packageelements/resource/FunctionDeclaration.xml"/>
+         <file name="ProcedureDeclaration.xml" url="item/packageelements/resource/ProcedureDeclaration.xml"/>
+      </folder>
+      <folder name="Program units">
+         <file name="Function.xml" url="item/programunit/resource/Function.xml"/>
+         <file name="ProcedureUnit.xml" url="item/programunit/resource/ProcedureUnit.xml"/>
+      </folder>
+      <folder name="Variables">
+         <file name="BinaryInteger.xml" url="item/variable/resource/BinaryInteger.xml"/>
+         <file name="BLOB.xml" url="item/variable/resource/BLOB.xml"/>
+         <file name="Boolean.xml" url="item/variable/resource/Boolean.xml"/>
+         <file name="CLOB.xml" url="item/variable/resource/CLOB.xml"/>
+         <file name="Date.xml" url="item/variable/resource/Date.xml"/>
+         <file name="IntegerVar.xml" url="item/variable/resource/IntegerVar.xml"/>
+         <file name="LongVar.xml" url="item/variable/resource/LongVar.xml"/>
+         <file name="LongRaw.xml" url="item/variable/resource/LongRaw.xml"/>
+         <file name="NumberVar.xml" url="item/variable/resource/NumberVar.xml"/>
+         <file name="Varchar2.xml" url="item/variable/resource/Varchar2.xml"/>
+         <file name="Cursor.xml" url="item/variable/resource/Cursor.xml"/>
+         <file name="ColumnType.xml" url="item/variable/resource/ColumnType.xml"/>
+         <file name="RowType.xml" url="item/variable/resource/RowType.xml"/>
+      </folder>
+      <folder name="SQL Functions">
+         <file name="Abs.xml" url="item/sqlfunction/resource/Abs.xml"/>
+         <file name="Acos.xml" url="item/sqlfunction/resource/Acos.xml"/>
+         <file name="AddMonths.xml" url="item/sqlfunction/resource/AddMonths.xml"/>
+         <file name="Ascii.xml" url="item/sqlfunction/resource/Ascii.xml"/>
+         <file name="Asin.xml" url="item/sqlfunction/resource/Asin.xml"/>
+         <file name="Atan.xml" url="item/sqlfunction/resource/Atan.xml"/>
+         <file name="Atan2.xml" url="item/sqlfunction/resource/Atan2.xml"/>
+         <file name="Avg.xml" url="item/sqlfunction/resource/Avg.xml"/>
+         <file name="BFilename.xml" url="item/sqlfunction/resource/BFilename.xml"/>
+         <file name="Ceil.xml" url="item/sqlfunction/resource/Ceil.xml"/>
+         <file name="CharToRowid.xml" url="item/sqlfunction/resource/CharToRowid.xml"/>
+         <file name="Chr.xml" url="item/sqlfunction/resource/Chr.xml"/>
+         <file name="Concat.xml" url="item/sqlfunction/resource/Concat.xml"/>
+         <file name="Convert.xml" url="item/sqlfunction/resource/Convert.xml"/>
+         <file name="Cos.xml" url="item/sqlfunction/resource/Cos.xml"/>
+         <file name="Cosh.xml" url="item/sqlfunction/resource/Cosh.xml"/>
+         <file name="Count.xml" url="item/sqlfunction/resource/Count.xml"/>
+         <file name="Deref.xml" url="item/sqlfunction/resource/Deref.xml"/>
+         <file name="EmptyBLOB.xml" url="item/sqlfunction/resource/EmptyBLOB.xml"/>
+         <file name="EmptyCLOB.xml" url="item/sqlfunction/resource/EmptyCLOB.xml"/>
+         <file name="Exp.xml" url="item/sqlfunction/resource/Exp.xml"/>
+         <file name="Floor.xml" url="item/sqlfunction/resource/Floor.xml"/>
+         <file name="Greatest.xml" url="item/sqlfunction/resource/Greatest.xml"/>
+         <file name="Grouping.xml" url="item/sqlfunction/resource/Grouping.xml"/>
+         <file name="HexToRaw.xml" url="item/sqlfunction/resource/HexToRaw.xml"/>
+         <file name="InitCap.xml" url="item/sqlfunction/resource/InitCap.xml"/>
+         <file name="Instr.xml" url="item/sqlfunction/resource/Instr.xml"/>
+         <file name="Instrb.xml" url="item/sqlfunction/resource/Instrb.xml"/>
+         <file name="Lastday.xml" url="item/sqlfunction/resource/Lastday.xml"/>
+         <file name="Least.xml" url="item/sqlfunction/resource/Least.xml"/>
+         <file name="Length.xml" url="item/sqlfunction/resource/Length.xml"/>
+         <file name="Lengthb.xml" url="item/sqlfunction/resource/Lengthb.xml"/>
+         <file name="Ln.xml" url="item/sqlfunction/resource/Ln.xml"/>
+         <file name="Log.xml" url="item/sqlfunction/resource/Log.xml"/>
+         <file name="Lower.xml" url="item/sqlfunction/resource/Lower.xml"/>
+         <file name="LPad.xml" url="item/sqlfunction/resource/LPad.xml"/>
+         <file name="LTrim.xml" url="item/sqlfunction/resource/LTrim.xml"/>
+         <file name="MakeRef.xml" url="item/sqlfunction/resource/MakeRef.xml"/>
+         <file name="Max.xml" url="item/sqlfunction/resource/Max.xml"/>
+         <file name="Min.xml" url="item/sqlfunction/resource/Min.xml"/>
+         <file name="Mod.xml" url="item/sqlfunction/resource/Mod.xml"/>
+         <file name="MonthsBetween.xml" url="item/sqlfunction/resource/MonthsBetween.xml"/>
+         <file name="NewTime.xml" url="item/sqlfunction/resource/NewTime.xml"/>
+         <file name="NextDay.xml" url="item/sqlfunction/resource/NextDay.xml"/>
+         <file name="NLSCharsetDecl.xml" url="item/sqlfunction/resource/NLSCharsetDecl.xml"/>
+         <file name="NLSCharsetId.xml" url="item/sqlfunction/resource/NLSCharsetId.xml"/>
+         <file name="NLSCharsetName.xml" url="item/sqlfunction/resource/NLSCharsetName.xml"/>
+         <file name="NLSInitcap.xml" url="item/sqlfunction/resource/NLSInitcap.xml"/>
+         <file name="NLSLower.xml" url="item/sqlfunction/resource/NLSLower.xml"/>
+         <file name="NLSUpper.xml" url="item/sqlfunction/resource/NLSUpper.xml"/>
+         <file name="NLSSort.xml" url="item/sqlfunction/resource/NLSSort.xml"/>
+         <file name="Nvl.xml" url="item/sqlfunction/resource/Nvl.xml"/>
+         <file name="Power.xml" url="item/sqlfunction/resource/Power.xml"/>
+         <file name="RawToHex.xml" url="item/sqlfunction/resource/RawToHex.xml"/>
+         <file name="Ref.xml" url="item/sqlfunction/resource/Ref.xml"/>
+         <file name="RefToHex.xml" url="item/sqlfunction/resource/RefToHex.xml"/>
+         <file name="Replace.xml" url="item/sqlfunction/resource/Replace.xml"/>
+         <file name="Round.xml" url="item/sqlfunction/resource/Round.xml"/>
+         <file name="RowidToChar.xml" url="item/sqlfunction/resource/RowidToChar.xml"/>
+         <file name="RPad.xml" url="item/sqlfunction/resource/RPad.xml"/>
+         <file name="RTrim.xml" url="item/sqlfunction/resource/RTrim.xml"/>
+         <file name="Sign.xml" url="item/sqlfunction/resource/Sign.xml"/>
+         <file name="Sin.xml" url="item/sqlfunction/resource/Sin.xml"/>
+         <file name="Sinh.xml" url="item/sqlfunction/resource/Sinh.xml"/>
+         <file name="Soundex.xml" url="item/sqlfunction/resource/Soundex.xml"/>
+         <file name="Sqrt.xml" url="item/sqlfunction/resource/Sqrt.xml"/>
+         <file name="Stddev.xml" url="item/sqlfunction/resource/Stddev.xml"/>
+         <file name="Substr.xml" url="item/sqlfunction/resource/Substr.xml"/>
+         <file name="Substrb.xml" url="item/sqlfunction/resource/Substrb.xml"/>
+         <file name="Sum.xml" url="item/sqlfunction/resource/Sum.xml"/>
+         <file name="SysContext.xml" url="item/sqlfunction/resource/SysContext.xml"/>
+         <file name="SysGuide.xml" url="item/sqlfunction/resource/SysGuide.xml"/>
+         <file name="SysDate.xml" url="item/sqlfunction/resource/SysDate.xml"/>
+         <file name="Tan.xml" url="item/sqlfunction/resource/Tan.xml"/>
+         <file name="Tanh.xml" url="item/sqlfunction/resource/Tanh.xml"/>
+         <file name="ToChar.xml" url="item/sqlfunction/resource/ToChar.xml"/>
+         <file name="ToDate.xml" url="item/sqlfunction/resource/ToDate.xml"/>
+         <file name="ToLOB.xml" url="item/sqlfunction/resource/ToLOB.xml"/>
+         <file name="ToMultiByte.xml" url="item/sqlfunction/resource/ToMultiByte.xml"/>
+         <file name="ToNumber.xml" url="item/sqlfunction/resource/ToNumber.xml"/>
+         <file name="ToSingleByte.xml" url="item/sqlfunction/resource/ToSingleByte.xml"/>
+         <file name="Translate.xml" url="item/sqlfunction/resource/Translate.xml"/>
+         <file name="Trim.xml" url="item/sqlfunction/resource/Trim.xml"/>
+         <file name="TruncDate.xml" url="item/sqlfunction/resource/TruncDate.xml"/>
+         <file name="TruncNumber.xml" url="item/sqlfunction/resource/TruncNumber.xml"/>
+         <file name="Uid.xml" url="item/sqlfunction/resource/Uid.xml"/>
+         <file name="Upper.xml" url="item/sqlfunction/resource/Upper.xml"/>
+         <file name="User.xml" url="item/sqlfunction/resource/User.xml"/>
+         <file name="Userenv.xml" url="item/sqlfunction/resource/Userenv.xml"/>
+         <file name="Value.xml" url="item/sqlfunction/resource/Value.xml"/>
+         <file name="Variance.xml" url="item/sqlfunction/resource/Variance.xml"/>
+         <file name="VSize.xml" url="item/sqlfunction/resource/VSize.xml"/>
+      </folder>
+      <folder name="Reports &amp; Utilities">
+         <file name="ListSessions.xml" url="item/reports/resource/ListSessions.xml"/>
+         <file name="ListTablespaces.xml" url="item/reports/resource/ListTablespaces.xml"/>
+         <file name="ListInvalidObjects.xml" url="item/reports/resource/ListInvalidObjects.xml"/>
+         <file name="CompileInvalidObjects.xml" url="item/reports/resource/CompileInvalidObjects.xml"/>
+         <file name="DebugCompilePackages.xml" url="item/reports/resource/DebugCompilePackages.xml"/>
+         <file name="ListDebugCompiledPkgs.xml" url="item/reports/resource/ListDebugCompiledPkgs.xml"/>      
+         <file name="RemoveDebugInfo.xml" url="item/reports/resource/RemoveDebugInfo.xml"/>
+         <file name="RefreshDictionary.xml" url="item/reports/resource/RefreshDictionary.xml"/>
+         <file name="GrantIfssys.xml" url="item/reports/resource/GrantIfssys.xml"/>
+      </folder>
+   </folder>
+</filesystem>

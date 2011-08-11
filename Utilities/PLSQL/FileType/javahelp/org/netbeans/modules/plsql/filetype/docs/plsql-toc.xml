@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE toc PUBLIC "-//Sun Microsystems Inc.//DTD JavaHelp TOC Version 2.0//EN" "http://java.sun.com/products/javahelp/toc_2_0.dtd">
+<toc version="2.0">
+    <tocitem text="IFS Developer Studio">
+    <tocitem text="PL/SQL Development">
+    <tocitem text="Creating PL/SQL Source Files" target="org.netbeans.modules.plsql.creating"/>
+    <tocitem text="Editing PL/SQL Source Files">
+        <tocitem text="About Editing PL/SQL Source Files" target="org.netbeans.modules.plsql.editing"/>
+        <tocitem text="Navigating Code" target="org.netbeans.modules.plsql.navigating"/>
+        <tocitem text="Using Code Completion" target="org.netbeans.modules.plsql.completion"/>
+        <tocitem text="Annotations in  PL/SQL Code" target="org.netbeans.modules.plsql.annotation">
+           <tocitem text="Annotations on Column Comments" target="org.netbeans.modules.plsql.annotation.colcomment"/>
+           <tocitem text="Annotations on Comments" target="org.netbeans.modules.plsql.annotation.comment"/>
+           <tocitem text="Annotations on Constants" target="org.netbeans.modules.plsql.annotation.constant"/>
+           <tocitem text="Annotations on Cursors" target="org.netbeans.modules.plsql.annotation.cursor"/>
+           <tocitem text="Annotations on Function Return" target="org.netbeans.modules.plsql.annotation.function"/>
+           <tocitem text="Annotations on If Condition" target="org.netbeans.modules.plsql.annotation.if"/>
+           <tocitem text="Annotations on Methods" target="org.netbeans.modules.plsql.annotation.method"/>
+           <tocitem text="Annotations on Statements" target="org.netbeans.modules.plsql.annotation.stmt"/>
+           <tocitem text="Annotations on Tables/Views Used" target="org.netbeans.modules.plsql.annotation.table"/>
+           <tocitem text="Annotations on Tags" target="org.netbeans.modules.plsql.annotation.tag">
+        </tocitem>
+    </tocitem>
+    <tocitem text="Using PL/SQL Find Usage" target="org.netbeans.modules.plsql.usages"/>
+    <tocitem text="Deploying PL/SQL Source Files" target="org.netbeans.modules.plsql.deploying"/>
+    <tocitem text="Auto Commit - ON/OFF" target="org.netbeans.modules.plsql.auto.commit"/>
+        <tocitem text="Testing Functions and Procedures" target="org.netbeans.modules.plsql.testing"/>
+        </tocitem>
+    </tocitem>
+</toc>

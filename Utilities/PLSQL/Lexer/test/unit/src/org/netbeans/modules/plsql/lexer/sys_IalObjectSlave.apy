@@ -1,0 +1,376 @@
+-----------------------------------------------------------------------------
+--
+--  Logical unit: IalObjectSlave
+--
+--  Purpose:
+--
+--  IFS/Design Template Version 2.2
+--
+--  Date    Sign  History
+--  ------  ----  -----------------------------------------------------------
+--  990301  MANY  Project Invader for IAL (ToDo #3177).
+--  990301  ERFO  Corrected table name paramters for Add/Remove_Index.
+--  990322  MANY  Implemented partial replication (ToDo #3222).
+--  030113  ROOD  Made Get_Table_Info handle locally managed tablespaces (Bug#35022).
+--  030130  ROOD  Handling for locally managed tablespaces for indexes too (Bug#35022).
+--                Removed unused public interfaces. Added implementation help methods.
+--                Some other implementation modifications. 
+--  030225  ROOD  Changed module to FNDBAS (ToDo#4149).
+--  090107  HASP  Increased length of indexes_ variable in Enumerate_Index_Info method (Bug#79640).
+--  090817  NABA  Certified the assert safe for dynamic SQLs (Bug#84218)
+-----------------------------------------------------------------------------
+
+DEFINE MODULE        = FNDBAS
+DEFINE LU            = IalObjectSlave
+DEFINE PKG           = IAL_OBJECT_SLAVE_API
+
+-----------------------------------------------------------------------------
+-------------------- PACKAGES FOR METHODS -----------------------------------
+-----------------------------------------------------------------------------
+
+PROMPT Creating &INFO_OWNER..&PKG implementation
+
+CREATE OR REPLACE PACKAGE BODY &INFO_OWNER..&PKG IS
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC IMPLEMENTATION METHOD DECLARATIONS ---------
+-----------------------------------------------------------------------------
+
+FUNCTION Is_Locally_Managed___ (
+   tablespace_ IN VARCHAR2 ) RETURN BOOLEAN;
+
+FUNCTION Is_Column_Indexed___ (
+   name_        IN VARCHAR2,
+   column_name_ IN VARCHAR2 ) RETURN VARCHAR2;
+
+FUNCTION Get_Column_Id___ (
+   table_name_  IN VARCHAR2,
+   column_name_ IN VARCHAR2 ) RETURN VARCHAR2;
+
+FUNCTION Table_Exist___ (
+   table_name_ IN VARCHAR2 ) RETURN BOOLEAN;
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC IMPLEMENTATION METHODS ---------------------
+-----------------------------------------------------------------------------
+
+FUNCTION Is_Locally_Managed___ (
+   tablespace_ IN VARCHAR2 ) RETURN BOOLEAN
+IS
+   extent_management_ VARCHAR2(10);
+
+   CURSOR get_extent_management IS
+      SELECT extent_management
+      FROM   user_tablespaces
+      WHERE  tablespace_name = tablespace_;
+BEGIN
+   OPEN get_extent_management;
+   FETCH get_extent_management INTO extent_management_;
+   CLOSE get_extent_management;
+   RETURN extent_management_ = 'LOCAL';
+END Is_Locally_Managed___;
+
+FUNCTION Is_Column_Indexed___ (
+   name_        IN VARCHAR2,
+   column_name_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+   column_id_  VARCHAR2(10) := Get_Column_Id___(name_||'_TAB', column_name_);
+   dummy_      NUMBER;
+   found_      VARCHAR2(5);
+
+   CURSOR get_index(index_name_ IN VARCHAR2) IS
+      SELECT 1
+      FROM user_indexes
+      WHERE index_name = index_name_;
+
+BEGIN
+   OPEN get_index(name_||'_X'||column_id_);
+   FETCH get_index INTO dummy_;
+   IF get_index%FOUND THEN
+      found_ := 'TRUE';
+   ELSE
+      found_ := 'FALSE';
+   END IF;
+   CLOSE get_index;
+   RETURN found_;
+END Is_Column_Indexed___;
+
+FUNCTION Get_Column_Id___ (
+   table_name_  IN VARCHAR2,
+   column_name_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+   id_ NUMBER;
+
+   CURSOR get_id IS
+      SELECT column_id
+      FROM   user_tab_columns
+      WHERE  table_name = table_name_
+      AND    column_name = column_name_;
+BEGIN
+   OPEN get_id;
+   FETCH get_id INTO id_;
+   CLOSE get_id;
+   RETURN to_char(id_);
+END Get_Column_Id___;
+
+FUNCTION Table_Exist___ (
+   table_name_ IN VARCHAR2 ) RETURN BOOLEAN
+IS
+   dummy_  NUMBER;
+
+   CURSOR exist_control IS
+   SELECT 1
+   FROM user_tables
+   WHERE table_name = table_name_;
+BEGIN
+   OPEN exist_control;
+   FETCH exist_control INTO dummy_;
+   IF exist_control%FOUND THEN
+      CLOSE exist_control;
+      RETURN (TRUE);
+   END IF;
+   CLOSE exist_control;
+   RETURN (FALSE);
+END Table_Exist___;
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PRIVATE METHODS ----------------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PROTECTED METHODS --------------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PUBLIC METHODS -----------------------------
+-----------------------------------------------------------------------------
+
+PROCEDURE Exec_Ddl_Statement (
+   stmt_        IN VARCHAR2 )
+IS
+BEGIN
+   -- Safe as package is in IAL Owner schema
+   -- ifs_assert_safe nabalk 20090817
+   EXECUTE IMMEDIATE stmt_;
+END Exec_Ddl_Statement;
+
+PROCEDURE Enumerate_Column_Info (
+   attr_ OUT VARCHAR2,
+   name_ IN  VARCHAR2 )
+IS
+   out_attr_   VARCHAR2(19000);
+   tmp_attr_   VARCHAR2(32000);
+   table_name_ VARCHAR2(30) := name_||'_TAB';
+   view_name_  VARCHAR2(30) := name_||'_IAL';
+
+   CURSOR get_column_info(table_or_view_name_ IN VARCHAR2) IS
+      SELECT * FROM user_tab_columns
+      WHERE  table_name = table_or_view_name_;
+BEGIN
+   IF Table_Exist___(table_name_) THEN
+      FOR rec_ IN get_column_info(table_name_) LOOP
+         tmp_attr_ := NULL;
+         tmp_attr_ := tmp_attr_ || 'NAME' || chr(31) || rec_.column_name || chr(30);
+         tmp_attr_ := tmp_attr_ || 'DATATYPE' || chr(31) || rec_.data_type || chr(30);
+         tmp_attr_ := tmp_attr_ || 'INDEXED' || chr(31) || Is_Column_Indexed___(name_, rec_.column_name) || chr(30);
+         out_attr_ := out_attr_ || tmp_attr_ ||chr(29);
+      END LOOP;
+   ELSE
+      FOR rec_ IN get_column_info(view_name_) LOOP
+         tmp_attr_ := NULL;
+         tmp_attr_ := tmp_attr_ || 'NAME' || chr(31) || rec_.column_name || chr(30);
+         tmp_attr_ := tmp_attr_ || 'DATATYPE' || chr(31) || rec_.data_type || chr(30);
+         tmp_attr_ := tmp_attr_ || 'INDEXED' || chr(31) || 'FALSE' || chr(30);
+         out_attr_ := out_attr_ || tmp_attr_ ||chr(29);
+      END LOOP;
+   END IF;
+   attr_ := out_attr_;
+END Enumerate_Column_Info;
+
+PROCEDURE Enumerate_Index_Info (
+   index_list_ OUT VARCHAR2,
+   name_       IN  VARCHAR2 )
+IS
+   indexes_           VARCHAR2(32000);
+   index_             VARCHAR2(2000);
+   col_list_          VARCHAR2(400);
+   delim_             VARCHAR2(1);
+   table_name_        VARCHAR2(30) := name_ || '_TAB';
+
+   CURSOR get_index_info IS
+      SELECT * 
+      FROM user_indexes
+      WHERE  table_name = table_name_;
+
+   CURSOR get_columns(index_name_ IN VARCHAR2) IS
+      SELECT column_name 
+      FROM user_ind_columns
+      WHERE  index_name = index_name_
+      ORDER BY column_position;
+BEGIN
+   FOR ind_ IN get_index_info LOOP
+      IF (ind_.uniqueness = 'UNIQUE') THEN
+         index_ := 'CREATE UNIQUE INDEX ' || ind_.index_name || ' ON ' || ind_.table_name || '(';
+      ELSE
+         index_ := 'CREATE INDEX ' || ind_.index_name || ' ON ' || ind_.table_name || '(';
+      END IF;
+      col_list_ := NULL;
+      delim_ := NULL;
+      FOR col_ IN get_columns(ind_.index_name) LOOP
+         col_list_ := col_list_ || delim_ || col_.column_name;
+         delim_ := ',';
+      END LOOP;
+      IF (col_list_ IS NOT NULL) THEN -- Can a index have zero columns? Well, just in case...
+         index_ := index_ || col_list_ || ') TABLESPACE ' || ind_.tablespace_name || ' ';
+         -- Statements only necessary if not locally managed tablespace
+         IF NOT Is_Locally_Managed___(ind_.tablespace_name) THEN
+            index_ := index_ || 'INITRANS ' || ind_.ini_trans || ' ';
+            index_ := index_ || 'MAXTRANS ' || ind_.max_trans || ' ';
+            index_ := index_ || 'PCTFREE ' || ind_.pct_free || ' ';
+            index_ := index_ || 'STORAGE (INITIAL ' || ind_.initial_extent || ' NEXT ' || ind_.next_extent || ' ';
+            index_ := index_ || 'MINEXTENTS ' || ind_.min_extents || ' MAXEXTENTS ' || ind_.max_extents || ' ';
+            index_ := index_ || 'PCTINCREASE ' || ind_.pct_increase || ' FREELISTS ' || ind_.freelists || ' ';
+            index_ := index_ || 'FREELIST GROUPS ' || ind_.freelist_groups || ')';
+         END IF;
+         -- Add this index to the list for all indexes
+         indexes_ := indexes_ || index_ || chr(31);
+      END IF;
+   END LOOP;
+   index_list_ := indexes_;
+END Enumerate_Index_Info;
+
+PROCEDURE Add_Index (
+   name_        IN VARCHAR2,
+   column_name_ IN VARCHAR2 )
+IS
+   column_id_  VARCHAR2(10) := Get_Column_Id___(name_||'_TAB', column_name_);
+BEGIN
+   Exec_Ddl_Statement('CREATE INDEX '||name_||'_X'||column_id_||' ON '||name_||'_TAB ('||column_name_||')');
+END Add_Index;
+
+PROCEDURE Remove_Index (
+   name_        IN VARCHAR2,
+   column_name_ IN VARCHAR2 )
+IS
+   column_id_  VARCHAR2(10) := Get_Column_Id___(name_||'_TAB', column_name_);
+BEGIN
+   Exec_Ddl_Statement('DROP INDEX '||name_||'_X'||column_id_);
+END Remove_Index;
+
+PROCEDURE Get_Object_Info (
+   attr_    OUT VARCHAR2,
+   name_    IN  VARCHAR2 )
+IS
+   tmp_attr_   VARCHAR2(100) := NULL;
+   dummy_      NUMBER;
+   table_name_ VARCHAR2(30) := name_||'_TAB';
+
+   CURSOR find_objdate_column IS
+      SELECT 1
+      FROM user_tab_columns
+      WHERE table_name = table_name_
+      AND   column_name = 'OBJDATE';
+BEGIN
+   IF Table_Exist___(table_name_) THEN
+      -- Add table name
+      tmp_attr_ := tmp_attr_ || 'TABLE_NAME' || chr(31) || table_name_ || chr(30);
+      
+      -- Add info about objdate column
+      OPEN find_objdate_column;
+      FETCH find_objdate_column INTO dummy_;
+      IF find_objdate_column%FOUND THEN
+         tmp_attr_ := tmp_attr_ || 'OBJDATE' || chr(31) || 'TRUE' || chr(30);
+      ELSE
+         tmp_attr_ := tmp_attr_ || 'OBJDATE' || chr(31) || 'FALSE' || chr(30);
+      END IF;
+      CLOSE find_objdate_column;
+   ELSE
+      -- If no table exist, then no objdate column will exist either...
+      tmp_attr_ := tmp_attr_ || 'OBJDATE' || chr(31) || 'FALSE' || chr(30);
+   END IF;
+   attr_ := tmp_attr_;
+END Get_Object_Info;
+
+FUNCTION Check_Index (
+   name_        IN VARCHAR2,
+   column_name_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+   dummy_      NUMBER;
+   table_name_ VARCHAR2(30) := name_ || '_TAB';
+
+   CURSOR get_indexes IS
+      SELECT index_name
+      FROM user_indexes
+      WHERE table_name = table_name_;
+
+   CURSOR find_index_column(index_name_ IN VARCHAR2) IS
+      SELECT 1
+      FROM user_ind_columns
+      WHERE index_name = index_name_
+      AND column_name = column_name_;
+BEGIN
+   FOR rec_ IN get_indexes LOOP
+      OPEN find_index_column(rec_.index_name);
+      FETCH find_index_column INTO dummy_;
+      IF find_index_column%FOUND THEN -- There is an index on this column that is probably better.
+         CLOSE find_index_column;
+         RETURN 'FALSE';
+      END IF;
+      CLOSE find_index_column;
+   END LOOP;
+   RETURN ('TRUE');
+END Check_Index;
+
+PROCEDURE Get_Table_Info (
+   table_info_ OUT VARCHAR2,
+   name_       IN  VARCHAR2 )
+IS
+   table_             VARCHAR2(2000);
+
+   CURSOR get_table_information(table_name_ IN VARCHAR2) IS
+      SELECT *
+      FROM user_tables
+      WHERE  table_name = table_name_;
+BEGIN
+   FOR tab_ IN get_table_information(name_ || '_TAB') LOOP
+      -- Initial statement
+      table_ := 'CREATE TABLE ' || tab_.table_name;
+      table_ := table_ || ' TABLESPACE ' || tab_.tablespace_name;
+      -- Statements only necessary if not locally managed tablespace
+      IF NOT Is_Locally_Managed___(tab_.tablespace_name) THEN
+         table_ := table_ || ' INITRANS ' || tab_.ini_trans;
+         table_ := table_ || ' MAXTRANS ' || tab_.max_trans;
+         table_ := table_ || ' PCTFREE ' || tab_.pct_free;
+         table_ := table_ || ' STORAGE (INITIAL ' || tab_.initial_extent || ' NEXT ' || tab_.next_extent;
+         table_ := table_ || ' MINEXTENTS ' || tab_.min_extents || ' MAXEXTENTS ' || tab_.max_extents;
+         table_ := table_ || ' PCTINCREASE ' || tab_.pct_increase || ' FREELISTS ' || tab_.freelists;
+         table_ := table_ || ' FREELIST GROUPS ' || tab_.freelist_groups || ')';
+      END IF;
+      -- Final statement
+      table_ := table_ || ' AS (SELECT * FROM ' || name_ || '_IAL)';
+   END LOOP;
+   table_info_ := table_;
+END Get_Table_Info;
+
+-----------------------------------------------------------------------------
+-------------------- FOUNDATION1 METHODS ------------------------------------
+-----------------------------------------------------------------------------
+-- Init
+--   Dummy procedure that can be called at database startup to ensure that
+--   this package is loaded into memory for performance reasons only.
+-----------------------------------------------------------------------------
+
+PROCEDURE Init
+IS
+BEGIN
+   NULL;
+END Init;
+
+
+END &PKG;
+/
+SHOW ERROR
+
+-----------------------------------------------------------------------------

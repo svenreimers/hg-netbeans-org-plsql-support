@@ -1,0 +1,144 @@
+<html>
+    <head>
+        <title>Annotations on methods</title>
+        <link rel="stylesheet" href="nbdocs:/org/netbeans/modules/usersguide/ide.css" type="text/css">
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    </head>
+    <body>
+        <h2>Annotations on methods</h2>
+        <p><small><a href="#seealso">See Also</a></small></p>
+        <ul>
+            <li>
+                <p>Editor provides errors if the method specification is missing for public/protected/private methods.</p>
+                <p>Actions Available:</p>
+                <ul>
+                    <li>Add method specification</li>
+                    <li>Add an IgnoreMissingMethodDef</li>
+                </ul>
+            </li>
+            <li>
+                <p>Editor provides a warning if a method implementation that was generated, has changed.</p>
+                <p>Actions Available:</p>
+                <ul>
+                    <li>Diff with generated code</li>
+                    <li>Replace from generated code</li>
+                    <li>Add an IgnoreGeneratedMethod</li>
+                </ul>
+            </li>
+            <li>
+                <p>Editor provides a warning if a method declared in the specification do not have a call to General_SYS.Init_Method() as the first line of its implementation. Some methods like Init are excepted from this check.</p>
+                <p>Actions Available:</p>
+                <ul>
+                    <li>Add method call to General_SYS.Init_Method</li>
+                    <li>Add an IgnoreMissingSysinit</li>
+                </ul>
+            </li>
+            <li>
+                <p>Editor provides an error if the third parameter of the General_SYS.Init_Method() is not the method name.</p>
+                <p>Example of Incorrect Code:</p>
+                <p><font size="3">&nbsp;&nbsp;&nbsp;PROCEDURE Exist (<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;formula_id_ IN VARCHAR2,<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;formula_item_id_ IN NUMBER )<br/>
+                    &nbsp;&nbsp;&nbsp;IS<br/>
+                    &nbsp;&nbsp;&nbsp;BEGIN<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;General_SYS.Init_Method(lu_name_, '&PKG', <font color ="RED">'Exis'</font>, TRUE);</font></p>
+                <p>Example of Correct Code:</p>
+                <p><font size="3">&nbsp;&nbsp;&nbsp;PROCEDURE Exist (<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;formula_id_ IN VARCHAR2,<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;formula_item_id_ IN NUMBER )<br/>
+                    &nbsp;&nbsp;&nbsp;IS<br/>
+                    &nbsp;&nbsp;&nbsp;BEGIN<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;General_SYS.Init_Method(lu_name_, '&PKG', <font color ="BLUE">'Exist'</font>, TRUE);</font></p>
+                <p>Actions Available:</p>
+                <ul>
+                    <li>Correct the parameter</li>
+                    <li>Add an IgnoreWrongInitParam</li>
+                </ul>
+            </li>
+            <li>
+                <p>Editor provides a warning if the method name is missing at the end of the method.</p>
+                <p>Example of Incorrect Code:</p>
+                <p><font size="3">&nbsp;&nbsp;&nbsp;PROCEDURE Prepare_Insert___ (<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;attr_ IN OUT VARCHAR2 )<br>
+                    &nbsp;&nbsp;&nbsp;IS<br>
+                    &nbsp;&nbsp;&nbsp;BEGIN<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Client_SYS.Clear_Attr(attr_);<br>
+                    &nbsp;&nbsp;&nbsp;<font color="RED">END</font>;</font></p>
+                <p>Example of Correct Code:</p>
+                <p><font size="3">&nbsp;&nbsp;&nbsp;PROCEDURE Prepare_Insert___ (<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;attr_ IN OUT VARCHAR2 )<br><
+                    &nbsp;&nbsp;&nbsp;IS<br>
+                    &nbsp;&nbsp;&nbsp;BEGIN<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Client_SYS.Clear_Attr(attr_);<br>
+                    &nbsp;&nbsp;&nbsp;<font color="BLUE">END Prepare_Insert___</font>;</font></p>
+                <p>Actions Available:</p>
+                <ul>
+                    <li>Add the function/procedure name</li>
+                    <li>Add an IgnoreMissingEndName</li>
+                </ul>
+            </li>
+            <li>
+                <p>Editor provides an error if the method name is not correct at the end of the method.</p>
+                <p>Example of Incorrect Code:</p>
+                <p><font size="3">&nbsp;&nbsp;&nbsp;PROCEDURE Prepare_Insert___ (<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;attr_ IN OUT VARCHAR2 )<br><
+                    &nbsp;&nbsp;&nbsp;IS<br>
+                    &nbsp;&nbsp;&nbsp;BEGIN<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Client_SYS.Clear_Attr(attr_);<br>
+                    &nbsp;&nbsp;&nbsp;<font color="RED">END Prepare_Insert</font>;</font></p>
+                <p>Example of Correct Code:</p>
+                <p><font size="3">&nbsp;&nbsp;&nbsp;PROCEDURE Prepare_Insert___ (<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;attr_ IN OUT VARCHAR2 )<br><
+                    &nbsp;&nbsp;&nbsp;IS<br>
+                    &nbsp;&nbsp;&nbsp;BEGIN<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Client_SYS.Clear_Attr(attr_);<br>
+                    &nbsp;&nbsp;&nbsp;<font color="BLUE">END Prepare_Insert___</font>;</font></p>
+                <p>Actions Available:</p>
+                <ul>
+                    <li>Change the function/procedure end name</li>
+                    <li>Add an IgnoreWrongEndName</li>
+                </ul>
+            </li>
+            <li>
+                <p>Editor provides a warning if a function has OUT/IN OUT parameters.</p>
+                <p>Example of Incorrect Code:</p>
+                <p><font size="3">&nbsp;&nbsp;&nbsp;FUNCTION Check_Exist___ (<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;formula_id_ <font color ="RED">IN OUT</font> VARCHAR2,<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;formula_item_id_ IN NUMBER ) RETURN BOOLEAN</font></p>
+                <p>Example of Correct Code:</p>
+                <p><font size="3">&nbsp;&nbsp;&nbsp;FUNCTION Check_Exist___ (<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;formula_id_ <font color ="BLUE">IN</font> VARCHAR2,<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;formula_item_id_ IN NUMBER ) RETURN BOOLEAN</font></p>
+                <p>Actions Available:</p>
+                <ul>
+                    <li>Add an IgnoreWrongFunctionParam</li>
+                </ul>
+            </li>
+            <li>
+                <p>Editor provides a warning if the parameter order is incorrect. Parameter order should be OUT, IN OUT or IN, DEFAULT.</p>
+                <p>Example of Incorrect Code:</p>
+                <p><font size="3">&nbsp;&nbsp;&nbsp;PROCEDURE New_From_Source6___ (<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;order_no_                 IN OUT NOCOPY VARCHAR2,<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;start_date_               IN DATE,<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color ="RED">eng_chg_level_            IN VARCHAR2 DEFAULT NULL,</font><br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;owning_customer_no_       IN VARCHAR2 )</font></p>
+                <p>Example of Correct Code:</p>
+                <p><font size="3">&nbsp;&nbsp;&nbsp;PROCEDURE New_From_Source6___ (<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;order_no_                 IN OUT NOCOPY VARCHAR2,<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;start_date_               IN DATE,   <br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;owning_customer_no_       IN VARCHAR2,<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<font color ="BLUE">eng_chg_level_            IN VARCHAR2 DEFAULT NULL </font>)</font></p>
+                <p>Actions Available:</p>
+                <ul>
+                    <li>Add an IgnoreWrongParamOrder</li>
+                </ul>
+            </li>
+        </ul>
+        <dl>
+            <dt><a name="seealso">See Also</a></dt>
+            <dd><a href="plsql-creating.html">Creating PL/SQL Source Files</a></dd>
+            <dd><a href="plsql-deploying.html">Deploying PL/SQL Source Files</a></dd>
+            <dd><a href="plsql-testing.html">Testing PL/SQL Functions and Procedures</a></dd>
+        </dl>
+    </body>
+</html>

@@ -1,0 +1,46 @@
+replaced
+replaced
+replaced
+replaced
+replaced
+replaced
+replaced
+replaced
+replaced
+replaced
+
+DEFINE MODULE = FNDBAS
+DEFINE LU     = MessageArchiveUtil
+DEFINE PKG    = Fndcn_Message_Archive_Util_API
+
+replaced
+
+CREATE OR REPLACE PACKAGE &PKG IS
+
+replaced
+replaced
+
+replaced
+replaced
+
+replaced
+
+replaced
+replaced
+replaced
+replaced
+
+
+replaced
+replaced
+replaced
+replaced
+replaced
+replaced
+replaced
+replaced
+replaced
+replaced
+replaced
+replaced
+replaced

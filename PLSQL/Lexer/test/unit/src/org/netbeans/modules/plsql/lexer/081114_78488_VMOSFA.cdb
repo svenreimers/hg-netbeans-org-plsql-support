@@ -1,0 +1,22 @@
+------------------------------------------------------------------------------------
+--
+--  Module  : VMOSFA
+--
+--  File    : 081114_78488_VMOSFA.cdb
+--
+--  Date    Sign     History
+--  ------  ------   ---------------------------------------------------------------
+--  081114  maabse   Bug 78488: Comment is missing on the views VMO_BASE_SYNC_PACKAGE_VIEW and VMO_BASE_SYNC_TRIGGER_VIEW
+------------------------------------------------------------------------------------
+
+PROMPT Starting 081114_78488_VMOSFA.cdb
+
+----------------------------------------------------------------------------------------------------------------------
+
+COMMENT ON TABLE VMO_BASE_SYNC_PACKAGE_VIEW IS 'LU=vmobaseview^PROMPT=Internal base view in Sales and Marketing^MODULE=VMOSFA^'
+/
+COMMENT ON TABLE VMO_BASE_SYNC_TRIGGER_VIEW IS 'LU=vmobaseview^PROMPT=Internal base view in Sales and Marketing^MODULE=VMOSFA^'
+/
+
+PROMPT Finished with 081114_78488_VMOSFA.cdb
+

@@ -1,0 +1,709 @@
+-----------------------------------------------------------------------------
+--
+--  Logical unit: FormulaVariable
+--
+--  Purpose:
+--
+--  IFS/Design Template Version 2.5
+--
+--  Date    Sign    History
+--  ------  ------  ---------------------------------------------------------
+-----------------------------------------------------------------------------
+
+DEFINE MODULE        = APPSRV
+DEFINE LU            = FormulaVariable
+DEFINE TABLE         = FORMULA_VARIABLE_TAB
+DEFINE VIEW          = FORMULA_VARIABLE
+DEFINE PKG           = FORMULA_VARIABLE_API
+
+DEFINE OBJID         = rowid
+DEFINE OBJVERSION    = "ltrim(lpad(to_char(rowversion,'YYYYMMDDHH24MISS'),2000))"
+
+-----------------------------------------------------------------------------
+-------------------- VIEWS FOR SELECTS --------------------------------------
+-----------------------------------------------------------------------------
+
+PROMPT Creating &VIEW view
+
+CREATE OR REPLACE VIEW &VIEW AS
+SELECT variable_id                    variable_id,
+       description                    description,
+       unit_code                      unit_code,
+       &OBJID                         objid,
+       &OBJVERSION                    objversion
+FROM   formula_variable_tab
+WITH   read only;
+
+COMMENT ON TABLE &VIEW
+   IS 'LU=&LU^PROMPT=Formula Variable^MODULE=&MODULE^';
+
+COMMENT ON COLUMN &VIEW..variable_id
+   IS 'FLAGS=KMI-L^DATATYPE=STRING(30)/UPPERCASE^PROMPT=Variable Id^';
+COMMENT ON COLUMN &VIEW..description
+   IS 'FLAGS=AMIUL^DATATYPE=STRING(100)^PROMPT=Description^';
+COMMENT ON COLUMN &VIEW..unit_code
+   IS 'FLAGS=AMI--^DATATYPE=STRING(30)^PROMPT=Unit Code^REF=IsoUnit^';
+
+-----------------------------------------------------------------------------
+-------------------- PACKAGES FOR METHODS -----------------------------------
+-----------------------------------------------------------------------------
+
+PROMPT Creating &PKG implementation
+
+CREATE OR REPLACE PACKAGE BODY &PKG IS
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC IMPLEMENTATION METHOD DECLARATIONS ---------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS ----------------------------
+-----------------------------------------------------------------------------
+-- Lock_By_Id___
+--    Client-support to lock a specific instance of the logical unit.
+--
+-- Lock_By_Keys___
+--    Server support to lock a specific instance of the logical unit.
+--
+-- Get_Object_By_Id___
+--    Get LU-record from the database with a specified object identity.
+--
+-- Get_Object_By_Keys___
+--    Get LU-record from the database with specified key columns.
+--
+-- Check_Exist___
+--    Check if a specific LU-instance already exist in the database.
+--
+-- Get_Id_Version_By_Keys___
+--    Get the current OBJID and OBJVERSION for a specific LU-instance.
+-----------------------------------------------------------------------------
+
+FUNCTION Lock_By_Id___ (
+   objid_      IN VARCHAR2,
+   objversion_ IN VARCHAR2 ) RETURN &TABLE%ROWTYPE
+IS
+   row_changed EXCEPTION;
+   row_deleted EXCEPTION;
+   row_locked  EXCEPTION;
+   PRAGMA      EXCEPTION_INIT(row_locked, -0054);
+   rec_        &TABLE%ROWTYPE;
+   dummy_      NUMBER;
+   CURSOR lock_control IS
+      SELECT *
+      FROM  &TABLE
+      WHERE &OBJID = objid_
+      AND   &OBJVERSION = objversion_
+      FOR UPDATE NOWAIT;
+   CURSOR exist_control IS
+      SELECT 1
+      FROM  &TABLE
+      WHERE &OBJID = objid_;
+BEGIN
+   OPEN lock_control;
+   FETCH lock_control INTO rec_;
+   IF (lock_control%FOUND) THEN
+      CLOSE lock_control;
+      RETURN rec_;
+   END IF;
+   CLOSE lock_control;
+   OPEN exist_control;
+   FETCH exist_control INTO dummy_;
+   IF (exist_control%FOUND) THEN
+      CLOSE exist_control;
+      RAISE row_changed;
+   ELSE
+      CLOSE exist_control;
+      RAISE row_deleted;
+   END IF;
+EXCEPTION
+   WHEN row_locked THEN
+      Error_SYS.Record_Locked(lu_name_);
+   WHEN row_changed THEN
+      Error_SYS.Record_Modified(lu_name_);
+   WHEN row_deleted THEN
+      Error_SYS.Record_Removed(lu_name_);
+END Lock_By_Id___;
+
+PROCEDURE Park3___ (
+   rec_  IN     &TABLE%ROWTYPE,
+   attr_ IN OUT NOCOPY VARCHAR2 )
+IS
+   info_           VARCHAR2(2000) := NULL;
+   objid_          ROWID;
+   objversion_     VARCHAR2(2000);
+   pick_exist_err  EXCEPTION;
+
+   stmt_           VARCHAR2(2000);
+   dispo_exists_   NUMBER;
+BEGIN
+   IF Shop_Material_Pick_Util_API.Pick_List_Exist(rec_.order_no,
+                                                  rec_.release_no,
+                                                  rec_.sequence_no) THEN
+      RAISE pick_exist_err;
+   END IF;
+
+   IF Dictionary_SYS.Logical_Unit_Is_Installed('ShopOrdDispoLine') THEN
+      stmt_ := 'BEGIN :exists := Shop_Ord_Dispo_Line_API.Approved_Lines_Exist(:order_no, :release_no, :sequence_no); END;';
+      -- ifs_assert_safe pemase 20051221
+      EXECUTE IMMEDIATE stmt_
+       USING
+       OUT dispo_exists_,
+       IN rec_.order_no,
+       IN rec_.release_no,
+       IN rec_.sequence_no;
+
+      IF dispo_exists_ = 1 THEN
+         Error_Sys.Appl_General(lu_name_, 'APPROVEDDISPPARK: Shop Order has approved Disposition Lines. Can not Park.');
+      ELSIF dispo_exists_ = 2 THEN
+        Error_Sys.Appl_General(lu_name_, 'APPROVEDDISPPARK: Shop Order has a Pick List. Can not Park.');
+      END IF;
+   END IF;
+
+   FOR alrec_ IN Shop_Material_Alloc_API.Get_Shop_Material_Alloc(rec_.order_no, rec_.release_no, rec_.sequence_no) LOOP
+      Client_SYS.Clear_Attr(attr_);
+      objid_      := alrec_.objid;
+      objversion_ := alrec_.objversion;
+      Shop_Material_Alloc_API.Park__(info_, objid_, objversion_, attr_, 'DO' );
+   END LOOP;
+   FOR oprec IN get_op LOOP
+      IF Shop_Oper_Clocking_Util_API.Check_Active_Clk_Exist(rec_.order_no, rec_.release_no, rec_.sequence_no, oprec.operation_no)= 'FALSE' THEN
+         IF (rec_.rowstate = 'Released') THEN
+            -- Operation status must be Released when changing from Released to Parked.
+            Shop_Order_Operation_API.Modify_Status_Code( rec_.order_no, rec_.release_no,
+                                                         rec_.sequence_no, oprec.operation_no,
+                                                         Oper_Status_Code_API.Decode('40'));
+         ELSIF (rec_.rowstate = 'Planned') THEN
+            -- Operation status must be Planned when changing from Planned to Parked.
+            Shop_Order_Operation_API.Modify_Status_Code( rec_.order_no, rec_.release_no,
+                                                         rec_.sequence_no, oprec.operation_no,
+                                                         Oper_Status_Code_API.Decode('20'));
+         END IF;
+      ELSE
+         Error_SYS.Appl_General(lu_name_, 'CLKEXISTS1: Shop Order has a Pick List.');
+      END IF;
+   END LOOP;
+EXCEPTION
+   WHEN pick_exist_err THEN
+      Error_Sys.Appl_General(lu_name_, 'CLKEXISTS2: Shop Order has approved Disposition Lines.');
+END Park3___;
+
+
+FUNCTION Lock_By_Keys___ (
+   variable_id_ IN VARCHAR2 ) RETURN &TABLE%ROWTYPE
+IS
+   row_deleted EXCEPTION;
+   rec_        &TABLE%ROWTYPE;
+   CURSOR lock_control IS
+      SELECT *
+      FROM  &TABLE
+      WHERE variable_id = variable_id_
+      FOR UPDATE;
+BEGIN
+   OPEN lock_control;
+   FETCH lock_control INTO rec_;
+   IF (lock_control%FOUND) THEN
+      CLOSE lock_control;
+      RETURN rec_;
+   ELSE
+      CLOSE lock_control;
+      RAISE row_deleted;
+   END IF;
+EXCEPTION
+   WHEN row_deleted THEN
+      Error_SYS.Record_Removed(lu_name_);
+END Lock_By_Keys___;
+
+
+FUNCTION Get_Object_By_Id___ (
+   objid_ IN VARCHAR2 ) RETURN &TABLE%ROWTYPE
+IS
+   lu_rec_ &TABLE%ROWTYPE;
+   CURSOR getrec IS
+      SELECT *
+      FROM  &TABLE
+      WHERE &OBJID = objid_;
+BEGIN
+   OPEN getrec;
+   FETCH getrec INTO lu_rec_;
+   IF (getrec%NOTFOUND) THEN
+      CLOSE getrec;
+      Error_SYS.Record_Removed(lu_name_);
+   END IF;
+   CLOSE getrec;
+   RETURN(lu_rec_);
+END Get_Object_By_Id___;
+
+
+FUNCTION Get_Object_By_Keys___ (
+   variable_id_ IN VARCHAR2 ) RETURN &TABLE%ROWTYPE
+IS
+   lu_rec_ &TABLE%ROWTYPE;
+   CURSOR getrec IS
+      SELECT *
+      FROM  &TABLE
+      WHERE variable_id = variable_id_;
+BEGIN
+   OPEN getrec;
+   FETCH getrec INTO lu_rec_;
+   CLOSE getrec;
+   RETURN(lu_rec_);
+END Get_Object_By_Keys___;
+
+
+FUNCTION Check_Exist___ (
+   variable_id_ IN VARCHAR2 ) RETURN BOOLEAN
+IS
+   dummy_ NUMBER;
+   CURSOR exist_control IS
+      SELECT 1
+      FROM  &TABLE
+      WHERE variable_id = variable_id_;
+BEGIN
+   OPEN exist_control;
+   FETCH exist_control INTO dummy_;
+   IF (exist_control%FOUND) THEN
+      CLOSE exist_control;
+      RETURN(TRUE);
+   END IF;
+   CLOSE exist_control;
+   RETURN(FALSE);
+END Check_Exist___;
+
+
+PROCEDURE Get_Id_Version_By_Keys___ (
+   objid_      IN OUT VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   variable_id_ IN VARCHAR2 )
+IS
+   CURSOR get_version IS
+      SELECT &OBJID, &OBJVERSION
+      FROM  &TABLE
+      WHERE variable_id = variable_id_;
+BEGIN
+   OPEN get_version;
+   FETCH get_version INTO objid_, objversion_;
+   CLOSE get_version;
+END Get_Id_Version_By_Keys___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR INSERT -----------------
+-----------------------------------------------------------------------------
+-- Prepare_Insert___
+--    Set all default values for a new instance (ON-NEW-RECORD) of this
+--    logical unit by calling procedure Add_Attr.
+--
+-- Unpack_Check_Insert___
+--    Unpack the attribute list, check all attributes from the client
+--    and generate all default values before creation of the new object.
+--
+-- Insert___
+--    Insert a new LU-instance into the database and return the values
+--    for OBJID and OBJVERSION.
+-----------------------------------------------------------------------------
+
+PROCEDURE Prepare_Insert___ (
+   attr_ IN OUT VARCHAR2 )
+IS
+BEGIN
+   Client_SYS.Clear_Attr(attr_);
+END Prepare_Insert___;
+
+
+PROCEDURE Unpack_Check_Insert___ (
+   attr_   IN OUT VARCHAR2,
+   newrec_ IN OUT &TABLE%ROWTYPE )
+IS
+   ptr_   NUMBER;
+   name_  VARCHAR2(30);
+   value_ VARCHAR2(2000);
+BEGIN
+   ptr_ := NULL;
+   WHILE (Client_SYS.Get_Next_From_Attr(attr_, ptr_, name_, value_)) LOOP
+      IF (name_ = 'VARIABLE_ID') THEN
+         newrec_.variable_id := value_;
+      ELSIF (name_ = 'DESCRIPTION') THEN
+         newrec_.description := value_;
+      ELSIF (name_ = 'UNIT_CODE') THEN
+         newrec_.unit_code := value_;
+         Iso_Unit_API.Exist(newrec_.unit_code);
+      ELSE
+         Error_SYS.Item_Not_Exist(lu_name_, name_, value_);
+      END IF;
+   END LOOP;
+   Client_SYS.Clear_Attr(attr_);
+   Error_SYS.Check_Not_Null(lu_name_, 'VARIABLE_ID', newrec_.variable_id);
+   Error_SYS.Check_Not_Null(lu_name_, 'DESCRIPTION', newrec_.description);
+   Error_SYS.Check_Not_Null(lu_name_, 'UNIT_CODE', newrec_.unit_code);
+EXCEPTION
+   WHEN value_error THEN
+      Error_SYS.Item_Format(lu_name_, name_, value_);
+END Unpack_Check_Insert___;
+
+
+PROCEDURE Insert___ (
+   objid_      OUT    VARCHAR2,
+   objversion_ OUT    VARCHAR2,
+   newrec_     IN OUT &TABLE%ROWTYPE,
+   attr_       IN OUT VARCHAR2 )
+IS
+BEGIN
+   newrec_.rowversion := sysdate;
+   objversion_ := to_char(newrec_.rowversion,'YYYYMMDDHH24MISS');
+   INSERT
+      INTO formula_variable_tab (
+         variable_id,
+         description,
+         unit_code,
+         rowversion)
+      VALUES (
+         newrec_.variable_id,
+         newrec_.description,
+         newrec_.unit_code,
+         newrec_.rowversion)
+      RETURNING &OBJID INTO objid_;
+EXCEPTION
+   WHEN dup_val_on_index THEN
+      Error_SYS.Record_Exist(lu_name_);
+END Insert___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR UPDATE -----------------
+-----------------------------------------------------------------------------
+-- Unpack_Check_Update___
+--    Unpack the attribute list, check all attributes from the client
+--    and generate all default values before modifying the object.
+--
+-- Update___
+--    Update an existing LU-instance in the database and return the
+--    the new OBJVERSION.
+-----------------------------------------------------------------------------
+
+PROCEDURE Unpack_Check_Update___ (
+   attr_   IN OUT VARCHAR2,
+   newrec_ IN OUT &TABLE%ROWTYPE,
+   objid_  IN     VARCHAR2 )
+IS
+   ptr_   NUMBER;
+   name_  VARCHAR2(30);
+   value_ VARCHAR2(2000);
+BEGIN
+   ptr_ := NULL;
+   WHILE (Client_SYS.Get_Next_From_Attr(attr_, ptr_, name_, value_)) LOOP
+      IF (name_ = 'VARIABLE_ID') THEN
+         Error_SYS.Item_Update(lu_name_, 'VARIABLE_ID');
+      ELSIF (name_ = 'DESCRIPTION') THEN
+         newrec_.description := value_;
+      ELSIF (name_ = 'UNIT_CODE') THEN
+         Error_SYS.Item_Update(lu_name_, 'UNIT_CODE');
+      ELSE
+         Error_SYS.Item_Not_Exist(lu_name_, name_, value_);
+      END IF;
+   END LOOP;
+   Client_SYS.Clear_Attr(attr_);
+   Error_SYS.Check_Not_Null(lu_name_, 'DESCRIPTION', newrec_.description);
+EXCEPTION
+   WHEN value_error THEN
+      Error_SYS.Item_Format(lu_name_, name_, value_);
+END Unpack_Check_Update___;
+
+
+PROCEDURE Update___ (
+   objid_      IN     VARCHAR2,
+   oldrec_     IN     &TABLE%ROWTYPE,
+   newrec_     IN OUT &TABLE%ROWTYPE,
+   attr_       IN OUT VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   by_keys_    IN     BOOLEAN DEFAULT FALSE )
+IS
+BEGIN
+   newrec_.rowversion := sysdate;
+   objversion_ := to_char(newrec_.rowversion,'YYYYMMDDHH24MISS');
+   IF by_keys_ THEN
+      UPDATE formula_variable_tab
+         SET variable_id = newrec_.variable_id,
+             description = newrec_.description,
+             unit_code = newrec_.unit_code,
+             rowversion = newrec_.rowversion
+         WHERE variable_id = newrec_.variable_id;
+   ELSE
+      UPDATE formula_variable_tab
+         SET variable_id = newrec_.variable_id,
+             description = newrec_.description,
+             unit_code = newrec_.unit_code,
+             rowversion = newrec_.rowversion
+         WHERE &OBJID = objid_;
+   END IF;
+EXCEPTION
+   WHEN dup_val_on_index THEN
+      Error_SYS.Record_Exist(lu_name_);
+END Update___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR DELETE -----------------
+-----------------------------------------------------------------------------
+-- Check_Delete___
+--    Checks whether a specific LU-record may be removed or not.
+--    The procedure should check business rules like attribute values
+--    as well as database constraints (defined or not).
+--
+-- Delete___
+--    Deletion of the specific LU-object from the database.
+-----------------------------------------------------------------------------
+
+PROCEDURE Check_Delete___ (
+   remrec_ IN &TABLE%ROWTYPE )
+IS
+   key_ VARCHAR2(2000);
+BEGIN
+   key_ := remrec_.variable_id || '^';
+   Reference_SYS.Check_Restricted_Delete(lu_name_, key_);
+END Check_Delete___;
+
+
+PROCEDURE Delete___ (
+   objid_  IN VARCHAR2,
+   remrec_ IN &TABLE%ROWTYPE )
+IS
+   key_ VARCHAR2(2000);
+BEGIN
+   key_ := remrec_.variable_id || '^';
+   Reference_SYS.Do_Cascade_Delete(lu_name_, key_);
+   DELETE
+      FROM  &TABLE
+      WHERE &OBJID = objid_;
+END Delete___;
+
+-----------------------------------------------------------------------------
+-------------------- PRIVATE BASE METHODS -----------------------------------
+-----------------------------------------------------------------------------
+-- Lock__
+--    Client-support to lock a specific instance of the logical unit.
+--
+-- New__
+--    Client-support interface to create LU instances.
+--       action_ = 'PREPARE'
+--          Default values and handle of information to client.
+--          The default values are set in procedure Prepare_Insert___.
+--       action_ = 'CHECK'
+--          Check all attributes before creating new object and handle of
+--          information to client. The attribute list is unpacked, checked
+--          and prepared (defaults) in procedure Unpack_Check_Insert___.
+--       action_ = 'DO'
+--          Creation of new instances of the logical unit and handle of
+--          information to client. The attribute list is unpacked, checked
+--          and prepared (defaults) in procedure Unpack_Check_Insert___
+--          before calling procedure Insert___.
+--
+-- Modify__
+--    Client-support interface to modify attributes for LU instances.
+--       action_ = 'CHECK'
+--          Check all attributes before modifying an existing object and
+--          handle of information to client. The attribute list is unpacked,
+--          checked and prepared(defaults) in procedure Unpack_Check_Update___.
+--       action_ = 'DO'
+--          Modification of an existing instance of the logical unit. The
+--          procedure unpacks the attributes, checks all values before
+--          procedure Update___ is called.
+--
+-- Remove__
+--    Client-support interface to remove LU instances.
+--       action_ = 'CHECK'
+--          Check whether a specific LU-instance may be removed or not.
+--          The procedure fetches the complete record by calling procedure
+--          Get_Object_By_Id___. Then the check is made by calling procedure
+--          Check_Delete___.
+--       action_ = 'DO'
+--          Remove an existing instance of the logical unit. The procedure
+--          fetches the complete LU-record, checks for a delete and then
+--          deletes the record by calling procedure Delete___.
+-----------------------------------------------------------------------------
+
+PROCEDURE Lock__ (
+   info_       OUT VARCHAR2,
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2 )
+IS
+   dummy_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Lock__');
+   dummy_ := Lock_By_Id___(objid_, objversion_);
+   info_ := Client_SYS.Get_All_Info;
+END Lock__;
+
+
+PROCEDURE New__ (
+   info_       OUT    VARCHAR2,
+   objid_      OUT    VARCHAR2,
+   objversion_ OUT    VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   newrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'New__');
+   IF (action_ = 'PREPARE') THEN
+      Prepare_Insert___(attr_);
+   ELSIF (action_ = 'CHECK') THEN
+      Unpack_Check_Insert___(attr_, newrec_);
+   ELSIF (action_ = 'DO') THEN
+      Unpack_Check_Insert___(attr_, newrec_);
+      Insert___(objid_, objversion_, newrec_, attr_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END New__;
+
+
+PROCEDURE Modify__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   oldrec_ &TABLE%ROWTYPE;
+   newrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Modify__');
+   IF (action_ = 'CHECK') THEN
+      newrec_ := Get_Object_By_Id___(objid_);
+      Unpack_Check_Update___(attr_, newrec_, objid_);
+   ELSIF (action_ = 'DO') THEN
+      oldrec_ := Lock_By_Id___(objid_, objversion_);
+      newrec_ := oldrec_;
+      Unpack_Check_Update___(attr_, newrec_, objid_);
+      Update___(objid_, oldrec_, newrec_, attr_, objversion_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Modify__;
+
+
+PROCEDURE Remove__ (
+   info_       OUT VARCHAR2,
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2,
+   action_     IN  VARCHAR2 )
+IS
+   remrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Remove__');
+   IF (action_ = 'CHECK') THEN
+      remrec_ := Get_Object_By_Id___(objid_);
+      Check_Delete___(remrec_);
+   ELSIF (action_ = 'DO') THEN
+      remrec_ := Lock_By_Id___(objid_, objversion_);
+      Check_Delete___(remrec_);
+      Delete___(objid_, remrec_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Remove__;
+
+-----------------------------------------------------------------------------
+-------------------- PUBLIC BASE METHODS ------------------------------------
+-----------------------------------------------------------------------------
+-- Exist
+--   Checks if given pointer (e.g. primary key) to an instance of this
+--   logical unit exists. If not an exception will be raised.
+-----------------------------------------------------------------------------
+
+PROCEDURE Exist (
+   variable_id_ IN VARCHAR2 )
+IS
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Exist', TRUE);
+   IF (NOT Check_Exist___(variable_id_)) THEN
+      Error_SYS.Record_Not_Exist(lu_name_);
+   END IF;
+END Exist;
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC IMPLEMENTATION METHODS ---------------------
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PRIVATE METHODS ----------------------------
+-----------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PROTECTED METHODS --------------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PUBLIC METHODS -----------------------------
+-----------------------------------------------------------------------------
+
+FUNCTION Get_Description (
+   variable_id_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+   temp_ &TABLE..description%TYPE;
+   CURSOR get_attr IS
+      SELECT description
+      FROM &TABLE
+      WHERE variable_id = variable_id_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Description;
+
+
+FUNCTION Get_Unit_Code (
+   variable_id_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+   temp_ &TABLE..unit_code%TYPE;
+   CURSOR get_attr IS
+      SELECT unit_code
+      FROM &TABLE
+      WHERE variable_id = variable_id_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Unit_Code;
+
+
+FUNCTION Get (
+   variable_id_ IN VARCHAR2 ) RETURN Public_Rec
+IS
+   temp_ Public_Rec;
+   CURSOR get_attr IS
+      SELECT description, unit_code
+      FROM &TABLE
+      WHERE variable_id = variable_id_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get;
+
+-----------------------------------------------------------------------------
+-------------------- FOUNDATION1 METHODS ------------------------------------
+-----------------------------------------------------------------------------
+-- Init
+--   Dummy procedure that can be called at database startup to ensure that
+--   this package is loaded into memory for performance reasons only.
+-----------------------------------------------------------------------------
+
+PROCEDURE Init
+IS
+BEGIN
+   NULL;
+END Init;
+
+
+END &PKG;
+/
+SHOW ERROR
+
+
+UNDEFINE MODULE
+UNDEFINE LU
+UNDEFINE TABLE
+UNDEFINE VIEW
+UNDEFINE PKG
+UNDEFINE OBJID
+UNDEFINE OBJVERSION
+-----------------------------------------------------------------------------

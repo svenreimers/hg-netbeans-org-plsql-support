@@ -1,0 +1,129 @@
+-----------------------------------------------------------------------------
+--
+--  Logical unit: Formula
+--
+--  Purpose:
+--
+--  IFS/Design Template Version 2.5
+--
+--  Date    Sign    History
+--  ------  ------  ---------------------------------------------------------
+-----------------------------------------------------------------------------
+
+DEFINE MODULE        = APPSRV
+DEFINE LU            = Formula
+DEFINE TABLE         = FORMULA_TAB
+DEFINE VIEW          = FORMULA
+DEFINE PKG           = FORMULA_API
+
+DEFINE OBJID         = rowid
+DEFINE OBJVERSION    = "ltrim(lpad(to_char(rowversion,'YYYYMMDDHH24MISS'),2000))"
+DEFINE OBJSTATE      = rowstate
+DEFINE OBJEVENTS     = &PKG..Finite_State_Events__(&OBJSTATE)
+DEFINE STATE         = &PKG..Finite_State_Decode__(&OBJSTATE)
+
+PROMPT Creating &VIEW view
+
+CREATE OR REPLACE VIEW &VIEW AS
+SELECT formula_id                     formula_id,
+       description                    description,
+       formula_uom                    formula_uom,
+       uom_description                uom_description,
+       &OBJID                         objid,
+       &OBJVERSION                    objversion,
+       &OBJSTATE                      objstate,
+       &OBJEVENTS                     objevents,
+       &STATE                         state
+FROM   formula_tab
+WITH   read only;
+
+COMMENT ON TABLE &VIEW
+   IS 'LU=&LU^PROMPT=Formula^MODULE=&MODULE^';
+
+COMMENT ON COLUMN &VIEW..formula_id
+   IS 'FLAGS=KMI-L^DATATYPE=STRING(30)/UPPERCASE^PROMPT=Formula Id^';
+COMMENT ON COLUMN &VIEW..description
+   IS 'FLAGS=AMIUL^DATATYPE=STRING(100)^PROMPT=Description^';
+COMMENT ON COLUMN &VIEW..formula_uom
+   IS 'FLAGS=AMIUL^DATATYPE=STRING(30)^PROMPT=Formula Uom^REF=IsoUnit/NOCHECK^';
+COMMENT ON COLUMN &VIEW..uom_description
+   IS 'FLAGS=AMIUL^DATATYPE=STRING(200)^PROMPT=Uom Description^';
+
+PROMPT Creating &PKG implementation
+
+CREATE OR REPLACE PACKAGE BODY &PKG IS
+
+state_separator_   CONSTANT VARCHAR2(1)   := Client_SYS.field_separator_;
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC IMPLEMENTATION METHOD DECLARATIONS ---------
+-----------------------------------------------------------------------------
+
+PROCEDURE Check_Formula_State___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 );
+
+FUNCTION Get_Db_Values___ RETURN VARCHAR2 DETERMINISTIC;
+
+PROCEDURE Exist (
+   formula_id_ IN VARCHAR2 )
+IS
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Exist', TRUE);
+   IF (NOT Check_Exist___(formula_id_)) THEN
+      Error_SYS.Record_Not_Exist(lu_name_);
+   END IF;
+END Exist;
+
+/**Example block comment inside a package spec**/
+
+FUNCTION Get (
+   formula_id_ IN VARCHAR2 ) RETURN Public_Rec
+IS
+   temp_ Public_Rec;
+   CURSOR get_attr IS
+      SELECT description, formula_uom, uom_description
+      FROM &TABLE
+      WHERE formula_id = formula_id_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get;
+
+-----------------------------------------------------------------------------
+-------------------- FOUNDATION1 METHODS ------------------------------------
+-----------------------------------------------------------------------------
+-- Init
+--   Dummy procedure that can be called at database startup to ensure that
+--   this package is loaded into memory for performance reasons only.
+-----------------------------------------------------------------------------
+
+PROCEDURE Init
+IS
+BEGIN
+   Domain_SYS.Load_State(lu_name_, Get_Client_Values___, Get_Db_Values___);
+END Init;
+
+END &PKG;
+/
+SHOW ERROR
+
+
+BEGIN
+   FORMULA_API.Language_Refreshed;
+END;
+/
+
+UNDEFINE MODULE
+UNDEFINE LU
+UNDEFINE TABLE
+UNDEFINE VIEW
+UNDEFINE PKG
+UNDEFINE OBJID
+UNDEFINE OBJVERSION
+UNDEFINE OBJSTATE
+UNDEFINE OBJEVENTS
+UNDEFINE STATE
+-----------------------------------------------------------------------------

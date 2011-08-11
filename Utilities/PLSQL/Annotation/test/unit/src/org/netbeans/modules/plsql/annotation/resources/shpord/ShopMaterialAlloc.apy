@@ -1,0 +1,2685 @@
+-----------------------------------------------------------------------------
+--
+--  Logical unit: ShopMaterialAlloc
+--
+--  Purpose:
+--
+--  IFS/Design Template Version 2.5
+--
+--  Date    Sign    History
+--  ------  ------  ---------------------------------------------------------
+-----------------------------------------------------------------------------
+
+DEFINE MODULE        = SHPORD
+DEFINE LU            = ShopMaterialAlloc
+DEFINE TABLE         = SHOP_MATERIAL_ALLOC_TAB
+DEFINE VIEW          = SHOP_MATERIAL_ALLOC
+DEFINE PKG           = SHOP_MATERIAL_ALLOC_API
+
+DEFINE OBJID         = rowid
+DEFINE OBJVERSION    = "ltrim(lpad(to_char(rowversion,'YYYYMMDDHH24MISS'),2000))"
+DEFINE OBJSTATE      = rowstate
+DEFINE OBJEVENTS     = &PKG..Finite_State_Events__(&OBJSTATE)
+DEFINE STATE         = &PKG..Finite_State_Decode__(&OBJSTATE)
+
+-----------------------------------------------------------------------------
+-------------------- VIEWS FOR SELECTS --------------------------------------
+-----------------------------------------------------------------------------
+
+PROMPT Creating &VIEW view
+
+CREATE OR REPLACE VIEW &VIEW AS
+SELECT order_no                       order_no,
+       release_no                     release_no,
+       sequence_no                    sequence_no,
+       line_item_no                   line_item_no,
+       part_no                        part_no,
+       contract                       contract,
+       issue_to_loc                   issue_to_loc,
+       note_id                        note_id,
+       operation_no                   operation_no,
+       structure_line_no              structure_line_no,
+       create_date                    create_date,
+       date_required                  date_required,
+       last_activity_date             last_activity_date,
+       last_issue_date                last_issue_date,
+       leadtime_offset                leadtime_offset,
+       priority_no                    priority_no,
+       qty_assigned                   qty_assigned,
+       qty_issued                     qty_issued,
+       qty_on_order                   qty_on_order,
+       qty_per_assembly               qty_per_assembly,
+       shrinkage_factor               shrinkage_factor,
+       component_scrap                component_scrap,
+       qty_required                   qty_required,
+       Order_Supply_Type_API.Decode(supply_code) supply_code,
+       supply_code                    supply_code_db,
+       note_text                      note_text,
+       Shop_Ord_Code_API.Decode(order_code) order_code,
+       order_code                     order_code_db,
+       generate_demand_qty            generate_demand_qty,
+       qty_short                      qty_short,
+       Consumption_Item_API.Decode(consumption_item) consumption_item,
+       consumption_item               consumption_item_db,
+       print_unit                     print_unit,
+       activity_seq                   activity_seq,
+       draw_pos_no                    draw_pos_no,
+       configuration_id               configuration_id,
+       condition_code                 condition_code,
+       Part_Ownership_API.Decode(part_ownership) part_ownership,
+       part_ownership                 part_ownership_db,
+       owning_customer_no             owning_customer_no,
+       owning_vendor_no               owning_vendor_no,
+       Vim_Structure_Source_API.Decode(vim_structure_source) vim_structure_source,
+       vim_structure_source           vim_structure_source_db,
+       partial_part_required          partial_part_required,
+       project_id                     project_id,
+       catch_qty_issued               catch_qty_issued,
+       replicate_changes              replicate_changes,
+       replaced_qty                   replaced_qty,
+       replaces_qpa_factor            replaces_qpa_factor,
+       replaces_line_item_no          replaces_line_item_no,
+       qty_scrapped_component         qty_scrapped_component,
+       position_part_no               position_part_no,
+       &OBJID                         objid,
+       &OBJVERSION                    objversion,
+       &OBJSTATE                      objstate,
+       &OBJEVENTS                     objevents,
+       &STATE                         state
+FROM   shop_material_alloc_tab
+WITH   read only;
+
+COMMENT ON TABLE &VIEW
+   IS 'LU=&LU^PROMPT=Shop Material Alloc^MODULE=&MODULE^';
+
+COMMENT ON COLUMN &VIEW..order_no
+   IS 'FLAGS=PMI-L^DATATYPE=STRING(12)/UPPERCASE^PROMPT=Order No^';
+COMMENT ON COLUMN &VIEW..release_no
+   IS 'FLAGS=PMI-L^DATATYPE=STRING(4)/UPPERCASE^PROMPT=Release No^';
+COMMENT ON COLUMN &VIEW..sequence_no
+   IS 'FLAGS=PMI-L^DATATYPE=STRING(4)/UPPERCASE^PROMPT=Sequence No^REF=ShopOrd(order_no,release_no)/CASCADE^';
+COMMENT ON COLUMN &VIEW..line_item_no
+   IS 'FLAGS=KMI-L^DATATYPE=NUMBER^PROMPT=Line Item No^';
+COMMENT ON COLUMN &VIEW..part_no
+   IS 'FLAGS=AMIU-^DATATYPE=STRING(25)/UPPERCASE^PROMPT=Part No^REF=InventoryPart(contract)^';
+COMMENT ON COLUMN &VIEW..contract
+   IS 'FLAGS=AMI-L^DATATYPE=STRING(5)/UPPERCASE^PROMPT=Site^REF=UserAllowedSite/NOCHECK^';
+COMMENT ON COLUMN &VIEW..issue_to_loc
+   IS 'FLAGS=A-IUL^DATATYPE=STRING(35)/UPPERCASE^PROMPT=Issue To Loc^REF=InventoryLocation(contract)^';
+COMMENT ON COLUMN &VIEW..note_id
+   IS 'FLAGS=AMIU-^DATATYPE=NUMBER(10)^PROMPT=Note Id^';
+COMMENT ON COLUMN &VIEW..operation_no
+   IS 'FLAGS=A-IUL^DATATYPE=NUMBER(3)^PROMPT=Operation No^';
+COMMENT ON COLUMN &VIEW..structure_line_no
+   IS 'FLAGS=A-IU-^DATATYPE=NUMBER^PROMPT=Ps Line No^';
+COMMENT ON COLUMN &VIEW..create_date
+   IS 'FLAGS=AMI--^DATATYPE=DATE/DATE^PROMPT=Create Date^';
+COMMENT ON COLUMN &VIEW..date_required
+   IS 'FLAGS=AMIU-^DATATYPE=DATE/DATE^PROMPT=Date Required^';
+COMMENT ON COLUMN &VIEW..last_activity_date
+   IS 'FLAGS=A-IU-^DATATYPE=DATE/DATE^PROMPT=Last Activity Date^';
+COMMENT ON COLUMN &VIEW..last_issue_date
+   IS 'FLAGS=A-IU-^DATATYPE=DATE/DATE^PROMPT=Last Issue Date^';
+COMMENT ON COLUMN &VIEW..leadtime_offset
+   IS 'FLAGS=AMIU-^DATATYPE=NUMBER(3)^PROMPT=Leadtime Offset^';
+COMMENT ON COLUMN &VIEW..priority_no
+   IS 'FLAGS=AMIU-^DATATYPE=NUMBER(5)^PROMPT=Priority No^';
+COMMENT ON COLUMN &VIEW..qty_assigned
+   IS 'FLAGS=AMIU-^DATATYPE=NUMBER(12)^PROMPT=Qty Assigned^';
+COMMENT ON COLUMN &VIEW..qty_issued
+   IS 'FLAGS=AMIU-^DATATYPE=NUMBER(12)^PROMPT=Qty Issued^';
+COMMENT ON COLUMN &VIEW..qty_on_order
+   IS 'FLAGS=A-IU-^DATATYPE=NUMBER^PROMPT=Qty On Order^';
+COMMENT ON COLUMN &VIEW..qty_per_assembly
+   IS 'FLAGS=AMIU-^DATATYPE=NUMBER^PROMPT=Qty Per Assembly^';
+COMMENT ON COLUMN &VIEW..shrinkage_factor
+   IS 'FLAGS=AMIU-^DATATYPE=NUMBER^PROMPT=Shrinkage Factor^';
+COMMENT ON COLUMN &VIEW..component_scrap
+   IS 'FLAGS=AMIU-^DATATYPE=NUMBER^PROMPT=Component Scrap^';
+COMMENT ON COLUMN &VIEW..qty_required
+   IS 'FLAGS=AMIU-^DATATYPE=NUMBER(12)^PROMPT=Qty Required^';
+COMMENT ON COLUMN &VIEW..supply_code
+   IS 'FLAGS=AMIUL^DATATYPE=STRING(200)^PROMPT=Supply Code^REF=OrderSupplyType^';
+COMMENT ON COLUMN &VIEW..supply_code_db
+   IS 'FLAGS=A----^DATATYPE=STRING(20)^PROMPT=Supply Code^';
+COMMENT ON COLUMN &VIEW..note_text
+   IS 'FLAGS=A-IU-^DATATYPE=STRING(2000)^PROMPT=Note Text^';
+COMMENT ON COLUMN &VIEW..order_code
+   IS 'FLAGS=AMI-L^DATATYPE=STRING(200)^PROMPT=Order Code^REF=ShopOrdCode^';
+COMMENT ON COLUMN &VIEW..order_code_db
+   IS 'FLAGS=A----^DATATYPE=STRING(20)^PROMPT=Order Code^';
+COMMENT ON COLUMN &VIEW..generate_demand_qty
+   IS 'FLAGS=A-IU-^DATATYPE=NUMBER(12)^PROMPT=Generate Demand Qty^';
+COMMENT ON COLUMN &VIEW..qty_short
+   IS 'FLAGS=AMIU-^DATATYPE=NUMBER(12)^PROMPT=Qty Short^';
+COMMENT ON COLUMN &VIEW..consumption_item
+   IS 'FLAGS=AMIUL^DATATYPE=STRING(200)^PROMPT=Consumption Item^REF=ConsumptionItem^';
+COMMENT ON COLUMN &VIEW..consumption_item_db
+   IS 'FLAGS=A----^DATATYPE=STRING(20)^PROMPT=Consumption Item^';
+COMMENT ON COLUMN &VIEW..print_unit
+   IS 'FLAGS=AMI--^DATATYPE=STRING(30)^PROMPT=Print Unit^REF=IsoUnit^';
+COMMENT ON COLUMN &VIEW..activity_seq
+   IS 'FLAGS=A-IU-^DATATYPE=NUMBER^PROMPT=Activity Seq^REF=Activity^';
+COMMENT ON COLUMN &VIEW..draw_pos_no
+   IS 'FLAGS=A-IU-^DATATYPE=STRING(10)/UPPERCASE^PROMPT=Drawing Position No^';
+COMMENT ON COLUMN &VIEW..configuration_id
+   IS 'FLAGS=AMIU-^DATATYPE=STRING(50)^PROMPT=Configuration Id^REF=ConfigurationSpec(part_no)^';
+COMMENT ON COLUMN &VIEW..condition_code
+   IS 'FLAGS=A-IUL^DATATYPE=STRING(10)/UPPERCASE^PROMPT=Condition Code^REF=ConditionCode^';
+COMMENT ON COLUMN &VIEW..part_ownership
+   IS 'FLAGS=AMIU-^DATATYPE=STRING(200)^PROMPT=Part Ownership^REF=PartOwnership^';
+COMMENT ON COLUMN &VIEW..part_ownership_db
+   IS 'FLAGS=A----^DATATYPE=STRING(20)^PROMPT=Part Ownership^';
+COMMENT ON COLUMN &VIEW..owning_customer_no
+   IS 'FLAGS=A-IU-^DATATYPE=STRING(20)/UPPERCASE^PROMPT=Owning Customer No^REF=CustOrdCustomer^';
+COMMENT ON COLUMN &VIEW..owning_vendor_no
+   IS 'FLAGS=A-IU-^DATATYPE=STRING(20)/UPPERCASE^PROMPT=Owning Vendor No^REF=Supplier^';
+COMMENT ON COLUMN &VIEW..vim_structure_source
+   IS 'FLAGS=A-IU-^DATATYPE=STRING(200)^PROMPT=Structure Source^REF=VimStructureSource^';
+COMMENT ON COLUMN &VIEW..vim_structure_source_db
+   IS 'FLAGS=A----^DATATYPE=STRING(20)^PROMPT=Structure Source^';
+COMMENT ON COLUMN &VIEW..partial_part_required
+   IS 'FLAGS=AMI--^DATATYPE=STRING(1)^PROMPT=Partial Part Required^';
+COMMENT ON COLUMN &VIEW..project_id
+   IS 'FLAGS=A-IU-^DATATYPE=STRING(10)/UPPERCASE^PROMPT=Project id^REF=Project^';
+COMMENT ON COLUMN &VIEW..catch_qty_issued
+   IS 'FLAGS=A-IU-^DATATYPE=NUMBER^PROMPT=Catch Qty Issued^';
+COMMENT ON COLUMN &VIEW..replicate_changes
+   IS 'FLAGS=A--U-^DATATYPE=STRING(5)^PROMPT=Replicate Changes^';
+COMMENT ON COLUMN &VIEW..replaced_qty
+   IS 'FLAGS=A-IU-^DATATYPE=NUMBER^PROMPT=Replaced Qty^';
+COMMENT ON COLUMN &VIEW..replaces_qpa_factor
+   IS 'FLAGS=A-IU-^DATATYPE=NUMBER^PROMPT=Replaces Qty Per Assembly Factor^';
+COMMENT ON COLUMN &VIEW..replaces_line_item_no
+   IS 'FLAGS=A-IU-^DATATYPE=NUMBER^PROMPT=Replaced Line Item No^';
+COMMENT ON COLUMN &VIEW..qty_scrapped_component
+   IS 'FLAGS=AMIU-^DATATYPE=NUMBER^PROMPT=Qty Scrapped Component^';
+COMMENT ON COLUMN &VIEW..position_part_no
+   IS 'FLAGS=A-IU-^DATATYPE=STRING(25)/UPPERCASE^PROMPT=Position Part No^REF=PositionPartReference^';
+
+-----------------------------------------------------------------------------
+-------------------- PACKAGES FOR METHODS -----------------------------------
+-----------------------------------------------------------------------------
+
+PROMPT Creating &PKG implementation
+
+CREATE OR REPLACE PACKAGE BODY &PKG IS
+
+-----------------------------------------------------------------------------
+-------------------- FINITE STATE DECLARATIONS ------------------------------
+-----------------------------------------------------------------------------
+
+state_separator_   CONSTANT VARCHAR2(1)   := Client_SYS.field_separator_;
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC IMPLEMENTATION METHOD DECLARATIONS ---------
+-----------------------------------------------------------------------------
+
+PROCEDURE Do_Close___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 );
+
+PROCEDURE Do_Issue___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 );
+
+PROCEDURE Do_Open___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 );
+
+PROCEDURE Do_Park___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 );
+
+PROCEDURE Do_Plan___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 );
+
+PROCEDURE Do_Release___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 );
+
+PROCEDURE Do_Reserve___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 );
+
+PROCEDURE Do_Unissue___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 );
+
+PROCEDURE Do_Unreserve___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 );
+
+FUNCTION Create_Released___ (
+   rec_  IN     &TABLE%ROWTYPE ) RETURN BOOLEAN;
+
+FUNCTION Is_Reserved___ (
+   rec_  IN     &TABLE%ROWTYPE ) RETURN BOOLEAN;
+
+FUNCTION Order_Has_General_Oh___ (
+   rec_  IN     &TABLE%ROWTYPE ) RETURN BOOLEAN;
+
+FUNCTION Remaining_Issued___ (
+   rec_  IN     &TABLE%ROWTYPE ) RETURN BOOLEAN;
+
+FUNCTION Remaining_Reserved___ (
+   rec_  IN     &TABLE%ROWTYPE ) RETURN BOOLEAN;
+
+FUNCTION Use_Part___ (
+   rec_  IN     &TABLE%ROWTYPE ) RETURN BOOLEAN;
+
+FUNCTION Get_Db_Values___ RETURN VARCHAR2 DETERMINISTIC;
+
+FUNCTION Get_Client_Values___ RETURN VARCHAR2 DETERMINISTIC;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS ----------------------------
+-----------------------------------------------------------------------------
+-- Lock_By_Id___
+--    Client-support to lock a specific instance of the logical unit.
+--
+-- Lock_By_Keys___
+--    Server support to lock a specific instance of the logical unit.
+--
+-- Get_Object_By_Id___
+--    Get LU-record from the database with a specified object identity.
+--
+-- Get_Object_By_Keys___
+--    Get LU-record from the database with specified key columns.
+--
+-- Check_Exist___
+--    Check if a specific LU-instance already exist in the database.
+--
+-- Get_Id_Version_By_Keys___
+--    Get the current OBJID and OBJVERSION for a specific LU-instance.
+-----------------------------------------------------------------------------
+
+FUNCTION Lock_By_Id___ (
+   objid_      IN VARCHAR2,
+   objversion_ IN VARCHAR2 ) RETURN &TABLE%ROWTYPE
+IS
+   row_changed EXCEPTION;
+   row_deleted EXCEPTION;
+   row_locked  EXCEPTION;
+   PRAGMA      EXCEPTION_INIT(row_locked, -0054);
+   rec_        &TABLE%ROWTYPE;
+   dummy_      NUMBER;
+   CURSOR lock_control IS
+      SELECT *
+      FROM  &TABLE
+      WHERE &OBJID = objid_
+      AND   &OBJVERSION = objversion_
+      FOR UPDATE NOWAIT;
+   CURSOR exist_control IS
+      SELECT 1
+      FROM  &TABLE
+      WHERE &OBJID = objid_;
+BEGIN
+   OPEN lock_control;
+   FETCH lock_control INTO rec_;
+   IF (lock_control%FOUND) THEN
+      CLOSE lock_control;
+      RETURN rec_;
+   END IF;
+   CLOSE lock_control;
+   OPEN exist_control;
+   FETCH exist_control INTO dummy_;
+   IF (exist_control%FOUND) THEN
+      CLOSE exist_control;
+      RAISE row_changed;
+   ELSE
+      CLOSE exist_control;
+      RAISE row_deleted;
+   END IF;
+EXCEPTION
+   WHEN row_locked THEN
+      Error_SYS.Record_Locked(lu_name_);
+   WHEN row_changed THEN
+      Error_SYS.Record_Modified(lu_name_);
+   WHEN row_deleted THEN
+      Error_SYS.Record_Removed(lu_name_);
+END Lock_By_Id___;
+
+
+FUNCTION Lock_By_Keys___ (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN &TABLE%ROWTYPE
+IS
+   row_deleted EXCEPTION;
+   rec_        &TABLE%ROWTYPE;
+   CURSOR lock_control IS
+      SELECT *
+      FROM  &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_
+      FOR UPDATE;
+BEGIN
+   OPEN lock_control;
+   FETCH lock_control INTO rec_;
+   IF (lock_control%FOUND) THEN
+      CLOSE lock_control;
+      RETURN rec_;
+   ELSE
+      CLOSE lock_control;
+      RAISE row_deleted;
+   END IF;
+EXCEPTION
+   WHEN row_deleted THEN
+      Error_SYS.Record_Removed(lu_name_);
+END Lock_By_Keys___;
+
+
+FUNCTION Get_Object_By_Id___ (
+   objid_ IN VARCHAR2 ) RETURN &TABLE%ROWTYPE
+IS
+   lu_rec_ &TABLE%ROWTYPE;
+   CURSOR getrec IS
+      SELECT *
+      FROM  &TABLE
+      WHERE &OBJID = objid_;
+BEGIN
+   OPEN getrec;
+   FETCH getrec INTO lu_rec_;
+   IF (getrec%NOTFOUND) THEN
+      CLOSE getrec;
+      Error_SYS.Record_Removed(lu_name_);
+   END IF;
+   CLOSE getrec;
+   RETURN(lu_rec_);
+END Get_Object_By_Id___;
+
+
+FUNCTION Get_Object_By_Keys___ (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN &TABLE%ROWTYPE
+IS
+   lu_rec_ &TABLE%ROWTYPE;
+   CURSOR getrec IS
+      SELECT *
+      FROM  &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN getrec;
+   FETCH getrec INTO lu_rec_;
+   CLOSE getrec;
+   RETURN(lu_rec_);
+END Get_Object_By_Keys___;
+
+
+FUNCTION Check_Exist___ (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN BOOLEAN
+IS
+   dummy_ NUMBER;
+   CURSOR exist_control IS
+      SELECT 1
+      FROM  &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN exist_control;
+   FETCH exist_control INTO dummy_;
+   IF (exist_control%FOUND) THEN
+      CLOSE exist_control;
+      RETURN(TRUE);
+   END IF;
+   CLOSE exist_control;
+   RETURN(FALSE);
+END Check_Exist___;
+
+
+PROCEDURE Get_Id_Version_By_Keys___ (
+   objid_      IN OUT VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER )
+IS
+   CURSOR get_version IS
+      SELECT &OBJID, &OBJVERSION
+      FROM  &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_version;
+   FETCH get_version INTO objid_, objversion_;
+   CLOSE get_version;
+END Get_Id_Version_By_Keys___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION FINITE STATE MACHINE --------------------
+-----------------------------------------------------------------------------
+-- Finite_State_Set___
+--    Updates the finite state indicator for an existing LU-instance.
+--
+-- Finite_State_Machine___
+--    Processes an event by:
+--    1. Fetching the current state
+--    2. Evaluating any conditions for given event at current state
+--    3. executing any exit code for the old state
+--    4. Performing any action associated with given event
+--    5. update the database to the new state
+--    6. execute any entry code for the new state
+--    7. Executing a state change to the new state
+--
+-- Finite_State_Add_To_Attr___
+--    Adds the current state and allowed events to the attribute string.
+--
+-- Finite_State_Init___
+--    Sets the initial finite state indicator for an existing LU-instance
+--    and processes any automatic events.
+-----------------------------------------------------------------------------
+
+PROCEDURE Finite_State_Set___ (
+   rec_   IN &TABLE%ROWTYPE,
+   state_ IN OUT    VARCHAR2 )
+IS
+BEGIN
+   rec_.rowversion := sysdate;
+   UPDATE shop_material_alloc_tab
+      SET &OBJSTATE = state_,
+          rowversion = rec_.rowversion
+      WHERE order_no = rec_.order_no
+          AND    release_no = rec_.release_no
+          AND    sequence_no = rec_.sequence_no
+          AND    line_item_no = rec_.line_item_no;
+   rec_.rowstate := state_;
+END Finite_State_Set___;
+
+
+PROCEDURE Finite_State_Machine___ (
+   rec_   IN OUT &TABLE%ROWTYPE,
+   event_ IN     VARCHAR2,
+   attr_  OUT VARCHAR2 )
+IS
+   state_ VARCHAR2(30);
+BEGIN
+   state_ := rec_.rowstate;
+   IF (state_ IS NULL) THEN
+      IF (event_ IS NULL) THEN
+         IF (NOT Create_Released___(rec_)) THEN
+            Do_Park___(rec_, attr_);
+            Finite_State_Set___(rec_, 'Planned');
+         ELSIF (Create_Released___(rec_)) THEN
+            Do_Release___(rec_, attr_);
+            Finite_State_Set___(rec_, 'Released');
+         END IF;
+      ELSE
+         Error_SYS.State_Event_Not_Handled(lu_name_, event_, Finite_State_Decode__(state_));
+      END IF;
+   ELSIF (state_ = 'Closed') THEN
+      IF (event_ = 'Open') THEN
+         Do_Open___(rec_, attr_);
+         Finite_State_Set___(rec_, 'Issued');
+      ELSE
+         Error_SYS.State_Event_Not_Handled(lu_name_, event_, Finite_State_Decode__(state_));
+      END IF;
+   ELSIF (state_ = 'Issued') THEN
+      IF (event_ = 'Close') THEN
+         Do_Close___(rec_, attr_);
+         Finite_State_Set___(rec_, 'Closed');
+      ELSIF (event_ = 'Issue') THEN
+         Do_Issue___(rec_, attr_);
+      ELSIF (event_ = 'Reserve') THEN
+         Do_Reserve___(rec_, attr_);
+      ELSIF (event_ = 'Unissue') THEN
+         IF (Remaining_Issued___(rec_)) THEN
+            Do_Unissue___(rec_, attr_);
+         ELSIF (NOT Remaining_Issued___(rec_)) THEN
+            Do_Unissue___(rec_, attr_);
+            Finite_State_Set___(rec_, 'Reserved');
+            Finite_State_Machine___(rec_, NULL, attr_);
+         END IF;
+      ELSIF (event_ = 'Unreserve') THEN
+         Do_Unreserve___(rec_, attr_);
+      ELSE
+         Error_SYS.State_Event_Not_Handled(lu_name_, event_, Finite_State_Decode__(state_));
+      END IF;
+   ELSIF (state_ = 'Parked') THEN
+      IF (event_ = 'Plan') THEN
+         Do_Plan___(rec_, attr_);
+         Finite_State_Set___(rec_, 'Planned');
+      ELSIF (event_ = 'Release') THEN
+         Do_Release___(rec_, attr_);
+         Finite_State_Set___(rec_, 'Released');
+      ELSE
+         Error_SYS.State_Event_Not_Handled(lu_name_, event_, Finite_State_Decode__(state_));
+      END IF;
+   ELSIF (state_ = 'Planned') THEN
+      IF (event_ = 'Close') THEN
+         Do_Close___(rec_, attr_);
+         Finite_State_Set___(rec_, 'Closed');
+      ELSIF (event_ = 'Park') THEN
+         Do_Park___(rec_, attr_);
+         Finite_State_Set___(rec_, 'Parked');
+      ELSIF (event_ = 'Release') THEN
+         Do_Release___(rec_, attr_);
+         Finite_State_Set___(rec_, 'Released');
+      ELSE
+         Error_SYS.State_Event_Not_Handled(lu_name_, event_, Finite_State_Decode__(state_));
+      END IF;
+   ELSIF (state_ = 'Released') THEN
+      IF (event_ = 'Close') THEN
+         IF (Use_Part___(rec_)) THEN
+            Do_Close___(rec_, attr_);
+            Finite_State_Set___(rec_, 'Closed');
+         END IF;
+      ELSIF (event_ = 'Issue') THEN
+         Do_Issue___(rec_, attr_);
+         Finite_State_Set___(rec_, 'Issued');
+      ELSIF (event_ = 'Park') THEN
+         Do_Park___(rec_, attr_);
+         Finite_State_Set___(rec_, 'Parked');
+      ELSIF (event_ = 'Plan') THEN
+         Do_Plan___(rec_, attr_);
+         Finite_State_Set___(rec_, 'Planned');
+      ELSIF (event_ = 'Reserve') THEN
+         IF (Is_Reserved___(rec_)) THEN
+            Do_Reserve___(rec_, attr_);
+            Finite_State_Set___(rec_, 'Reserved');
+            Finite_State_Machine___(rec_, NULL, attr_);
+         END IF;
+      ELSE
+         Error_SYS.State_Event_Not_Handled(lu_name_, event_, Finite_State_Decode__(state_));
+      END IF;
+   ELSIF (state_ = 'Reserved') THEN
+      IF (event_ IS NULL) THEN
+         IF (NOT Remaining_Reserved___(rec_)) THEN
+            Finite_State_Set___(rec_, 'Released');
+         END IF;
+      ELSIF (event_ = 'Close') THEN
+         IF (Use_Part___(rec_)) THEN
+            Finite_State_Set___(rec_, 'Closed');
+         ELSIF (Order_Has_General_Oh___(rec_)) THEN
+            Do_Close___(rec_, attr_);
+            Finite_State_Set___(rec_, 'Closed');
+         END IF;
+      ELSIF (event_ = 'Issue') THEN
+         Do_Issue___(rec_, attr_);
+         Finite_State_Set___(rec_, 'Issued');
+      ELSIF (event_ = 'Reserve') THEN
+         Do_Reserve___(rec_, attr_);
+      ELSIF (event_ = 'Unreserve') THEN
+         IF (NOT Is_Reserved___(rec_)) THEN
+            Do_Unreserve___(rec_, attr_);
+            Finite_State_Set___(rec_, 'Released');
+         ELSIF (Is_Reserved___(rec_)) THEN
+            NULL;
+         END IF;
+      ELSE
+         Error_SYS.State_Event_Not_Handled(lu_name_, event_, Finite_State_Decode__(state_));
+      END IF;
+   ELSE
+      Error_SYS.State_Not_Exist(lu_name_, Finite_State_Decode__(state_));
+   END IF;
+END Finite_State_Machine___;
+
+
+PROCEDURE Finite_State_Add_To_Attr___ (
+   rec_  IN     &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 )
+IS
+   state_ VARCHAR2(30);
+BEGIN
+   state_ := rec_.rowstate;
+   Client_SYS.Add_To_Attr('__OBJSTATE', state_, attr_);
+   Client_SYS.Add_To_Attr('__OBJEVENTS', Finite_State_Events__(state_), attr_);
+   Client_SYS.Add_To_Attr('STATE', Finite_State_Decode__(state_), attr_);
+END Finite_State_Add_To_Attr___;
+
+
+PROCEDURE Finite_State_Init___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 )
+IS
+   state_ VARCHAR2(30);
+BEGIN
+   Finite_State_Machine___(rec_, NULL, attr_);
+   Finite_State_Add_To_Attr___(rec_, attr_);
+END Finite_State_Init___;
+
+
+FUNCTION Get_Db_Values___ RETURN VARCHAR2 DETERMINISTIC
+IS
+BEGIN
+   RETURN('Planned^Released^Parked^Reserved^Issued^Closed^');
+END Get_Db_Values___;
+
+
+FUNCTION Get_Client_Values___ RETURN VARCHAR2 DETERMINISTIC
+IS
+BEGIN
+   RETURN('Planned^Released^Parked^Reserved^Issued^Closed^');
+END Get_Client_Values___;
+
+-----------------------------------------------------------------------------
+-------------------- PRIVATE FINITE STATE MACHINE ---------------------------
+-----------------------------------------------------------------------------
+-- Finite_State_Decode__
+--   Returns the client equivalent for any database representation of
+--   a state name = objstate.
+--
+-- Finite_State_Encode__
+--   Returns the database equivalent for any client representation of
+--   a state name = state.
+--
+-- Enumerate_States__
+--   Returns a list of all possible finite states in client terminology.
+--
+-- Enumerate_States_Db__
+--   Returns a list of all possible finite states in database terminology.
+--
+-- Finite_State_Events__
+--   Returns a list of allowed events for a given state
+--   NOTE! Regardless of conditions if not otherwize encoded
+--
+-- Enumerate_Events__
+--   Returns a list of all possible events.
+-----------------------------------------------------------------------------
+
+FUNCTION Finite_State_Decode__ (
+   db_state_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+BEGIN
+   RETURN(Domain_SYS.Decode_(Domain_SYS.Get_Translated_Values(lu_name_), Get_Db_Values___, db_state_));
+END Finite_State_Decode__;
+
+
+FUNCTION Finite_State_Encode__ (
+   client_state_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+BEGIN
+   RETURN(Domain_SYS.Encode_(Domain_SYS.Get_Translated_Values(lu_name_), Get_Db_Values___, client_state_));
+END Finite_State_Encode__;
+
+
+PROCEDURE Enumerate_States__ (
+   client_values_ OUT VARCHAR2 )
+IS
+BEGIN
+   client_values_ := Domain_SYS.Enumerate_(Domain_SYS.Get_Translated_Values(lu_name_));
+END Enumerate_States__;
+
+
+PROCEDURE Enumerate_States_Db__ (
+   db_values_ OUT VARCHAR2 )
+IS
+BEGIN
+   db_values_ := Domain_SYS.Enumerate_(Get_Db_Values___);
+END Enumerate_States_Db__;
+
+
+FUNCTION Finite_State_Events__ (
+   db_state_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+BEGIN
+   IF (db_state_ IS NULL) THEN
+      RETURN NULL;
+   ELSIF (db_state_ = 'Closed') THEN
+      RETURN 'Open^';
+   ELSIF (db_state_ = 'Issued') THEN
+      RETURN 'Close^Issue^Reserve^Unissue^Unreserve^';
+   ELSIF (db_state_ = 'Parked') THEN
+      RETURN 'Plan^Release^';
+   ELSIF (db_state_ = 'Planned') THEN
+      RETURN 'Close^Park^Release^';
+   ELSIF (db_state_ = 'Released') THEN
+      RETURN 'Close^Issue^Park^Plan^Reserve^';
+   ELSIF (db_state_ = 'Reserved') THEN
+      RETURN 'Close^Issue^Reserve^Unreserve^';
+   ELSE
+      RETURN NULL;
+   END IF;
+END Finite_State_Events__;
+
+
+PROCEDURE Enumerate_Events__ (
+   db_events_ OUT VARCHAR2 )
+IS
+BEGIN
+   db_events_ := 'Reserve^Release^Open^Issue^Unissue^Close^Park^Unreserve^Plan^';
+END Enumerate_Events__;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR INSERT -----------------
+-----------------------------------------------------------------------------
+-- Prepare_Insert___
+--    Set all default values for a new instance (ON-NEW-RECORD) of this
+--    logical unit by calling procedure Add_Attr.
+--
+-- Unpack_Check_Insert___
+--    Unpack the attribute list, check all attributes from the client
+--    and generate all default values before creation of the new object.
+--
+-- Insert___
+--    Insert a new LU-instance into the database and return the values
+--    for OBJID and OBJVERSION.
+-----------------------------------------------------------------------------
+
+PROCEDURE Prepare_Insert___ (
+   attr_ IN OUT VARCHAR2 )
+IS
+BEGIN
+   Client_SYS.Clear_Attr(attr_);
+END Prepare_Insert___;
+
+
+PROCEDURE Unpack_Check_Insert___ (
+   attr_   IN OUT VARCHAR2,
+   newrec_ IN OUT &TABLE%ROWTYPE )
+IS
+   ptr_   NUMBER;
+   name_  VARCHAR2(30);
+   value_ VARCHAR2(2000);
+BEGIN
+   ptr_ := NULL;
+   WHILE (Client_SYS.Get_Next_From_Attr(attr_, ptr_, name_, value_)) LOOP
+      IF (name_ = 'ORDER_NO') THEN
+         newrec_.order_no := value_;
+      ELSIF (name_ = 'RELEASE_NO') THEN
+         newrec_.release_no := value_;
+      ELSIF (name_ = 'SEQUENCE_NO') THEN
+         newrec_.sequence_no := value_;
+         Shop_Ord_API.Exist(newrec_.sequence_no, newrec_.sequence_no, newrec_.sequence_no);
+      ELSIF (name_ = 'LINE_ITEM_NO') THEN
+         newrec_.line_item_no := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'PART_NO') THEN
+         newrec_.part_no := value_;
+         Inventory_Part_API.Exist(newrec_.part_no, newrec_.part_no);
+      ELSIF (name_ = 'CONTRACT') THEN
+         newrec_.contract := value_;
+         User_Allowed_Site_API.Exist(newrec_.contract);
+      ELSIF (name_ = 'ISSUE_TO_LOC') THEN
+         newrec_.issue_to_loc := value_;
+        IF (value_ IS NOT NULL) THEN
+            Inventory_Location_API.Exist(newrec_.issue_to_loc, newrec_.issue_to_loc);
+         END IF;
+      ELSIF (name_ = 'NOTE_ID') THEN
+         newrec_.note_id := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'OPERATION_NO') THEN
+         newrec_.operation_no := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'STRUCTURE_LINE_NO') THEN
+         newrec_.structure_line_no := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'CREATE_DATE') THEN
+         newrec_.create_date := Client_SYS.Attr_Value_To_Date(value_);
+      ELSIF (name_ = 'DATE_REQUIRED') THEN
+         newrec_.date_required := Client_SYS.Attr_Value_To_Date(value_);
+      ELSIF (name_ = 'LAST_ACTIVITY_DATE') THEN
+         newrec_.last_activity_date := Client_SYS.Attr_Value_To_Date(value_);
+      ELSIF (name_ = 'LAST_ISSUE_DATE') THEN
+         newrec_.last_issue_date := Client_SYS.Attr_Value_To_Date(value_);
+      ELSIF (name_ = 'LEADTIME_OFFSET') THEN
+         newrec_.leadtime_offset := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'PRIORITY_NO') THEN
+         newrec_.priority_no := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'QTY_ASSIGNED') THEN
+         newrec_.qty_assigned := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'QTY_ISSUED') THEN
+         newrec_.qty_issued := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'QTY_ON_ORDER') THEN
+         newrec_.qty_on_order := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'QTY_PER_ASSEMBLY') THEN
+         newrec_.qty_per_assembly := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'SHRINKAGE_FACTOR') THEN
+         newrec_.shrinkage_factor := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'COMPONENT_SCRAP') THEN
+         newrec_.component_scrap := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'QTY_REQUIRED') THEN
+         newrec_.qty_required := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'SUPPLY_CODE') THEN
+         newrec_.supply_code := Order_Supply_Type_API.Encode(value_);
+         IF (value_ IS NOT NULL) THEN
+            Order_Supply_Type_API.Exist(value_);
+         END IF;
+      ELSIF (name_ = 'SUPPLY_CODE_DB') THEN
+         newrec_.supply_code := value_;
+         IF (value_ IS NOT NULL) THEN
+            Order_Supply_Type_API.Exist_Db(value_);
+         END IF;
+      ELSIF (name_ = 'NOTE_TEXT') THEN
+         newrec_.note_text := value_;
+      ELSIF (name_ = 'ORDER_CODE') THEN
+         newrec_.order_code := Shop_Ord_Code_API.Encode(value_);
+         IF (value_ IS NOT NULL) THEN
+            Shop_Ord_Code_API.Exist(value_);
+         END IF;
+      ELSIF (name_ = 'ORDER_CODE_DB') THEN
+         newrec_.order_code := value_;
+         IF (value_ IS NOT NULL) THEN
+            Shop_Ord_Code_API.Exist_Db(value_);
+         END IF;
+      ELSIF (name_ = 'GENERATE_DEMAND_QTY') THEN
+         newrec_.generate_demand_qty := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'QTY_SHORT') THEN
+         newrec_.qty_short := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'CONSUMPTION_ITEM') THEN
+         newrec_.consumption_item := Consumption_Item_API.Encode(value_);
+         IF (value_ IS NOT NULL) THEN
+            Consumption_Item_API.Exist(value_);
+         END IF;
+      ELSIF (name_ = 'CONSUMPTION_ITEM_DB') THEN
+         newrec_.consumption_item := value_;
+         IF (value_ IS NOT NULL) THEN
+            Consumption_Item_API.Exist_Db(value_);
+         END IF;
+      ELSIF (name_ = 'PRINT_UNIT') THEN
+         newrec_.print_unit := value_;
+         Iso_Unit_API.Exist(newrec_.print_unit);
+      ELSIF (name_ = 'ACTIVITY_SEQ') THEN
+         newrec_.activity_seq := Client_SYS.Attr_Value_To_Number(value_);
+        IF (value_ IS NOT NULL) THEN
+            Activity_API.Exist(newrec_.activity_seq);
+         END IF;
+      ELSIF (name_ = 'DRAW_POS_NO') THEN
+         newrec_.draw_pos_no := value_;
+      ELSIF (name_ = 'CONFIGURATION_ID') THEN
+         newrec_.configuration_id := value_;
+         Configuration_Spec_API.Exist(newrec_.configuration_id, newrec_.configuration_id);
+      ELSIF (name_ = 'CONDITION_CODE') THEN
+         newrec_.condition_code := value_;
+        IF (value_ IS NOT NULL) THEN
+            Condition_Code_API.Exist(newrec_.condition_code);
+         END IF;
+      ELSIF (name_ = 'PART_OWNERSHIP') THEN
+         newrec_.part_ownership := Part_Ownership_API.Encode(value_);
+         IF (value_ IS NOT NULL) THEN
+            Part_Ownership_API.Exist(value_);
+         END IF;
+      ELSIF (name_ = 'PART_OWNERSHIP_DB') THEN
+         newrec_.part_ownership := value_;
+         IF (value_ IS NOT NULL) THEN
+            Part_Ownership_API.Exist_Db(value_);
+         END IF;
+      ELSIF (name_ = 'OWNING_CUSTOMER_NO') THEN
+         newrec_.owning_customer_no := value_;
+        IF (value_ IS NOT NULL) THEN
+            Cust_Ord_Customer_API.Exist(newrec_.owning_customer_no);
+         END IF;
+      ELSIF (name_ = 'OWNING_VENDOR_NO') THEN
+         newrec_.owning_vendor_no := value_;
+        IF (value_ IS NOT NULL) THEN
+            Supplier_API.Exist(newrec_.owning_vendor_no);
+         END IF;
+      ELSIF (name_ = 'VIM_STRUCTURE_SOURCE') THEN
+         newrec_.vim_structure_source := Vim_Structure_Source_API.Encode(value_);
+         IF (value_ IS NOT NULL) THEN
+            Vim_Structure_Source_API.Exist(value_);
+         END IF;
+      ELSIF (name_ = 'VIM_STRUCTURE_SOURCE_DB') THEN
+         newrec_.vim_structure_source := value_;
+         IF (value_ IS NOT NULL) THEN
+            Vim_Structure_Source_API.Exist_Db(value_);
+         END IF;
+      ELSIF (name_ = 'PARTIAL_PART_REQUIRED') THEN
+         newrec_.partial_part_required := value_;
+      ELSIF (name_ = 'PROJECT_ID') THEN
+         newrec_.project_id := value_;
+        IF (value_ IS NOT NULL) THEN
+            Project_API.Exist(newrec_.project_id);
+         END IF;
+      ELSIF (name_ = 'CATCH_QTY_ISSUED') THEN
+         newrec_.catch_qty_issued := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'REPLICATE_CHANGES') THEN
+         Error_SYS.Item_Insert(lu_name_, 'REPLICATE_CHANGES');
+      ELSIF (name_ = 'REPLACED_QTY') THEN
+         newrec_.replaced_qty := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'REPLACES_QPA_FACTOR') THEN
+         newrec_.replaces_qpa_factor := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'REPLACES_LINE_ITEM_NO') THEN
+         newrec_.replaces_line_item_no := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'QTY_SCRAPPED_COMPONENT') THEN
+         newrec_.qty_scrapped_component := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'POSITION_PART_NO') THEN
+         newrec_.position_part_no := value_;
+        IF (value_ IS NOT NULL) THEN
+            Position_Part_Reference_API.Exist(newrec_.position_part_no);
+         END IF;
+      ELSE
+         Error_SYS.Item_Not_Exist(lu_name_, name_, value_);
+      END IF;
+   END LOOP;
+   Client_SYS.Clear_Attr(attr_);
+   Error_SYS.Check_Not_Null(lu_name_, 'ORDER_NO', newrec_.order_no);
+   Error_SYS.Check_Not_Null(lu_name_, 'RELEASE_NO', newrec_.release_no);
+   Error_SYS.Check_Not_Null(lu_name_, 'SEQUENCE_NO', newrec_.sequence_no);
+   Error_SYS.Check_Not_Null(lu_name_, 'LINE_ITEM_NO', newrec_.line_item_no);
+   Error_SYS.Check_Not_Null(lu_name_, 'PART_NO', newrec_.part_no);
+   Error_SYS.Check_Not_Null(lu_name_, 'CONTRACT', newrec_.contract);
+   Error_SYS.Check_Not_Null(lu_name_, 'NOTE_ID', newrec_.note_id);
+   Error_SYS.Check_Not_Null(lu_name_, 'CREATE_DATE', newrec_.create_date);
+   Error_SYS.Check_Not_Null(lu_name_, 'DATE_REQUIRED', newrec_.date_required);
+   Error_SYS.Check_Not_Null(lu_name_, 'LEADTIME_OFFSET', newrec_.leadtime_offset);
+   Error_SYS.Check_Not_Null(lu_name_, 'PRIORITY_NO', newrec_.priority_no);
+   Error_SYS.Check_Not_Null(lu_name_, 'QTY_ASSIGNED', newrec_.qty_assigned);
+   Error_SYS.Check_Not_Null(lu_name_, 'QTY_ISSUED', newrec_.qty_issued);
+   Error_SYS.Check_Not_Null(lu_name_, 'QTY_PER_ASSEMBLY', newrec_.qty_per_assembly);
+   Error_SYS.Check_Not_Null(lu_name_, 'SHRINKAGE_FACTOR', newrec_.shrinkage_factor);
+   Error_SYS.Check_Not_Null(lu_name_, 'COMPONENT_SCRAP', newrec_.component_scrap);
+   Error_SYS.Check_Not_Null(lu_name_, 'QTY_REQUIRED', newrec_.qty_required);
+   Error_SYS.Check_Not_Null(lu_name_, 'SUPPLY_CODE', newrec_.supply_code);
+   Error_SYS.Check_Not_Null(lu_name_, 'ORDER_CODE', newrec_.order_code);
+   Error_SYS.Check_Not_Null(lu_name_, 'QTY_SHORT', newrec_.qty_short);
+   Error_SYS.Check_Not_Null(lu_name_, 'CONSUMPTION_ITEM', newrec_.consumption_item);
+   Error_SYS.Check_Not_Null(lu_name_, 'PRINT_UNIT', newrec_.print_unit);
+   Error_SYS.Check_Not_Null(lu_name_, 'CONFIGURATION_ID', newrec_.configuration_id);
+   Error_SYS.Check_Not_Null(lu_name_, 'PART_OWNERSHIP', newrec_.part_ownership);
+   Error_SYS.Check_Not_Null(lu_name_, 'PARTIAL_PART_REQUIRED', newrec_.partial_part_required);
+   Error_SYS.Check_Not_Null(lu_name_, 'QTY_SCRAPPED_COMPONENT', newrec_.qty_scrapped_component);
+EXCEPTION
+   WHEN value_error THEN
+      Error_SYS.Item_Format(lu_name_, name_, value_);
+END Unpack_Check_Insert___;
+
+
+PROCEDURE Insert___ (
+   objid_      OUT    VARCHAR2,
+   objversion_ OUT    VARCHAR2,
+   newrec_     IN OUT &TABLE%ROWTYPE,
+   attr_       IN OUT VARCHAR2 )
+IS
+BEGIN
+   newrec_.rowversion := sysdate;
+   objversion_ := to_char(newrec_.rowversion,'YYYYMMDDHH24MISS');
+   INSERT
+      INTO shop_material_alloc_tab (
+         order_no,
+         release_no,
+         sequence_no,
+         line_item_no,
+         part_no,
+         contract,
+         issue_to_loc,
+         note_id,
+         operation_no,
+         structure_line_no,
+         create_date,
+         date_required,
+         last_activity_date,
+         last_issue_date,
+         leadtime_offset,
+         priority_no,
+         qty_assigned,
+         qty_issued,
+         qty_on_order,
+         qty_per_assembly,
+         shrinkage_factor,
+         component_scrap,
+         qty_required,
+         supply_code,
+         note_text,
+         order_code,
+         generate_demand_qty,
+         qty_short,
+         consumption_item,
+         print_unit,
+         activity_seq,
+         draw_pos_no,
+         configuration_id,
+         condition_code,
+         part_ownership,
+         owning_customer_no,
+         owning_vendor_no,
+         vim_structure_source,
+         partial_part_required,
+         project_id,
+         catch_qty_issued,
+         replicate_changes,
+         replaced_qty,
+         replaces_qpa_factor,
+         replaces_line_item_no,
+         qty_scrapped_component,
+         position_part_no,
+         rowversion,
+         rowstate)
+      VALUES (
+         newrec_.order_no,
+         newrec_.release_no,
+         newrec_.sequence_no,
+         newrec_.line_item_no,
+         newrec_.part_no,
+         newrec_.contract,
+         newrec_.issue_to_loc,
+         newrec_.note_id,
+         newrec_.operation_no,
+         newrec_.structure_line_no,
+         newrec_.create_date,
+         newrec_.date_required,
+         newrec_.last_activity_date,
+         newrec_.last_issue_date,
+         newrec_.leadtime_offset,
+         newrec_.priority_no,
+         newrec_.qty_assigned,
+         newrec_.qty_issued,
+         newrec_.qty_on_order,
+         newrec_.qty_per_assembly,
+         newrec_.shrinkage_factor,
+         newrec_.component_scrap,
+         newrec_.qty_required,
+         newrec_.supply_code,
+         newrec_.note_text,
+         newrec_.order_code,
+         newrec_.generate_demand_qty,
+         newrec_.qty_short,
+         newrec_.consumption_item,
+         newrec_.print_unit,
+         newrec_.activity_seq,
+         newrec_.draw_pos_no,
+         newrec_.configuration_id,
+         newrec_.condition_code,
+         newrec_.part_ownership,
+         newrec_.owning_customer_no,
+         newrec_.owning_vendor_no,
+         newrec_.vim_structure_source,
+         newrec_.partial_part_required,
+         newrec_.project_id,
+         newrec_.catch_qty_issued,
+         newrec_.replicate_changes,
+         newrec_.replaced_qty,
+         newrec_.replaces_qpa_factor,
+         newrec_.replaces_line_item_no,
+         newrec_.qty_scrapped_component,
+         newrec_.position_part_no,
+         newrec_.rowversion,
+         newrec_.rowstate)
+      RETURNING &OBJID INTO objid_;
+   Finite_State_Init___(newrec_, attr_);
+EXCEPTION
+   WHEN dup_val_on_index THEN
+      Error_SYS.Record_Exist(lu_name_);
+END Insert___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR UPDATE -----------------
+-----------------------------------------------------------------------------
+-- Unpack_Check_Update___
+--    Unpack the attribute list, check all attributes from the client
+--    and generate all default values before modifying the object.
+--
+-- Update___
+--    Update an existing LU-instance in the database and return the
+--    the new OBJVERSION.
+-----------------------------------------------------------------------------
+
+PROCEDURE Unpack_Check_Update___ (
+   attr_   IN OUT VARCHAR2,
+   newrec_ IN OUT &TABLE%ROWTYPE,
+   objid_  IN     VARCHAR2 )
+IS
+   ptr_   NUMBER;
+   name_  VARCHAR2(30);
+   value_ VARCHAR2(2000);
+BEGIN
+   ptr_ := NULL;
+   WHILE (Client_SYS.Get_Next_From_Attr(attr_, ptr_, name_, value_)) LOOP
+      IF (name_ = 'ORDER_NO') THEN
+         Error_SYS.Item_Update(lu_name_, 'ORDER_NO');
+      ELSIF (name_ = 'RELEASE_NO') THEN
+         Error_SYS.Item_Update(lu_name_, 'RELEASE_NO');
+      ELSIF (name_ = 'SEQUENCE_NO') THEN
+         Error_SYS.Item_Update(lu_name_, 'SEQUENCE_NO');
+      ELSIF (name_ = 'LINE_ITEM_NO') THEN
+         Error_SYS.Item_Update(lu_name_, 'LINE_ITEM_NO');
+      ELSIF (name_ = 'PART_NO') THEN
+         newrec_.part_no := value_;
+         Inventory_Part_API.Exist(newrec_.part_no, newrec_.part_no);
+      ELSIF (name_ = 'CONTRACT') THEN
+         Error_SYS.Item_Update(lu_name_, 'CONTRACT');
+      ELSIF (name_ = 'ISSUE_TO_LOC') THEN
+         newrec_.issue_to_loc := value_;
+        IF (value_ IS NOT NULL) THEN
+            Inventory_Location_API.Exist(newrec_.issue_to_loc, newrec_.issue_to_loc);
+         END IF;
+      ELSIF (name_ = 'NOTE_ID') THEN
+         newrec_.note_id := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'OPERATION_NO') THEN
+         newrec_.operation_no := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'STRUCTURE_LINE_NO') THEN
+         newrec_.structure_line_no := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'CREATE_DATE') THEN
+         Error_SYS.Item_Update(lu_name_, 'CREATE_DATE');
+      ELSIF (name_ = 'DATE_REQUIRED') THEN
+         newrec_.date_required := Client_SYS.Attr_Value_To_Date(value_);
+      ELSIF (name_ = 'LAST_ACTIVITY_DATE') THEN
+         newrec_.last_activity_date := Client_SYS.Attr_Value_To_Date(value_);
+      ELSIF (name_ = 'LAST_ISSUE_DATE') THEN
+         newrec_.last_issue_date := Client_SYS.Attr_Value_To_Date(value_);
+      ELSIF (name_ = 'LEADTIME_OFFSET') THEN
+         newrec_.leadtime_offset := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'PRIORITY_NO') THEN
+         newrec_.priority_no := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'QTY_ASSIGNED') THEN
+         newrec_.qty_assigned := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'QTY_ISSUED') THEN
+         newrec_.qty_issued := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'QTY_ON_ORDER') THEN
+         newrec_.qty_on_order := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'QTY_PER_ASSEMBLY') THEN
+         newrec_.qty_per_assembly := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'SHRINKAGE_FACTOR') THEN
+         newrec_.shrinkage_factor := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'COMPONENT_SCRAP') THEN
+         newrec_.component_scrap := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'QTY_REQUIRED') THEN
+         newrec_.qty_required := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'SUPPLY_CODE') THEN
+         newrec_.supply_code := Order_Supply_Type_API.Encode(value_);
+         IF (value_ IS NOT NULL) THEN
+            Order_Supply_Type_API.Exist(value_);
+         END IF;
+      ELSIF (name_ = 'SUPPLY_CODE_DB') THEN
+         newrec_.supply_code := value_;
+         IF (value_ IS NOT NULL) THEN
+            Order_Supply_Type_API.Exist_Db(value_);
+         END IF;
+      ELSIF (name_ = 'NOTE_TEXT') THEN
+         newrec_.note_text := value_;
+      ELSIF (name_ = 'ORDER_CODE') THEN
+         Error_SYS.Item_Update(lu_name_, 'ORDER_CODE');
+      ELSIF (name_ = 'GENERATE_DEMAND_QTY') THEN
+         newrec_.generate_demand_qty := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'QTY_SHORT') THEN
+         newrec_.qty_short := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'CONSUMPTION_ITEM') THEN
+         newrec_.consumption_item := Consumption_Item_API.Encode(value_);
+         IF (value_ IS NOT NULL) THEN
+            Consumption_Item_API.Exist(value_);
+         END IF;
+      ELSIF (name_ = 'CONSUMPTION_ITEM_DB') THEN
+         newrec_.consumption_item := value_;
+         IF (value_ IS NOT NULL) THEN
+            Consumption_Item_API.Exist_Db(value_);
+         END IF;
+      ELSIF (name_ = 'PRINT_UNIT') THEN
+         Error_SYS.Item_Update(lu_name_, 'PRINT_UNIT');
+      ELSIF (name_ = 'ACTIVITY_SEQ') THEN
+         newrec_.activity_seq := Client_SYS.Attr_Value_To_Number(value_);
+        IF (value_ IS NOT NULL) THEN
+            Activity_API.Exist(newrec_.activity_seq);
+         END IF;
+      ELSIF (name_ = 'DRAW_POS_NO') THEN
+         newrec_.draw_pos_no := value_;
+      ELSIF (name_ = 'CONFIGURATION_ID') THEN
+         newrec_.configuration_id := value_;
+         Configuration_Spec_API.Exist(newrec_.configuration_id, newrec_.configuration_id);
+      ELSIF (name_ = 'CONDITION_CODE') THEN
+         newrec_.condition_code := value_;
+        IF (value_ IS NOT NULL) THEN
+            Condition_Code_API.Exist(newrec_.condition_code);
+         END IF;
+      ELSIF (name_ = 'PART_OWNERSHIP') THEN
+         newrec_.part_ownership := Part_Ownership_API.Encode(value_);
+         IF (value_ IS NOT NULL) THEN
+            Part_Ownership_API.Exist(value_);
+         END IF;
+      ELSIF (name_ = 'PART_OWNERSHIP_DB') THEN
+         newrec_.part_ownership := value_;
+         IF (value_ IS NOT NULL) THEN
+            Part_Ownership_API.Exist_Db(value_);
+         END IF;
+      ELSIF (name_ = 'OWNING_CUSTOMER_NO') THEN
+         newrec_.owning_customer_no := value_;
+        IF (value_ IS NOT NULL) THEN
+            Cust_Ord_Customer_API.Exist(newrec_.owning_customer_no);
+         END IF;
+      ELSIF (name_ = 'OWNING_VENDOR_NO') THEN
+         newrec_.owning_vendor_no := value_;
+        IF (value_ IS NOT NULL) THEN
+            Supplier_API.Exist(newrec_.owning_vendor_no);
+         END IF;
+      ELSIF (name_ = 'VIM_STRUCTURE_SOURCE') THEN
+         newrec_.vim_structure_source := Vim_Structure_Source_API.Encode(value_);
+         IF (value_ IS NOT NULL) THEN
+            Vim_Structure_Source_API.Exist(value_);
+         END IF;
+      ELSIF (name_ = 'VIM_STRUCTURE_SOURCE_DB') THEN
+         newrec_.vim_structure_source := value_;
+         IF (value_ IS NOT NULL) THEN
+            Vim_Structure_Source_API.Exist_Db(value_);
+         END IF;
+      ELSIF (name_ = 'PARTIAL_PART_REQUIRED') THEN
+         Error_SYS.Item_Update(lu_name_, 'PARTIAL_PART_REQUIRED');
+      ELSIF (name_ = 'PROJECT_ID') THEN
+         newrec_.project_id := value_;
+        IF (value_ IS NOT NULL) THEN
+            Project_API.Exist(newrec_.project_id);
+         END IF;
+      ELSIF (name_ = 'CATCH_QTY_ISSUED') THEN
+         newrec_.catch_qty_issued := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'REPLICATE_CHANGES') THEN
+         newrec_.replicate_changes := value_;
+      ELSIF (name_ = 'REPLACED_QTY') THEN
+         newrec_.replaced_qty := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'REPLACES_QPA_FACTOR') THEN
+         newrec_.replaces_qpa_factor := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'REPLACES_LINE_ITEM_NO') THEN
+         newrec_.replaces_line_item_no := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'QTY_SCRAPPED_COMPONENT') THEN
+         newrec_.qty_scrapped_component := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'POSITION_PART_NO') THEN
+         newrec_.position_part_no := value_;
+        IF (value_ IS NOT NULL) THEN
+            Position_Part_Reference_API.Exist(newrec_.position_part_no);
+         END IF;
+      ELSE
+         Error_SYS.Item_Not_Exist(lu_name_, name_, value_);
+      END IF;
+   END LOOP;
+   Client_SYS.Clear_Attr(attr_);
+   Error_SYS.Check_Not_Null(lu_name_, 'PART_NO', newrec_.part_no);
+   Error_SYS.Check_Not_Null(lu_name_, 'NOTE_ID', newrec_.note_id);
+   Error_SYS.Check_Not_Null(lu_name_, 'DATE_REQUIRED', newrec_.date_required);
+   Error_SYS.Check_Not_Null(lu_name_, 'LEADTIME_OFFSET', newrec_.leadtime_offset);
+   Error_SYS.Check_Not_Null(lu_name_, 'PRIORITY_NO', newrec_.priority_no);
+   Error_SYS.Check_Not_Null(lu_name_, 'QTY_ASSIGNED', newrec_.qty_assigned);
+   Error_SYS.Check_Not_Null(lu_name_, 'QTY_ISSUED', newrec_.qty_issued);
+   Error_SYS.Check_Not_Null(lu_name_, 'QTY_PER_ASSEMBLY', newrec_.qty_per_assembly);
+   Error_SYS.Check_Not_Null(lu_name_, 'SHRINKAGE_FACTOR', newrec_.shrinkage_factor);
+   Error_SYS.Check_Not_Null(lu_name_, 'COMPONENT_SCRAP', newrec_.component_scrap);
+   Error_SYS.Check_Not_Null(lu_name_, 'QTY_REQUIRED', newrec_.qty_required);
+   Error_SYS.Check_Not_Null(lu_name_, 'SUPPLY_CODE', newrec_.supply_code);
+   Error_SYS.Check_Not_Null(lu_name_, 'QTY_SHORT', newrec_.qty_short);
+   Error_SYS.Check_Not_Null(lu_name_, 'CONSUMPTION_ITEM', newrec_.consumption_item);
+   Error_SYS.Check_Not_Null(lu_name_, 'CONFIGURATION_ID', newrec_.configuration_id);
+   Error_SYS.Check_Not_Null(lu_name_, 'PART_OWNERSHIP', newrec_.part_ownership);
+   Error_SYS.Check_Not_Null(lu_name_, 'QTY_SCRAPPED_COMPONENT', newrec_.qty_scrapped_component);
+EXCEPTION
+   WHEN value_error THEN
+      Error_SYS.Item_Format(lu_name_, name_, value_);
+END Unpack_Check_Update___;
+
+
+PROCEDURE Update___ (
+   objid_      IN     VARCHAR2,
+   oldrec_     IN     &TABLE%ROWTYPE,
+   newrec_     IN OUT &TABLE%ROWTYPE,
+   attr_       IN OUT VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   by_keys_    IN     BOOLEAN DEFAULT FALSE )
+IS
+BEGIN
+   newrec_.rowversion := sysdate;
+   objversion_ := to_char(newrec_.rowversion,'YYYYMMDDHH24MISS');
+   IF by_keys_ THEN
+      UPDATE shop_material_alloc_tab
+         SET order_no = newrec_.order_no,
+             release_no = newrec_.release_no,
+             sequence_no = newrec_.sequence_no,
+             line_item_no = newrec_.line_item_no,
+             part_no = newrec_.part_no,
+             contract = newrec_.contract,
+             issue_to_loc = newrec_.issue_to_loc,
+             note_id = newrec_.note_id,
+             operation_no = newrec_.operation_no,
+             structure_line_no = newrec_.structure_line_no,
+             create_date = newrec_.create_date,
+             date_required = newrec_.date_required,
+             last_activity_date = newrec_.last_activity_date,
+             last_issue_date = newrec_.last_issue_date,
+             leadtime_offset = newrec_.leadtime_offset,
+             priority_no = newrec_.priority_no,
+             qty_assigned = newrec_.qty_assigned,
+             qty_issued = newrec_.qty_issued,
+             qty_on_order = newrec_.qty_on_order,
+             qty_per_assembly = newrec_.qty_per_assembly,
+             shrinkage_factor = newrec_.shrinkage_factor,
+             component_scrap = newrec_.component_scrap,
+             qty_required = newrec_.qty_required,
+             supply_code = newrec_.supply_code,
+             note_text = newrec_.note_text,
+             order_code = newrec_.order_code,
+             generate_demand_qty = newrec_.generate_demand_qty,
+             qty_short = newrec_.qty_short,
+             consumption_item = newrec_.consumption_item,
+             print_unit = newrec_.print_unit,
+             activity_seq = newrec_.activity_seq,
+             draw_pos_no = newrec_.draw_pos_no,
+             configuration_id = newrec_.configuration_id,
+             condition_code = newrec_.condition_code,
+             part_ownership = newrec_.part_ownership,
+             owning_customer_no = newrec_.owning_customer_no,
+             owning_vendor_no = newrec_.owning_vendor_no,
+             vim_structure_source = newrec_.vim_structure_source,
+             partial_part_required = newrec_.partial_part_required,
+             project_id = newrec_.project_id,
+             catch_qty_issued = newrec_.catch_qty_issued,
+             replicate_changes = newrec_.replicate_changes,
+             replaced_qty = newrec_.replaced_qty,
+             replaces_qpa_factor = newrec_.replaces_qpa_factor,
+             replaces_line_item_no = newrec_.replaces_line_item_no,
+             qty_scrapped_component = newrec_.qty_scrapped_component,
+             position_part_no = newrec_.position_part_no,
+             rowversion = newrec_.rowversion
+         WHERE order_no = newrec_.order_no
+             AND    release_no = newrec_.release_no
+             AND    sequence_no = newrec_.sequence_no
+             AND    line_item_no = newrec_.line_item_no;
+   ELSE
+      UPDATE shop_material_alloc_tab
+         SET order_no = newrec_.order_no,
+             release_no = newrec_.release_no,
+             sequence_no = newrec_.sequence_no,
+             line_item_no = newrec_.line_item_no,
+             part_no = newrec_.part_no,
+             contract = newrec_.contract,
+             issue_to_loc = newrec_.issue_to_loc,
+             note_id = newrec_.note_id,
+             operation_no = newrec_.operation_no,
+             structure_line_no = newrec_.structure_line_no,
+             create_date = newrec_.create_date,
+             date_required = newrec_.date_required,
+             last_activity_date = newrec_.last_activity_date,
+             last_issue_date = newrec_.last_issue_date,
+             leadtime_offset = newrec_.leadtime_offset,
+             priority_no = newrec_.priority_no,
+             qty_assigned = newrec_.qty_assigned,
+             qty_issued = newrec_.qty_issued,
+             qty_on_order = newrec_.qty_on_order,
+             qty_per_assembly = newrec_.qty_per_assembly,
+             shrinkage_factor = newrec_.shrinkage_factor,
+             component_scrap = newrec_.component_scrap,
+             qty_required = newrec_.qty_required,
+             supply_code = newrec_.supply_code,
+             note_text = newrec_.note_text,
+             order_code = newrec_.order_code,
+             generate_demand_qty = newrec_.generate_demand_qty,
+             qty_short = newrec_.qty_short,
+             consumption_item = newrec_.consumption_item,
+             print_unit = newrec_.print_unit,
+             activity_seq = newrec_.activity_seq,
+             draw_pos_no = newrec_.draw_pos_no,
+             configuration_id = newrec_.configuration_id,
+             condition_code = newrec_.condition_code,
+             part_ownership = newrec_.part_ownership,
+             owning_customer_no = newrec_.owning_customer_no,
+             owning_vendor_no = newrec_.owning_vendor_no,
+             vim_structure_source = newrec_.vim_structure_source,
+             partial_part_required = newrec_.partial_part_required,
+             project_id = newrec_.project_id,
+             catch_qty_issued = newrec_.catch_qty_issued,
+             replicate_changes = newrec_.replicate_changes,
+             replaced_qty = newrec_.replaced_qty,
+             replaces_qpa_factor = newrec_.replaces_qpa_factor,
+             replaces_line_item_no = newrec_.replaces_line_item_no,
+             qty_scrapped_component = newrec_.qty_scrapped_component,
+             position_part_no = newrec_.position_part_no,
+             rowversion = newrec_.rowversion
+         WHERE &OBJID = objid_;
+   END IF;
+EXCEPTION
+   WHEN dup_val_on_index THEN
+      Error_SYS.Record_Exist(lu_name_);
+END Update___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR DELETE -----------------
+-----------------------------------------------------------------------------
+-- Check_Delete___
+--    Checks whether a specific LU-record may be removed or not.
+--    The procedure should check business rules like attribute values
+--    as well as database constraints (defined or not).
+--
+-- Delete___
+--    Deletion of the specific LU-object from the database.
+-----------------------------------------------------------------------------
+
+PROCEDURE Check_Delete___ (
+   remrec_ IN &TABLE%ROWTYPE )
+IS
+   key_ VARCHAR2(2000);
+BEGIN
+   key_ := remrec_.order_no || '^' || remrec_.release_no || '^' || remrec_.sequence_no || '^' || remrec_.line_item_no || '^';
+   Reference_SYS.Check_Restricted_Delete(lu_name_, key_);
+END Check_Delete___;
+
+
+PROCEDURE Delete___ (
+   objid_  IN VARCHAR2,
+   remrec_ IN &TABLE%ROWTYPE )
+IS
+   key_ VARCHAR2(2000);
+BEGIN
+   key_ := remrec_.order_no || '^' || remrec_.release_no || '^' || remrec_.sequence_no || '^' || remrec_.line_item_no || '^';
+   Reference_SYS.Do_Cascade_Delete(lu_name_, key_);
+   DELETE
+      FROM  &TABLE
+      WHERE &OBJID = objid_;
+END Delete___;
+
+-----------------------------------------------------------------------------
+-------------------- PRIVATE BASE METHODS -----------------------------------
+-----------------------------------------------------------------------------
+-- Lock__
+--    Client-support to lock a specific instance of the logical unit.
+--
+-- New__
+--    Client-support interface to create LU instances.
+--       action_ = 'PREPARE'
+--          Default values and handle of information to client.
+--          The default values are set in procedure Prepare_Insert___.
+--       action_ = 'CHECK'
+--          Check all attributes before creating new object and handle of
+--          information to client. The attribute list is unpacked, checked
+--          and prepared (defaults) in procedure Unpack_Check_Insert___.
+--       action_ = 'DO'
+--          Creation of new instances of the logical unit and handle of
+--          information to client. The attribute list is unpacked, checked
+--          and prepared (defaults) in procedure Unpack_Check_Insert___
+--          before calling procedure Insert___.
+--
+-- Modify__
+--    Client-support interface to modify attributes for LU instances.
+--       action_ = 'CHECK'
+--          Check all attributes before modifying an existing object and
+--          handle of information to client. The attribute list is unpacked,
+--          checked and prepared(defaults) in procedure Unpack_Check_Update___.
+--       action_ = 'DO'
+--          Modification of an existing instance of the logical unit. The
+--          procedure unpacks the attributes, checks all values before
+--          procedure Update___ is called.
+--
+-- Remove__
+--    Client-support interface to remove LU instances.
+--       action_ = 'CHECK'
+--          Check whether a specific LU-instance may be removed or not.
+--          The procedure fetches the complete record by calling procedure
+--          Get_Object_By_Id___. Then the check is made by calling procedure
+--          Check_Delete___.
+--       action_ = 'DO'
+--          Remove an existing instance of the logical unit. The procedure
+--          fetches the complete LU-record, checks for a delete and then
+--          deletes the record by calling procedure Delete___.
+-----------------------------------------------------------------------------
+
+PROCEDURE Lock__ (
+   info_       OUT VARCHAR2,
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2 )
+IS
+   dummy_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Lock__');
+   dummy_ := Lock_By_Id___(objid_, objversion_);
+   info_ := Client_SYS.Get_All_Info;
+END Lock__;
+
+
+PROCEDURE New__ (
+   info_       OUT    VARCHAR2,
+   objid_      OUT    VARCHAR2,
+   objversion_ OUT    VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   newrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'New__');
+   IF (action_ = 'PREPARE') THEN
+      Prepare_Insert___(attr_);
+   ELSIF (action_ = 'CHECK') THEN
+      Unpack_Check_Insert___(attr_, newrec_);
+   ELSIF (action_ = 'DO') THEN
+      Unpack_Check_Insert___(attr_, newrec_);
+      Insert___(objid_, objversion_, newrec_, attr_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END New__;
+
+
+PROCEDURE Modify__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   by_keys_    IN     BOOLEAN DEFAULT FALSE,
+   action_     IN     VARCHAR2 )
+IS
+   oldrec_ &TABLE%ROWTYPE;
+   newrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Modify__');
+   IF (action_ = 'CHECK') THEN
+      newrec_ := Get_Object_By_Id___(objid_);
+      Unpack_Check_Update___(attr_, newrec_, objid_);
+   ELSIF (action_ = 'DO') THEN
+      oldrec_ := Lock_By_Id___(objid_, objversion_);
+      newrec_ := oldrec_;
+      Unpack_Check_Update___(attr_, newrec_, objid_);
+      Update___(objid_, oldrec_, newrec_, attr_, objversion_, by_keys_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Modify__;
+
+
+PROCEDURE Remove__ (
+   info_       OUT VARCHAR2,
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2,
+   action_     IN  VARCHAR2 )
+IS
+   remrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Remove__');
+   IF (action_ = 'CHECK') THEN
+      remrec_ := Get_Object_By_Id___(objid_);
+      Check_Delete___(remrec_);
+   ELSIF (action_ = 'DO') THEN
+      remrec_ := Lock_By_Id___(objid_, objversion_);
+      Check_Delete___(remrec_);
+      Delete___(objid_, remrec_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Remove__;
+
+-----------------------------------------------------------------------------
+-------------------- PUBLIC BASE METHODS ------------------------------------
+-----------------------------------------------------------------------------
+-- Exist
+--   Checks if given pointer (e.g. primary key) to an instance of this
+--   logical unit exists. If not an exception will be raised.
+-----------------------------------------------------------------------------
+
+PROCEDURE Exist (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER )
+IS
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Exist', TRUE);
+   IF (NOT Check_Exist___(order_no_, release_no_, sequence_no_, line_item_no_)) THEN
+      Error_SYS.Record_Not_Exist(lu_name_);
+   END IF;
+END Exist;
+
+-----------------------------------------------------------------------------
+-------------------- PUBLIC TRANSLATION METHODS -----------------------------
+-----------------------------------------------------------------------------
+
+PROCEDURE Language_Refreshed
+IS
+BEGIN
+   Domain_SYS.Language_Refreshed(lu_name_, Get_Client_Values___, Get_Db_Values___, 'STATE');
+END Language_Refreshed;
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC IMPLEMENTATION METHODS ---------------------
+-----------------------------------------------------------------------------
+
+PROCEDURE Do_Close___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 )
+IS
+BEGIN
+   NULL;
+END Do_Close___;
+
+
+PROCEDURE Do_Issue___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 )
+IS
+BEGIN
+   NULL;
+END Do_Issue___;
+
+
+PROCEDURE Do_Open___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 )
+IS
+BEGIN
+   NULL;
+END Do_Open___;
+
+
+PROCEDURE Do_Park___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 )
+IS
+BEGIN
+   NULL;
+END Do_Park___;
+
+
+PROCEDURE Do_Plan___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 )
+IS
+BEGIN
+   NULL;
+END Do_Plan___;
+
+
+PROCEDURE Do_Release___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 )
+IS
+BEGIN
+   NULL;
+END Do_Release___;
+
+
+PROCEDURE Do_Reserve___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 )
+IS
+BEGIN
+   NULL;
+END Do_Reserve___;
+
+
+PROCEDURE Do_Unissue___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 )
+IS
+BEGIN
+   NULL;
+END Do_Unissue___;
+
+
+PROCEDURE Do_Unreserve___ (
+   rec_  IN OUT &TABLE%ROWTYPE,
+   attr_ IN OUT VARCHAR2 )
+IS
+BEGIN
+   NULL;
+END Do_Unreserve___;
+
+
+FUNCTION Create_Released___ (
+   rec_  IN     &TABLE%ROWTYPE ) RETURN BOOLEAN
+IS
+BEGIN
+   RETURN FALSE;
+END Create_Released___;
+
+
+FUNCTION Is_Reserved___ (
+   rec_  IN     &TABLE%ROWTYPE ) RETURN BOOLEAN
+IS
+BEGIN
+   RETURN FALSE;
+END Is_Reserved___;
+
+
+FUNCTION Order_Has_General_Oh___ (
+   rec_  IN     &TABLE%ROWTYPE ) RETURN BOOLEAN
+IS
+BEGIN
+   RETURN FALSE;
+END Order_Has_General_Oh___;
+
+
+FUNCTION Remaining_Issued___ (
+   rec_  IN     &TABLE%ROWTYPE ) RETURN BOOLEAN
+IS
+BEGIN
+   RETURN FALSE;
+END Remaining_Issued___;
+
+
+FUNCTION Remaining_Reserved___ (
+   rec_  IN     &TABLE%ROWTYPE ) RETURN BOOLEAN
+IS
+BEGIN
+   RETURN FALSE;
+END Remaining_Reserved___;
+
+
+FUNCTION Use_Part___ (
+   rec_  IN     &TABLE%ROWTYPE ) RETURN BOOLEAN
+IS
+BEGIN
+   RETURN FALSE;
+END Use_Part___;
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PRIVATE METHODS ----------------------------
+-----------------------------------------------------------------------------
+
+PROCEDURE Close__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   rec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Close__');
+   IF (action_ = 'CHECK') THEN
+      NULL;
+   ELSIF (action_ = 'DO') THEN
+      rec_ := Lock_By_Id___(objid_, objversion_);
+      Finite_State_Machine___(rec_, 'Close', attr_);
+      objversion_ := to_char(rec_.rowversion,'YYYYMMDDHH24MISS');
+      Finite_State_Add_To_Attr___(rec_, attr_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Close__;
+
+
+PROCEDURE Issue__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   rec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Issue__');
+   IF (action_ = 'CHECK') THEN
+      NULL;
+   ELSIF (action_ = 'DO') THEN
+      rec_ := Lock_By_Id___(objid_, objversion_);
+      Finite_State_Machine___(rec_, 'Issue', attr_);
+      objversion_ := to_char(rec_.rowversion,'YYYYMMDDHH24MISS');
+      Finite_State_Add_To_Attr___(rec_, attr_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Issue__;
+
+
+PROCEDURE Open__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   rec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Open__');
+   IF (action_ = 'CHECK') THEN
+      NULL;
+   ELSIF (action_ = 'DO') THEN
+      rec_ := Lock_By_Id___(objid_, objversion_);
+      Finite_State_Machine___(rec_, 'Open', attr_);
+      objversion_ := to_char(rec_.rowversion,'YYYYMMDDHH24MISS');
+      Finite_State_Add_To_Attr___(rec_, attr_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Open__;
+
+
+PROCEDURE Park__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   rec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Park__');
+   IF (action_ = 'CHECK') THEN
+      NULL;
+   ELSIF (action_ = 'DO') THEN
+      rec_ := Lock_By_Id___(objid_, objversion_);
+      Finite_State_Machine___(rec_, 'Park', attr_);
+      objversion_ := to_char(rec_.rowversion,'YYYYMMDDHH24MISS');
+      Finite_State_Add_To_Attr___(rec_, attr_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Park__;
+
+
+PROCEDURE Plan__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   rec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Plan__');
+   IF (action_ = 'CHECK') THEN
+      NULL;
+   ELSIF (action_ = 'DO') THEN
+      rec_ := Lock_By_Id___(objid_, objversion_);
+      Finite_State_Machine___(rec_, 'Plan', attr_);
+      objversion_ := to_char(rec_.rowversion,'YYYYMMDDHH24MISS');
+      Finite_State_Add_To_Attr___(rec_, attr_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Plan__;
+
+
+PROCEDURE Release__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   rec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Release__');
+   IF (action_ = 'CHECK') THEN
+      NULL;
+   ELSIF (action_ = 'DO') THEN
+      rec_ := Lock_By_Id___(objid_, objversion_);
+      Finite_State_Machine___(rec_, 'Release', attr_);
+      objversion_ := to_char(rec_.rowversion,'YYYYMMDDHH24MISS');
+      Finite_State_Add_To_Attr___(rec_, attr_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Release__;
+
+
+PROCEDURE Reserve__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   rec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Reserve__');
+   IF (action_ = 'CHECK') THEN
+      NULL;
+   ELSIF (action_ = 'DO') THEN
+      rec_ := Lock_By_Id___(objid_, objversion_);
+      Finite_State_Machine___(rec_, 'Reserve', attr_);
+      objversion_ := to_char(rec_.rowversion,'YYYYMMDDHH24MISS');
+      Finite_State_Add_To_Attr___(rec_, attr_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Reserve__;
+
+
+PROCEDURE Unissue__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   rec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Unissue__');
+   IF (action_ = 'CHECK') THEN
+      NULL;
+   ELSIF (action_ = 'DO') THEN
+      rec_ := Lock_By_Id___(objid_, objversion_);
+      Finite_State_Machine___(rec_, 'Unissue', attr_);
+      objversion_ := to_char(rec_.rowversion,'YYYYMMDDHH24MISS');
+      Finite_State_Add_To_Attr___(rec_, attr_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Unissue__;
+
+
+PROCEDURE Unreserve__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   rec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Unreserve__');
+   IF (action_ = 'CHECK') THEN
+      NULL;
+   ELSIF (action_ = 'DO') THEN
+      rec_ := Lock_By_Id___(objid_, objversion_);
+      Finite_State_Machine___(rec_, 'Unreserve', attr_);
+      objversion_ := to_char(rec_.rowversion,'YYYYMMDDHH24MISS');
+      Finite_State_Add_To_Attr___(rec_, attr_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Unreserve__;
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PROTECTED METHODS --------------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PUBLIC METHODS -----------------------------
+-----------------------------------------------------------------------------
+
+FUNCTION Get_Part_No (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN VARCHAR2
+IS
+   temp_ &TABLE..part_no%TYPE;
+   CURSOR get_attr IS
+      SELECT part_no
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Part_No;
+
+
+FUNCTION Get_Contract (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN VARCHAR2
+IS
+   temp_ &TABLE..contract%TYPE;
+   CURSOR get_attr IS
+      SELECT contract
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Contract;
+
+
+FUNCTION Get_Note_Id (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN NUMBER
+IS
+   temp_ &TABLE..note_id%TYPE;
+   CURSOR get_attr IS
+      SELECT note_id
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Note_Id;
+
+
+FUNCTION Get_Operation_No (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN NUMBER
+IS
+   temp_ &TABLE..operation_no%TYPE;
+   CURSOR get_attr IS
+      SELECT operation_no
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Operation_No;
+
+
+FUNCTION Get_Structure_Line_No (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN NUMBER
+IS
+   temp_ &TABLE..structure_line_no%TYPE;
+   CURSOR get_attr IS
+      SELECT structure_line_no
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Structure_Line_No;
+
+
+FUNCTION Get_Date_Required (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN DATE
+IS
+   temp_ &TABLE..date_required%TYPE;
+   CURSOR get_attr IS
+      SELECT date_required
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Date_Required;
+
+
+FUNCTION Get_Qty_Assigned (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN NUMBER
+IS
+   temp_ &TABLE..qty_assigned%TYPE;
+   CURSOR get_attr IS
+      SELECT qty_assigned
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Qty_Assigned;
+
+
+FUNCTION Get_Qty_Issued (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN NUMBER
+IS
+   temp_ &TABLE..qty_issued%TYPE;
+   CURSOR get_attr IS
+      SELECT qty_issued
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Qty_Issued;
+
+
+FUNCTION Get_Qty_On_Order (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN NUMBER
+IS
+   temp_ &TABLE..qty_on_order%TYPE;
+   CURSOR get_attr IS
+      SELECT qty_on_order
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Qty_On_Order;
+
+
+FUNCTION Get_Qty_Per_Assembly (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN NUMBER
+IS
+   temp_ &TABLE..qty_per_assembly%TYPE;
+   CURSOR get_attr IS
+      SELECT qty_per_assembly
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Qty_Per_Assembly;
+
+
+FUNCTION Get_Shrinkage_Factor (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN NUMBER
+IS
+   temp_ &TABLE..shrinkage_factor%TYPE;
+   CURSOR get_attr IS
+      SELECT shrinkage_factor
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Shrinkage_Factor;
+
+
+FUNCTION Get_Component_Scrap (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN NUMBER
+IS
+   temp_ &TABLE..component_scrap%TYPE;
+   CURSOR get_attr IS
+      SELECT component_scrap
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Component_Scrap;
+
+
+FUNCTION Get_Qty_Required (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN NUMBER
+IS
+   temp_ &TABLE..qty_required%TYPE;
+   CURSOR get_attr IS
+      SELECT qty_required
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Qty_Required;
+
+
+FUNCTION Get_Supply_Code (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN VARCHAR2
+IS
+   temp_ &TABLE..supply_code%TYPE;
+   CURSOR get_attr IS
+      SELECT supply_code
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN Order_Supply_Type_API.Decode(temp_);
+END Get_Supply_Code;
+
+
+FUNCTION Get_Qty_Short (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN NUMBER
+IS
+   temp_ &TABLE..qty_short%TYPE;
+   CURSOR get_attr IS
+      SELECT qty_short
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Qty_Short;
+
+
+FUNCTION Get_Consumption_Item (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN VARCHAR2
+IS
+   temp_ &TABLE..consumption_item%TYPE;
+   CURSOR get_attr IS
+      SELECT consumption_item
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN Consumption_Item_API.Decode(temp_);
+END Get_Consumption_Item;
+
+
+FUNCTION Get_Activity_Seq (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN NUMBER
+IS
+   temp_ &TABLE..activity_seq%TYPE;
+   CURSOR get_attr IS
+      SELECT activity_seq
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Activity_Seq;
+
+
+FUNCTION Get_Configuration_Id (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN VARCHAR2
+IS
+   temp_ &TABLE..configuration_id%TYPE;
+   CURSOR get_attr IS
+      SELECT configuration_id
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Configuration_Id;
+
+
+FUNCTION Get_Condition_Code (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN VARCHAR2
+IS
+   temp_ &TABLE..condition_code%TYPE;
+   CURSOR get_attr IS
+      SELECT condition_code
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Condition_Code;
+
+
+FUNCTION Get_Part_Ownership (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN VARCHAR2
+IS
+   temp_ &TABLE..part_ownership%TYPE;
+   CURSOR get_attr IS
+      SELECT part_ownership
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN Part_Ownership_API.Decode(temp_);
+END Get_Part_Ownership;
+
+
+FUNCTION Get_Owning_Customer_No (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN VARCHAR2
+IS
+   temp_ &TABLE..owning_customer_no%TYPE;
+   CURSOR get_attr IS
+      SELECT owning_customer_no
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Owning_Customer_No;
+
+
+FUNCTION Get_Owning_Vendor_No (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN VARCHAR2
+IS
+   temp_ &TABLE..owning_vendor_no%TYPE;
+   CURSOR get_attr IS
+      SELECT owning_vendor_no
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Owning_Vendor_No;
+
+
+FUNCTION Get_Vim_Structure_Source (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN VARCHAR2
+IS
+   temp_ &TABLE..vim_structure_source%TYPE;
+   CURSOR get_attr IS
+      SELECT vim_structure_source
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN Vim_Structure_Source_API.Decode(temp_);
+END Get_Vim_Structure_Source;
+
+
+FUNCTION Get_Partial_Part_Required (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN VARCHAR2
+IS
+   temp_ &TABLE..partial_part_required%TYPE;
+   CURSOR get_attr IS
+      SELECT partial_part_required
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Partial_Part_Required;
+
+
+FUNCTION Get_Project_Id (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN VARCHAR2
+IS
+   temp_ &TABLE..project_id%TYPE;
+   CURSOR get_attr IS
+      SELECT project_id
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Project_Id;
+
+
+FUNCTION Get_Catch_Qty_Issued (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN NUMBER
+IS
+   temp_ &TABLE..catch_qty_issued%TYPE;
+   CURSOR get_attr IS
+      SELECT catch_qty_issued
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Catch_Qty_Issued;
+
+
+FUNCTION Get_Replaced_Qty (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN NUMBER
+IS
+   temp_ &TABLE..replaced_qty%TYPE;
+   CURSOR get_attr IS
+      SELECT replaced_qty
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Replaced_Qty;
+
+
+FUNCTION Get_Replaces_Qpa_Factor (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN NUMBER
+IS
+   temp_ &TABLE..replaces_qpa_factor%TYPE;
+   CURSOR get_attr IS
+      SELECT replaces_qpa_factor
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Replaces_Qpa_Factor;
+
+
+FUNCTION Get_Replaces_Line_Item_No (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN NUMBER
+IS
+   temp_ &TABLE..replaces_line_item_no%TYPE;
+   CURSOR get_attr IS
+      SELECT replaces_line_item_no
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Replaces_Line_Item_No;
+
+
+FUNCTION Get_Qty_Scrapped_Component (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN NUMBER
+IS
+   temp_ &TABLE..qty_scrapped_component%TYPE;
+   CURSOR get_attr IS
+      SELECT qty_scrapped_component
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Qty_Scrapped_Component;
+
+
+FUNCTION Get (
+   order_no_ IN VARCHAR2,
+   release_no_ IN VARCHAR2,
+   sequence_no_ IN VARCHAR2,
+   line_item_no_ IN NUMBER ) RETURN Public_Rec
+IS
+   temp_ Public_Rec;
+   CURSOR get_attr IS
+      SELECT part_no, contract, note_id, operation_no, structure_line_no, date_required, qty_assigned, qty_issued, qty_on_order, qty_per_assembly, shrinkage_factor, component_scrap, qty_required, supply_code, qty_short, consumption_item, activity_seq, configuration_id, condition_code, part_ownership, owning_customer_no, owning_vendor_no, vim_structure_source, partial_part_required, project_id, catch_qty_issued, replaced_qty, replaces_qpa_factor, replaces_line_item_no, qty_scrapped_component
+      FROM &TABLE
+      WHERE order_no = order_no_
+          AND   release_no = release_no_
+          AND   sequence_no = sequence_no_
+          AND   line_item_no = line_item_no_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get;
+
+-----------------------------------------------------------------------------
+-------------------- FOUNDATION1 METHODS ------------------------------------
+-----------------------------------------------------------------------------
+-- Init
+--   Dummy procedure that can be called at database startup to ensure that
+--   this package is loaded into memory for performance reasons only.
+-----------------------------------------------------------------------------
+
+PROCEDURE Init
+IS
+BEGIN
+   Domain_SYS.Load_State(lu_name_, Get_Client_Values___, Get_Db_Values___);
+END Init;
+
+
+BEGIN
+   --
+   -- Load the context with values
+   --
+   Init;
+END &PKG;
+/
+SHOW ERROR
+
+
+BEGIN
+   SHOP_MATERIAL_ALLOC_API.Language_Refreshed;
+END;
+/
+
+UNDEFINE MODULE
+UNDEFINE LU
+UNDEFINE TABLE
+UNDEFINE VIEW
+UNDEFINE PKG
+UNDEFINE OBJID
+UNDEFINE OBJVERSION
+UNDEFINE OBJSTATE
+UNDEFINE OBJEVENTS
+UNDEFINE STATE
+-----------------------------------------------------------------------------
