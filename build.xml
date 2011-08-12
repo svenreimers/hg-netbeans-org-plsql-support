@@ -5,7 +5,6 @@
 <project name="plsql support" basedir="." default="netbeans">
     <description>Builds the module suite plsql support.</description>
     
-    
     <property file="build.properties"/>
     
     <property name="use.timestamp" value="true"/>
@@ -77,6 +76,18 @@
             <fileset dir="." includes="*.html"/>
         </delete>
         <delete file="${timestamp.file}"/>
+    </target>
+
+    <target name="nbms" depends="update-binaries">
+        <ant antfile="build-suite.xml" target="nbms" inheritAll="false"/>
+    </target>
+    
+    <target name="daily" depends="update-binaries,build">
+        <mkdir dir="dist"/>
+        <zip destfile="dist/netbeans-trunk-${build.id}-plsql.zip" duplicate="add">
+            <zipfileset dir="build/cluster" prefix="netbeans/extra"/>
+            <zipfileset dir="ide/netbeans" prefix="netbeans"/>
+        </zip>
     </target>
 
 </project>
