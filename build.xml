@@ -56,6 +56,12 @@
         <ant antfile="build-suite.xml" target="build" inheritAll="false"/>
     </target>
     
+    <target name="printinfo">
+      <property environment="env" />
+      <echo message="${env.BUILD_TAG}"/>
+      <echo message="${env.JAVA_HOME}"/>
+    </target>
+    
     <target name="netbeans" depends="update-binaries,build-suite"/>
     <target name="build" depends="netbeans"/>
     
