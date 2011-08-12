@@ -23,7 +23,6 @@
                 </tokenfilter>
             </filterchain>
         </loadfile>
-        <echo>netbeans.binaries.url resolved to ${netbeans.binaries.url}</echo>
     </target>
 
     <target name="download-binaries" depends="calculate-netbeans-url" unless="skip.download">
@@ -52,6 +51,9 @@
     <target name="update-binaries" depends="download-binaries,check-binaries,unzip-binaries"/>
     
     <target name="build-suite">
+        <echo>basedir is ${basedir}</echo>
+        <echo>nbplatform.active is ${nbplatform.active}</echo>
+        <echo>nbplatform.default.netbeans.dest.dir resolved to ${nbplatform.default.netbeans.dest.dir}</echo>
         <echo>nbplatform.default.harness.dir resolved to ${nbplatform.default.harness.dir}</echo>
         <ant antfile="build-suite.xml" target="build" inheritAll="false"/>
     </target>
@@ -60,6 +62,9 @@
     <target name="build" depends="netbeans"/>
     
     <target name="clean">
+        <echo>basedir is ${basedir}</echo>
+        <echo>nbplatform.active is ${nbplatform.active}</echo>
+        <echo>nbplatform.default.netbeans.dest.dir resolved to ${nbplatform.default.netbeans.dest.dir}</echo>
         <echo>nbplatform.default.harness.dir resolved to ${nbplatform.default.harness.dir}</echo>
         <ant antfile="build-suite.xml" target="clean" inheritAll="false"/>
     </target>
