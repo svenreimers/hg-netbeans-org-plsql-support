@@ -1,13 +1,11 @@
 ~$
 /build$
 /dist$
-/ide$
 /nbproject/private$
 /nbproject/sqe.properties$
 /nbproject/findbugs.settings$
 /test/(coverage|lib|results|work)$
 derby\.log
-netbeans.*
 \.class$
 \.DS_Store$
 \.orig$
@@ -184,3 +182,7 @@ netbeans.*
 \.chg\..*$
 \.conflict\~$
 ^${timestamp\.file}$
+^ide$
+^netbeans\.zip$
+^netbeans\.html$
+^Libraries/ThirdParty/libs\.commons/release/modules/ext$

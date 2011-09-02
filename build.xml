@@ -10,6 +10,7 @@
     <property file="nbproject/platform.properties"/>
     
     <property name="use.timestamp" value="true"/>
+    <property name="timestamp.file" value=".lastModified"/>
     
     <property environment="env"/>
     <condition property="build.id" value="${env.BUILD_ID}" else="dev">
@@ -55,7 +56,7 @@
     <target name="check-harness">
         <echo>nbplatform.default.netbeans.dest.dir resolved to ${nbplatform.default.netbeans.dest.dir}</echo>
         <echo>nbplatform.default.harness.dir resolved to ${nbplatform.default.harness.dir}</echo>
-        <fail message="Harness is missing. Specify nbplatform.default.netbeans.dest.dir={your-sources-root}/ide/netbeans in nbproject/platform-private.propetries">
+        <fail message="Harness is missing. Specify nbplatform.default.netbeans.dest.dir={path-to-your-sources-root}/ide/netbeans in nbproject/private/platform-private.propetries">
             <condition>
                 <not>
                     <available file="${nbplatform.default.harness.dir}" type="dir"/>
