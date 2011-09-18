@@ -16,7 +16,7 @@ and open the template in the editor.
         <ext name="SPEC"/>
         <ext name="db"/>
         <ext name="DB"/>
-        <ext name="sql"/>
+        <!--<ext name="sql"/>-->
         <ext name="SQL"/>
         <ext name="cre"/>
         <ext name="CRE"/>
