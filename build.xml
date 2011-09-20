@@ -5,8 +5,8 @@
 <project name="plsql support" basedir="." default="netbeans">
     <description>Builds the module suite plsql support.</description>
     
-    <property file="build.properties"/>
     <property file="nbproject/private/platform-private.properties"/>
+    <property file="build.properties"/>
     <property file="nbproject/platform.properties"/>
     
     <property name="use.timestamp" value="true"/>
