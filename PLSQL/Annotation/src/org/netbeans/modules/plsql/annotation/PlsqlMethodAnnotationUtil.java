@@ -150,57 +150,84 @@ public class PlsqlMethodAnnotationUtil {
       }
       return methodSpec.trim();
    }
-
-   public static int getOffsetToInsert(final Document doc, final List<PlsqlBlock> specBlockHier, final String packageName, final String searchString) throws BadLocationException {
-      int offset = -1;
-      //Get package block
-      if (!packageName.equals("")) {
-         PlsqlBlock packageBlock = null;
-         for (int i = 0; i < specBlockHier.size(); i++) {
-            final PlsqlBlock temp = specBlockHier.get(i);
-            if (temp.getType() == PlsqlBlockType.PACKAGE && temp.getName().equalsIgnoreCase(packageName)) {
-               packageBlock = temp;
-               break;
+        
+    public static PlsqlBlock findMethod(final List<PlsqlBlock> specBlockHier, final String packageName, final String methodName) {
+        PlsqlBlock match = null;
+        if (!packageName.equals("")) {
+            PlsqlBlock packageBlock = getPackageBody(specBlockHier, PlsqlBlockType.PACKAGE_BODY, packageName);
+            if (packageBlock != null) {
+                for (int i = 0; i < packageBlock.getChildCount(); i++) {
+                    final PlsqlBlock temp = packageBlock.getChildBlocks().get(i);
+                    if (temp.getName().equals(methodName)) {
+                        match = temp;
+                        break;
+                    }
+                }
             }
-         }
-
-         if (packageBlock != null) {
-            for (int i = 0; i < packageBlock.getChildCount(); i++) {
-               final PlsqlBlock temp = packageBlock.getChildBlocks().get(i);
-               if (temp.getType() == PlsqlBlockType.COMMENT) {
-                  if (temp.getName().contains(searchString)) {
-                     offset = temp.getEndOffset();
-                     break;
-                  } else {
-                     //Get block content and check; comments can be merged to one comment block
-                     final String text = doc.getText(temp.getStartOffset(), temp.getEndOffset() - temp.getStartOffset());
-                     int index = text.indexOf(searchString);
-                     if (index != -1) {
-                        index = text.indexOf("\n", index);
-                        if (index != -1) {
-                           index = text.indexOf("\n", index + 1);
-                           if (index != -1) {
-                              offset = temp.getStartOffset() + index;
-                           } else {
-                              offset = temp.getEndOffset();
-                           }
-
-                           break;
-                        }
-                     }
-                  }
-               }
+        }
+        return match;
+    }
+      
+    public static PlsqlBlock getPackageBody(final List<PlsqlBlock> specBlockHier, final PlsqlBlockType blockType, final String packageName){
+        PlsqlBlock packageBlock = null;
+            for (int i = 0; i < specBlockHier.size(); i++) {
+                final PlsqlBlock temp = specBlockHier.get(i);
+                if (temp.getType() == blockType && temp.getName().equalsIgnoreCase(packageName)) {
+                    packageBlock = temp;
+                    break;
+                }
             }
-
-            //If the comment is not found insert some where
-            if (offset == -1) {
-               offset = packageBlock.getChildBlocks().get(0).getEndOffset();
-            }
-         }
-      }
-
-      return offset;
+            return packageBlock;        
    }
+
+    public static int getOffsetToInsert(final Document doc, final List<PlsqlBlock> specBlockHier, final String packageName, final PlsqlBlock searchBlock, final int searchPlace) throws BadLocationException {
+        int offset = -1;
+        //Get package block
+        if (!packageName.equals("")) {
+            PlsqlBlock packageBlock = getPackageBody(specBlockHier, PlsqlBlockType.PACKAGE, packageName);
+
+            if (packageBlock != null) {
+                for (int i = 0; i < packageBlock.getChildCount(); i++) {
+                    final PlsqlBlock temp = packageBlock.getChildBlocks().get(i);
+                    if (!temp.getType().equals(PlsqlBlockType.COMMENT) && (temp.getType().equals(PlsqlBlockType.FUNCTION_DEF) || temp.getType().equals(PlsqlBlockType.PROCEDURE_DEF))) {
+                        if (temp.getName().contains(searchBlock.getName())) {
+                            if (searchPlace == -1) {
+                                offset = temp.getStartOffset();
+                            } else {
+                                offset = packageBlock.getChildBlocks().get(i + 1).getStartOffset() - 1;
+                            }
+                            break;
+                        }
+                    } else if (temp.getType().equals(PlsqlBlockType.COMMENT)&& searchBlock.getType().equals(PlsqlBlockType.COMMENT)) {
+
+                        //Get block content and check; comments can be merged to one comment block
+                        final String text = doc.getText(temp.getStartOffset(), temp.getEndOffset() - temp.getStartOffset());
+                        int index = text.indexOf(searchBlock.getName());
+                        if (index != -1) {
+                            index = text.indexOf("\n", index);
+                            if (index != -1) {
+                                index = text.indexOf("\n", index + 1);
+                                if (index != -1) {
+                                    offset = temp.getStartOffset() + index;
+                                } else {
+                                    offset = temp.getEndOffset();
+                                }
+
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                //If the comment is not found insert some where
+                if (offset == -1) {
+                    offset = packageBlock.getChildBlocks().get(0).getEndOffset();
+                }
+            }
+        }
+
+        return offset;
+    }
 
    public static boolean changeParam(final Document doc, final int offset, final String methodName) {
       if (PlsqlAnnotationUtil.isFileReadOnly(doc)) {

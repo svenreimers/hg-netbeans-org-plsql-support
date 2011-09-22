@@ -129,88 +129,90 @@ public class PlsqlFoldManager implements FoldManager, Observer {
     */
    private void addFolds(final List<PlsqlBlock> blockHier, final FoldHierarchyTransaction fhTransaction, final List<FoldInfo> collapsedFolds) throws BadLocationException {
       final int count = blockHier.size();
-
+      Document doc = getDocument();
       for (int i = 0; i < count; i++) {
          final PlsqlBlock temp = blockHier.get(i);
          FoldType foldType = null;
          final PlsqlBlockType type = temp.getType();
          String description = "";
 
-         if (type == PlsqlBlockType.VIEW) {
-            foldType = PlsqlFoldTypes.VIEW;
-            description = temp.getPrefix() + "VIEW " + temp.getName();
-         } else if (type == PlsqlBlockType.TABLE_COMMENT) {
-            foldType = PlsqlFoldTypes.TABLECOMMENT;
-            description = "COMMENT ON TABLE " + temp.getName();
-         } else if (type == PlsqlBlockType.COLUMN_COMMENT) {
-            foldType = PlsqlFoldTypes.COLUMNCOMMENT;
-            description = "COLUMN COMMENTS ON TABLE " + temp.getName();
-         } else if (type == PlsqlBlockType.COMMENT) {
-            foldType = PlsqlFoldTypes.COMMENT;
-            description = temp.getName();
-         } else if (type == PlsqlBlockType.PACKAGE) {
-            foldType = PlsqlFoldTypes.PACKAGE;
-            description = temp.getPrefix() + "PACKAGE " + temp.getName();
-         } else if (type == PlsqlBlockType.PACKAGE_BODY) {
-            foldType = PlsqlFoldTypes.PACKAGEBODY;
-            description = temp.getPrefix() + "PACKAGE BODY " + temp.getName();
-         } else if (type == PlsqlBlockType.PROCEDURE_IMPL) {
-            foldType = PlsqlFoldTypes.PROCEDUREIMPL;
-            description = temp.getPrefix() + "PROCEDURE IMPLEMENTATION " + temp.getName();
-         } else if (type == PlsqlBlockType.FUNCTION_IMPL) {
-            foldType = PlsqlFoldTypes.FUNCTIONIMPL;
-            description = temp.getPrefix() + "FUNCTION IMPLEMENTATION " + temp.getName();
-         } else if (type == PlsqlBlockType.PROCEDURE_DEF) {
-            foldType = PlsqlFoldTypes.PROCEDUREDEF;
-            description = "PROCEDURE DEFINITION " + temp.getName();
-         } else if (type == PlsqlBlockType.FUNCTION_DEF) {
-            foldType = PlsqlFoldTypes.FUNCTIONDEF;
-            description = "FUNCTION DEFINITION " + temp.getName();
-         } else if (type == PlsqlBlockType.DECLARE_END) {
-            foldType = PlsqlFoldTypes.DECLAREEND;
-            description = "DECLARE BLOCK";
-         } else if (type == PlsqlBlockType.BEGIN_END) {
-            foldType = PlsqlFoldTypes.BEGINEND;
-            description = "BEGIN BLOCK";
-         } else if (type == PlsqlBlockType.TRIGGER) {
-            foldType = PlsqlFoldTypes.TRIGGER;
-            description = temp.getPrefix() + "TRIGGER " + temp.getName();
-         } else if (type == PlsqlBlockType.IF) {
-            foldType = PlsqlFoldTypes.IF;
-            description = temp.getName();
-         } else if (type == PlsqlBlockType.CASE) {
-            foldType = PlsqlFoldTypes.CASE;
-            description = temp.getName();
-         } else if (type == PlsqlBlockType.WHILE_LOOP) {
-            foldType = PlsqlFoldTypes.WHILELOOP;
-            description = "WHILE " + temp.getName();
-         } else if (type == PlsqlBlockType.FOR_LOOP) {
-            foldType = PlsqlFoldTypes.FORLOOP;
-            description = "FOR " + temp.getName();
-         } else if (type == PlsqlBlockType.LOOP) {
-            foldType = PlsqlFoldTypes.LOOP;
-            description = "LOOP ";
-         } else if (type == PlsqlBlockType.CUSTOM_FOLD) {
-            foldType = PlsqlFoldTypes.CUSTOM;
-            description = temp.getName();
-         } else if (type == PlsqlBlockType.STATEMENT) {
-            foldType = PlsqlFoldTypes.STATEMENT;
-            description = temp.getPrefix() + temp.getName();
-         } else if (type == PlsqlBlockType.CURSOR) {
-            foldType = PlsqlFoldTypes.CURSOR;
-            description = "CURSOR " + temp.getName();
-         } else if (type == PlsqlBlockType.JAVA_SOURCE) {
-            foldType = PlsqlFoldTypes.JAVASOURCE;
-            description = temp.getPrefix() + "JAVA SOURCE";
-         }
+          if (!(type == PlsqlBlockType.COMMENT && doc.getText(temp.getStartOffset(), temp.getEndOffset() - temp.getStartOffset()).indexOf("\n") == -1)) { // check for single line comments
+              if (type == PlsqlBlockType.VIEW) {
+                  foldType = PlsqlFoldTypes.VIEW;
+                  description = temp.getPrefix() + "VIEW " + temp.getName();
+              } else if (type == PlsqlBlockType.TABLE_COMMENT) {
+                  foldType = PlsqlFoldTypes.TABLECOMMENT;
+                  description = "COMMENT ON TABLE " + temp.getName();
+              } else if (type == PlsqlBlockType.COLUMN_COMMENT) {
+                  foldType = PlsqlFoldTypes.COLUMNCOMMENT;
+                  description = "COLUMN COMMENTS ON TABLE " + temp.getName();
+              } else if (type == PlsqlBlockType.COMMENT) {
+                  foldType = PlsqlFoldTypes.COMMENT;
+                  description = temp.getName();
+              } else if (type == PlsqlBlockType.PACKAGE) {
+                  foldType = PlsqlFoldTypes.PACKAGE;
+                  description = temp.getPrefix() + "PACKAGE " + temp.getName();
+              } else if (type == PlsqlBlockType.PACKAGE_BODY) {
+                  foldType = PlsqlFoldTypes.PACKAGEBODY;
+                  description = temp.getPrefix() + "PACKAGE BODY " + temp.getName();
+              } else if (type == PlsqlBlockType.PROCEDURE_IMPL) {
+                  foldType = PlsqlFoldTypes.PROCEDUREIMPL;
+                  description = temp.getPrefix() + "PROCEDURE IMPLEMENTATION " + temp.getName();
+              } else if (type == PlsqlBlockType.FUNCTION_IMPL) {
+                  foldType = PlsqlFoldTypes.FUNCTIONIMPL;
+                  description = temp.getPrefix() + "FUNCTION IMPLEMENTATION " + temp.getName();
+              } else if (type == PlsqlBlockType.PROCEDURE_DEF) {
+                  foldType = PlsqlFoldTypes.PROCEDUREDEF;
+                  description = "PROCEDURE DEFINITION " + temp.getName();
+              } else if (type == PlsqlBlockType.FUNCTION_DEF) {
+                  foldType = PlsqlFoldTypes.FUNCTIONDEF;
+                  description = "FUNCTION DEFINITION " + temp.getName();
+              } else if (type == PlsqlBlockType.DECLARE_END) {
+                  foldType = PlsqlFoldTypes.DECLAREEND;
+                  description = "DECLARE BLOCK";
+              } else if (type == PlsqlBlockType.BEGIN_END) {
+                  foldType = PlsqlFoldTypes.BEGINEND;
+                  description = "BEGIN BLOCK";
+              } else if (type == PlsqlBlockType.TRIGGER) {
+                  foldType = PlsqlFoldTypes.TRIGGER;
+                  description = temp.getPrefix() + "TRIGGER " + temp.getName();
+              } else if (type == PlsqlBlockType.IF) {
+                  foldType = PlsqlFoldTypes.IF;
+                  description = temp.getName();
+              } else if (type == PlsqlBlockType.CASE) {
+                  foldType = PlsqlFoldTypes.CASE;
+                  description = temp.getName();
+              } else if (type == PlsqlBlockType.WHILE_LOOP) {
+                  foldType = PlsqlFoldTypes.WHILELOOP;
+                  description = "WHILE " + temp.getName();
+              } else if (type == PlsqlBlockType.FOR_LOOP) {
+                  foldType = PlsqlFoldTypes.FORLOOP;
+                  description = "FOR " + temp.getName();
+              } else if (type == PlsqlBlockType.LOOP) {
+                  foldType = PlsqlFoldTypes.LOOP;
+                  description = "LOOP ";
+              } else if (type == PlsqlBlockType.CUSTOM_FOLD) {
+                  foldType = PlsqlFoldTypes.CUSTOM;
+                  description = temp.getName();
+              } else if (type == PlsqlBlockType.STATEMENT) {
+                  foldType = PlsqlFoldTypes.STATEMENT;
+                  description = temp.getPrefix() + temp.getName();
+              } else if (type == PlsqlBlockType.CURSOR) {
+                  foldType = PlsqlFoldTypes.CURSOR;
+                  description = "CURSOR " + temp.getName();
+              } else if (type == PlsqlBlockType.JAVA_SOURCE) {
+                  foldType = PlsqlFoldTypes.JAVASOURCE;
+                  description = temp.getPrefix() + "JAVA SOURCE";
+              }
 
-         if (getDocument().getEndPosition().getOffset() >= temp.getEndOffset()) {
-            operation.addToHierarchy(foldType, description, isCollapsed(temp, foldType, collapsedFolds),
-                  temp.getStartOffset(), temp.getEndOffset(), 0, 0, null, fhTransaction);
+              if (getDocument().getEndPosition().getOffset() >= temp.getEndOffset()) {
+                  operation.addToHierarchy(foldType, description, isCollapsed(temp, foldType, collapsedFolds),
+	      temp.getStartOffset(), temp.getEndOffset(), 0, 0, null, fhTransaction);
 
-            //check for any child folds and add them also
-            addFolds(temp.getChildBlocks(), fhTransaction, collapsedFolds);
-         }
+                  //check for any child folds and add them also
+                  addFolds(temp.getChildBlocks(), fhTransaction, collapsedFolds);
+              }
+          }
       }
    }
 
@@ -276,7 +278,7 @@ public class PlsqlFoldManager implements FoldManager, Observer {
     */
    private synchronized void updateFolds(final FoldHierarchyTransaction fhTran) {
       try {
-         final PlsqlBlockFactory blockFactory = getBlockFactory();
+        final PlsqlBlockFactory blockFactory = getBlockFactory();
          if (blockFactory == null) {
             return;
          }

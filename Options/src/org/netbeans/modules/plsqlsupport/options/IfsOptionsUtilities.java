@@ -45,36 +45,38 @@ import org.openide.util.NbPreferences;
 
 public class IfsOptionsUtilities {
 
-   public static String auto_deploy_all_databases_key ="auto.deploy.all.databases";
-   public static String plsql_annotations_enabled_key = "plsql.annotations.enabled";
-   public static String plsql_expand_folds_key = "plsql.folds.expand";
-   public static String command_window_auto_commit_key = "command.window.auto.commit";
-   public static String plsql_annotations_general_key = "plsql.annotations.general";
-   public static String plsql_annotations_ifs_key = "plsql.annotations.ifs";
-   public static String plsql_annotations_comment_ref_key = "plsql.annotations.comment.ref";
-   public static String plsql_annotations_comments_key = "plsql.annotations.comments";
-   public static String plsql_annotations_cursor_where_key = "plsql.annotations.cursor.where";
-   public static String plsql_annotations_function_return_key = "plsql.annotations.function.return";
-   public static String plsql_annotations_generated_method_key = "plsql.annotations.generated.method";
-   public static String plsql_annotations_global_variable_key = "plsql.annotations.global.variable";
-   public static String plsql_annotations_if_null_key = "plsql.annotations.if.null";
-   public static String plsql_annotations_missing_end_name_key = "plsql.annotations.missing.endname";
-   public static String plsql_annotations_missing_lu_dec_key = "plsql.annotations.missing.ludec";
-   public static String plsql_annotations_missing_method_key = "plsql.annotations.missing.method";
-   public static String plsql_annotations_missing_module_dec_key = "plsql.annotations.missing.moduledec";
-   public static String plsql_annotations_missing_sysinit_key = "plsql.annotations.missing.sysinit";
-   public static String plsql_annotations_same_tag_key = "plsql.annotations.sametag";
-   public static String plsql_annotations_statements_key = "plsql.annotations.statements";
-   public static String plsql_annotations_table_or_view_key = "plsql.annotations.tableorview";
-   public static String plsql_annotations_unique_tag_key = "plsql.annotations.uniquetag";
-   public static String plsql_annotations_unreachable_key = "plsql.annotations.unreachable";
-   public static String plsql_annotations_wrong_end_name_key = "plsql.annotations.wrong.endname";
-   public static String plsql_annotations_wrong_func_param_key = "plsql.annotations.wrong.func.param";
-   public static String plsql_annotations_wrong_init_param_key = "plsql.annotations.wrong.initparam";
-   public static String plsql_annotations_wrong_lu_name_key = "plsql.annotations.wrong.luname";
-   public static String plsql_annotations_wrong_module_key = "plsql.annotations.wrong.module";
-   public static String plsql_annotations_wrong_param_order_key = "plsql.annotations.wrong.param.order";
-     
+   public static final String auto_deploy_all_databases_key = "auto.deploy.all.databases";
+   public static final String plsql_annotations_enabled_key = "plsql.annotations.enabled";
+   public static final String plsql_expand_folds_key = "plsql.folds.expand";
+   public static final String command_window_auto_commit_key = "command.window.auto.commit";
+   public static final String plsql_annotations_general_key = "plsql.annotations.general";
+   public static final String plsql_annotations_ifs_key = "plsql.annotations.ifs";
+   public static final String plsql_annotations_comment_ref_key = "plsql.annotations.comment.ref";
+   public static final String plsql_annotations_comments_key = "plsql.annotations.comments";
+   public static final String plsql_annotations_cursor_where_key = "plsql.annotations.cursor.where";
+   public static final String plsql_annotations_function_return_key = "plsql.annotations.function.return";
+   public static final String plsql_annotations_generated_method_key = "plsql.annotations.generated.method";
+   public static final String plsql_annotations_global_variable_key = "plsql.annotations.global.variable";
+   public static final String plsql_annotations_if_null_key = "plsql.annotations.if.null";
+   public static final String plsql_annotations_missing_end_name_key = "plsql.annotations.missing.endname";
+   public static final String plsql_annotations_missing_lu_dec_key = "plsql.annotations.missing.ludec";
+   public static final String plsql_annotations_missing_method_key = "plsql.annotations.missing.method";
+   public static final String plsql_annotations_missing_module_dec_key = "plsql.annotations.missing.moduledec";
+   public static final String plsql_annotations_missing_sysinit_key = "plsql.annotations.missing.sysinit";
+   public static final String plsql_annotations_same_tag_key = "plsql.annotations.sametag";
+   public static final String plsql_annotations_statements_key = "plsql.annotations.statements";
+   public static final String plsql_annotations_table_or_view_key = "plsql.annotations.tableorview";
+   public static final String plsql_annotations_unique_tag_key = "plsql.annotations.uniquetag";
+   public static final String plsql_annotations_unreachable_key = "plsql.annotations.unreachable";
+   public static final String plsql_annotations_wrong_end_name_key = "plsql.annotations.wrong.endname";
+   public static final String plsql_annotations_wrong_func_param_key = "plsql.annotations.wrong.func.param";
+   public static final String plsql_annotations_wrong_init_param_key = "plsql.annotations.wrong.initparam";
+   public static final String plsql_annotations_wrong_lu_name_key = "plsql.annotations.wrong.luname";
+   public static final String plsql_annotations_wrong_module_key = "plsql.annotations.wrong.module";
+   public static final String plsql_annotations_wrong_param_order_key = "plsql.annotations.wrong.param.order";
+
+   private IfsOptionsUtilities() {
+   } //singleton     
 
    public static boolean isDeployNoPromptEnabled() {
       return !NbPreferences.forModule(GeneralPanel.class).getBoolean(auto_deploy_all_databases_key, true);
@@ -183,5 +185,4 @@ public class IfsOptionsUtilities {
    public static boolean isPlSqlAnnotationWrongParamOrderEnabled() {
       return NbPreferences.forModule(PLSQLAnnotationsPanel.class).getBoolean(plsql_annotations_wrong_param_order_key, true);
    }
-
 }

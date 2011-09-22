@@ -61,12 +61,12 @@ import org.openide.windows.WindowManager;
  * @author YADHLK
  */
 public class PlsqlPackageAnnotationUtil {
-
+    
    public static void getPackageAnnotations(final PlsqlAnnotationManager manager, final List<PlsqlBlock> blocks, final Map<Integer, List<PlsqlAnnotation>> annotationsToAdd, final Document doc) {
       for (PlsqlBlock temp : blocks) {
          if (temp.getType() == PlsqlBlockType.PACKAGE || temp.getType() == PlsqlBlockType.PACKAGE_BODY) {
             manager.resetAllowedTablesOrViews(doc, temp.getStartOffset());
-            PlsqlAnnotationUtil.callBlockAnnotations(manager, annotationsToAdd, doc, temp, null, null, manager.annotation.getType(temp));
+            PlsqlAnnotationUtil.callBlockAnnotations(manager, annotationsToAdd, doc, temp, null, null, PlsqlAnnotationManager.annotation.getType(temp));
          } 
 //         else if (temp.getType() == PlsqlBlockType.PACKAGE_BODY) {
 //            manager.resetAllowedTablesOrViews(doc, temp.getStartOffset());

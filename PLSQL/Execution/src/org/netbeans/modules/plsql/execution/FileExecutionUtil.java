@@ -57,8 +57,7 @@ import org.openide.util.Exceptions;
 
 public class FileExecutionUtil {
 
-   public FileExecutionUtil() {
-   }
+   private FileExecutionUtil() {} //singleton
 
    public static List<String> splitStringToVector(String s) {
       List<String> lines = new ArrayList<String>();

@@ -368,6 +368,10 @@ public class PlsqlFormatter extends ExtFormatter {
             // Get the first non-whitespace position on the line
             FormatTokenPosition firstNWS = findLineFirstNonWhitespace(pos);
             if (firstNWS != null) { // some non-WS on the line
+                // if the firstNWS is a character literal and contains \n, which means it has multiple lines, so indentation should avoid in such lines
+                if (firstNWS.getToken() != null && firstNWS.getToken().getTokenID().getNumericID() == PlsqlTokenContext.CHAR_LITERAL_ID && firstNWS.getToken().getImage().contains("\n")) {
+                    return pos;
+                }
 
                 indent = findIndent(firstNWS.getToken());
             } else { // whole line is WS
@@ -415,7 +419,9 @@ public class PlsqlFormatter extends ExtFormatter {
                         token = token.getNext();
                         offset += token.getImage().length();
                     }
-                    if (offset == caretPos) {
+                    // second part of the || condition is to get the correct format if the keyword is immediately followed by serveral whitespaces
+                    // as if there are whitespaces next to each other, all of them taken as one token. Hence offset calculation gets wrong.
+                    if (offset == caretPos || (token.getImage().trim().length() == 0 && (caretPos == offset - token.getImage().length() + 1))) {
                         break;
                     }
                 }
@@ -456,7 +462,7 @@ public class PlsqlFormatter extends ExtFormatter {
                     if (blockFactory != null) {
                         blockFactory.beforeCaseChange();
                     }
-                    if (!image.equals(upperCaseImage)) {
+                    if (!image.equals(upperCaseImage) && checkUpperCaseAllowed(token)) {
                         if (plsqlFormatSup.canReplaceToken(token)) {
                             plsqlFormatSup.replaceToken(token, token.getTokenID(), token.getTokenContextPath(), image.toUpperCase(Locale.ENGLISH));
                         } else {
@@ -525,7 +531,7 @@ public class PlsqlFormatter extends ExtFormatter {
                         if (blockFactory != null) {
                             blockFactory.beforeCaseChange();
                         }
-                        if (!image.equals(upperCaseImage)) {
+                        if (!image.equals(upperCaseImage) && checkUpperCaseAllowed(token)) {
                             if (plsqlFormatSup.canReplaceToken(token)) {
                                 plsqlFormatSup.replaceToken(token, token.getTokenID(), token.getTokenContextPath(), image.toUpperCase(Locale.ENGLISH));
                             } else {
@@ -547,6 +553,15 @@ public class PlsqlFormatter extends ExtFormatter {
             }
         }
 
+        private boolean checkUpperCaseAllowed(TokenItem token) {
+            TokenItem previousToken = getPreviousNonWhiteSpaceToken(token);
+            if (previousToken != null && (previousToken.getImage().trim().equalsIgnoreCase("PROCEDURE") || previousToken.getImage().trim().equalsIgnoreCase("FUNCTION") || (previousToken.getImage().trim().equalsIgnoreCase("END") && !(token.getImage().trim().equalsIgnoreCase("IF") || token.getImage().trim().equalsIgnoreCase("LOOP") || token.getImage().trim().equalsIgnoreCase("CASE")) ))) {
+                return false;
+            } else {
+                return true;
+            }
+        }
+
         /** Find the indentation for the first token on the line.
          * The given token is also examined in some cases.
          */
@@ -558,6 +573,12 @@ public class PlsqlFormatter extends ExtFormatter {
             do {
                 previousNWS = getPreviousToken(previousNWS);
                 if ((previousNWS != null) && (previousNWS.getTokenID() != PlsqlTokenContext.WHITESPACE)) {
+                    /*if the previousNWS is a line comment or a block comment, we should get previous non-whitespace token to
+                     * indent correctly.
+                     */
+                    if (previousNWS.getTokenID() == PlsqlTokenContext.LINE_COMMENT || previousNWS.getTokenID() == PlsqlTokenContext.BLOCK_COMMENT) {
+                        previousNWS = findLineFirstNonWhitespace(getPosition(previousNWS, 0)).getToken();
+                    }
                     break;
                 }
             } while (previousNWS != null);
@@ -693,7 +714,7 @@ public class PlsqlFormatter extends ExtFormatter {
                     }
 
                     tokenTempPre = tokenTemp;
-                    tokenTemp = getPreviousToken(tokenTemp);
+                    tokenTemp = getPreviousNonWhiteSpaceToken(tokenTemp);
                 }
             }
 
@@ -910,6 +931,22 @@ public class PlsqlFormatter extends ExtFormatter {
                     /*When a statement is ended by ';' in some statements
                      * if the statement is multi-lined we need to go to the beginning to
                      * get the indentation for the next*/
+                    TokenItem previousToken = getPreviousNonWhiteSpaceToken(previousNWS);
+                    /* if the previous Token is a ')' then we should find the begining of the statement */
+                    if (previousToken != null && previousToken.getTokenID().getNumericID() == PlsqlTokenContext.RPAREN_ID) {
+                        int multiLineIndent = getMethodIndent(previousToken);
+                        if (multiLineIndent != -1 && multiLineIndent != 0 && getLineIndent(getPosition(previousNWS, 0), true) != multiLineIndent) {
+                            return multiLineIndent - getLineIndent(getPosition(previousNWS, 0), true);
+                        }
+                    } // if previousToken is a character literal, we need to find the starting line of the string
+                    else if (previousToken != null && previousToken.getTokenID().getNumericID() == PlsqlTokenContext.CHAR_LITERAL_ID) {
+                        TokenItem preCharToken = getPreviousNonCharLiteralToken(previousToken);
+                        FormatTokenPosition tmp1 = getPosition(preCharToken, 0);
+                        FormatTokenPosition tmp2 = getPosition(previousNWS, 0);
+                        if (!(findLineEnd(tmp1)).equals(findLineEnd(tmp2))) {
+                            return (getLineIndent(tmp1, true) - getLineIndent(tmp2, true));
+                        }
+                    }
                     int diff[] = {0};
                     String previousBlockKey = getPreviousStmtKey(previousNWS, diff);
 
@@ -972,6 +1009,163 @@ public class PlsqlFormatter extends ExtFormatter {
                 }
             }
             return indent;
+        }
+
+        /**
+         * Get the previous non-whitespace token
+         * @param token
+         * @return TokenItem.
+         */
+        private TokenItem getPreviousNonWhiteSpaceToken(TokenItem token) {
+            token = token.getPrevious();
+            while (token != null) {
+                if (token.getTokenID().getNumericID() != PlsqlTokenContext.WHITESPACE_ID) {
+                    return token;
+                }
+                token = token.getPrevious();
+            }
+            return token;
+        }
+
+        /**
+         * Get the next non-whitespace token
+         * @param token
+         * @return TokenItem.
+         */
+        private TokenItem getNextNonWhiteSpaceToken(TokenItem token) {
+            token = token.getNext();
+            while (token != null) {
+                if (token.getTokenID().getNumericID() != PlsqlTokenContext.WHITESPACE_ID) {
+                    return token;
+                }
+                token = token.getNext();
+            }
+            return token;
+        }
+
+        /**
+         * Get the previous token Item which is not a character literal
+         * @param token
+         * @return TokenItem which is not a character literal.
+         */
+        private TokenItem getPreviousNonCharLiteralToken(TokenItem token) {
+            token = token.getPrevious();
+            while (token != null) {
+                if (token.getTokenID().getNumericID() != PlsqlTokenContext.WHITESPACE_ID && token.getTokenID().getNumericID() != PlsqlTokenContext.CHAR_LITERAL_ID) {
+                    return token;
+                }
+                token = token.getPrevious();
+            }
+            return token;
+        }
+
+        /**
+         * Get the indentation of a method which has multiple lines, it will simply matches
+         * brace count and return indentation of the method's first line.
+         * @param token, which has image of ')'
+         * @return indentation, indentation of the line that consist the method's starting '(' if a match found else 0.
+         */
+        private int getMethodIndent(TokenItem token) {
+            TokenItem tempToken = getPreviousNonWhiteSpaceToken(token);
+            FormatTokenPosition tmp1 = getPosition(tempToken, 0);
+            FormatTokenPosition tmp2 = null;
+            int brace_count = 1;
+            while (tempToken != null) {
+                if (tempToken.getTokenID().getNumericID() == PlsqlTokenContext.LPAREN_ID) {
+                    brace_count--;
+                } else if (tempToken.getTokenID().getNumericID() == PlsqlTokenContext.RPAREN_ID) {
+                    brace_count++;
+                }
+                if (brace_count == 0) {
+                    tmp2 = getPosition(tempToken, 0);
+                    break;
+                }
+                tempToken = getPreviousNonWhiteSpaceToken(tempToken);
+
+            }
+            if (tmp1 != null && tmp2 != null && !(findLineEnd(tmp1)).equals(findLineEnd(tmp2))) {
+                return getPreviousStmtIndent(tmp2.getToken());
+            } else {
+                return -1;
+            }
+        }
+
+        /**
+         * Method to get the indentation of the previous statement
+         * @param previousNWS
+         * @param diff
+         * @return
+         */
+        private int getPreviousStmtIndent(TokenItem previousNWS) {
+            int diff = 0;
+            TokenItem tokenTempPre = null;
+            TokenItem tokenTemp = getPreviousToken(previousNWS);
+
+            while (tokenTemp != null) {
+                String image = tokenTemp.getImage().trim();
+                if ((image.equalsIgnoreCase(";"))
+                        || (image.equalsIgnoreCase("BEGIN"))
+                        || (image.equalsIgnoreCase("LOOP"))
+                        || (image.equalsIgnoreCase("ELSE"))
+                        || (image.equalsIgnoreCase("THEN"))
+                        || (image.equalsIgnoreCase("CURSOR"))) {
+                    //METHOD declarations inside a
+                    break;
+                } else {
+                    if (tokenTemp.getTokenID().getNumericID() == PlsqlTokenContext.KEYWORD_ID) {
+                        tokenTempPre = tokenTemp;
+                    }
+                    tokenTemp = getPreviousToken(tokenTemp);
+                }
+            }
+
+            if (tokenTempPre != null) {
+                FormatTokenPosition tmp1 = getPosition(tokenTempPre, 0);
+                FormatTokenPosition tmp2 = getPosition(previousNWS, 0);
+
+                //if same line ignore
+                if ((findLineEnd(tmp1)).equals(findLineEnd(tmp2))) {
+                    return diff;
+                }
+
+                diff = getLineIndent(tmp1, true);
+            } else {
+                FormatTokenPosition tmp1 = getPosition(getNextNonWhiteSpaceToken(tokenTemp), 0);
+                diff = getLineIndent(tmp1, true);
+            }
+
+            return diff;
+        }
+
+        /**
+         * Get the starting line position of a method which has multiple lines, it will simply matches
+         * brace count and return the position of the matching token.
+         * @param token, which has image of ')'
+         * @return format token Position, position of '(' if a match found else null.
+         */
+        private FormatTokenPosition getMethodStartPosition(TokenItem token) {
+            TokenItem tempToken = getPreviousNonWhiteSpaceToken(token);
+            FormatTokenPosition tmp1 = getPosition(tempToken, 0);
+            FormatTokenPosition tmp2 = null;
+            int brace_count = 1;
+            while (tempToken != null) {
+                if (tempToken.getTokenID().getNumericID() == PlsqlTokenContext.LPAREN_ID) {
+                    brace_count--;
+                } else if (tempToken.getTokenID().getNumericID() == PlsqlTokenContext.RPAREN_ID) {
+                    brace_count++;
+                }
+                if (brace_count == 0) {
+                    tmp2 = getPosition(tempToken, 0);
+                    break;
+                }
+                tempToken = getPreviousNonWhiteSpaceToken(tempToken);
+
+            }
+            if (tmp1 != null && tmp2 != null && !(findLineEnd(tmp1)).equals(findLineEnd(tmp2))) {
+                return tmp2;
+            } else {
+                return tmp1;
+            }
         }
 
         /**
@@ -1066,7 +1260,11 @@ public class PlsqlFormatter extends ExtFormatter {
                         || (image.equalsIgnoreCase("BEGIN"))
                         || (image.equalsIgnoreCase("LOOP"))
                         || (image.equalsIgnoreCase("ELSE"))
-                        || (image.equalsIgnoreCase("THEN"))) {
+                        || (image.equalsIgnoreCase("THEN"))
+                        || (image.equalsIgnoreCase("CURSOR"))) {
+                    if (image.equalsIgnoreCase("CURSOR")) {
+                        tokenTempPre = tokenTemp;
+                    }
                     //METHOD declarations inside a
                     break;
                 } else {

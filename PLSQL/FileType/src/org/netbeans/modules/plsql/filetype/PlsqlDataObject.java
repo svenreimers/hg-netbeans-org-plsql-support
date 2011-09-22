@@ -97,13 +97,11 @@ public class PlsqlDataObject extends MultiDataObject {
             annotationManager = plsqlAnnotationManager;
          }
 
-         if (IfsOptionsUtilities.isPlSqlAnnotationsEnabled()) {
-            blockFactory.addObserver(annotationManager);
-            isAnnotationsEnabled = true;
-         }
+         blockFactory.addObserver(annotationManager);
 
          //Add preference change listener to IFS Options panel
-         addPreferenceListener();
+         //addPreferenceListener();
+         //This will handle by the PlsqlAnnotationManager
       }
       // TODO: if file not in project?!?
       if (project != null) {
@@ -154,13 +152,13 @@ public class PlsqlDataObject extends MultiDataObject {
       if (IfsOptionsUtilities.isPlSqlAnnotationsEnabled() && !isAnnotationsEnabled) {
          blockFactory.addObserver(annotationManager);
          isAnnotationsEnabled = true;
-         createLookup();
+         modifyLookupAnnotationManager(annotationManager);
          annotationManager.initAnnotations(this);
       } else if (!IfsOptionsUtilities.isPlSqlAnnotationsEnabled() && isAnnotationsEnabled) {
          blockFactory.deleteObserver(annotationManager);
          annotationManager.clearAnnotations();
          isAnnotationsEnabled = false;
-         createLookup();
+         modifyLookupAnnotationManager(annotationManager);
       }
    }
 
@@ -168,9 +166,11 @@ public class PlsqlDataObject extends MultiDataObject {
       List<Object> objects = new ArrayList<Object>();
       objects.add(blockFactory);
       objects.add(new StatementExecutionHistory());
-      if (isAnnotationsEnabled) {
-         objects.add(annotationManager);
-      }
+      
+       if (annotationManager != null) {
+           objects.add(annotationManager);
+       }
+      
       if (databaseConnection != null) {
          objects.add(databaseConnection);
       }

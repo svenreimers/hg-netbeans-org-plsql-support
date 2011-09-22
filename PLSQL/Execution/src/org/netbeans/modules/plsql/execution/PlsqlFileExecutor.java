@@ -272,6 +272,15 @@ public class PlsqlFileExecutor {
          return false;
       }
       String objectName = tokenizer.nextToken().toUpperCase(Locale.ENGLISH);
+      String objectOwner = null;
+      
+      if (objectName.contains(".")) { //handle schema.object format e.g. ifsapp.customer
+         final String[] result = objectName.split("\\.");
+         if (result != null && result.length == 2) {
+             objectOwner = result[0];
+             objectName = result[1];
+         }
+      }
 
       String query = "SELECT t.COLUMN_NAME \"Name\", "
               + "t.data_type||decode(t.data_type,'VARCHAR2','('||t.char_length||')', "
@@ -285,6 +294,7 @@ public class PlsqlFileExecutor {
               + "WHERE t.TABLE_NAME = c.TABLE_NAME "
               + "AND t.COLUMN_NAME = c.COLUMN_NAME "
               + "AND t.OWNER = c.OWNER "
+              + ((objectOwner!=null && !objectOwner.equals(""))? "AND t.OWNER = '"+ objectOwner +"' " : "") //set owner only if given by user
               + "AND t.TABLE_NAME = '" + objectName + "' ORDER BY t.COLUMN_ID";
       executeSelect(query, con, doc, objectName);
       return true;

@@ -63,7 +63,7 @@ import org.netbeans.lib.editor.codetemplates.api.CodeTemplateManager;
 public class PlsqlPaletteUtilities {
 
     /** Creates a new instance of PlsqlPaletteUtilities */
-    public PlsqlPaletteUtilities() {
+    private PlsqlPaletteUtilities() {
     }
 
     /**

@@ -249,9 +249,6 @@ public class PlsqlSyntax extends Syntax {
                     
                  case ISI_CHAR:
                     switch (actChar) {
-                        case '\n':
-                            state = INIT;
-                            return PlsqlTokenContext.CHAR_LITERAL;
                         case '\'': // NOI18N
                             offset++;
                             state = INIT;
@@ -293,11 +290,8 @@ public class PlsqlSyntax extends Syntax {
                             state = ISI_BLOCK_COMMENT;
                             break;
                         default:
-                            if(Character.isWhitespace(actChar) ||
-                                    actChar == '(') {
-                                state = INIT;
-                                return PlsqlTokenContext.OPERATOR;
-                            }
+                            state = INIT;
+                            return PlsqlTokenContext.OPERATOR;
                     }
                     break;
 
@@ -429,6 +423,8 @@ public class PlsqlSyntax extends Syntax {
             case ISA_SLASH:
                 state = INIT;
                 return PlsqlTokenContext.OPERATOR; 
+            case ISI_CHAR:
+                return PlsqlTokenContext.CHAR_LITERAL;//sadhlk
             }
         }
 

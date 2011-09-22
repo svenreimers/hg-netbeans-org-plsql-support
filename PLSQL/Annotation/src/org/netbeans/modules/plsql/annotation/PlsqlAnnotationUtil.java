@@ -65,6 +65,9 @@ import org.openide.util.Exceptions;
  */
 public class PlsqlAnnotationUtil {
 
+    private PlsqlAnnotationUtil() { //singleton
+    }    
+    
    public static Document getDocument() {
       final JTextComponent comp = EditorRegistry.lastFocusedComponent();
       return comp == null ? null : comp.getDocument();

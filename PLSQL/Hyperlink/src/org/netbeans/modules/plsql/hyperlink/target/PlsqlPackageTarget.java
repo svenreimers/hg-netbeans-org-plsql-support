@@ -63,6 +63,7 @@ public class PlsqlPackageTarget extends AbstractPlsqlGotoTarget {
    public PlsqlPackageTarget(final String name, final int position, final DataObject sourceDataObject,
            final Project project, final Document sourceDocument) {
       super(name, position, sourceDataObject, project, sourceDocument);
+      this.packageName = name;
       this.type = PlsqlBlockType.PACKAGE;
       this.synonym = cache.getPackageForSynonym(name);
    }
