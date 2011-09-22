@@ -1,7 +1,7 @@
 ~$
-/build$
+build$
 /dist$
-/nbproject/private$
+nbproject/private$
 /nbproject/sqe.properties$
 /nbproject/findbugs.settings$
 /test/(coverage|lib|results|work)$
