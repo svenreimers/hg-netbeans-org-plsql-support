@@ -91,10 +91,11 @@ public class PasteAsSqlCommandAction extends CookieAction {
                     String[] lines = contents.trim().split("\n");
                     int paramCount = 0;  //counter for '?' in SQL
                     for (int i = 0; i < lines.length; i++) {
-                        String line = lines[i].replaceAll("\\s+$", ""); //remove trailing space                        
+                        String line = lines[i].replaceAll("\\s+$", ""); //remove trailing space
+                        line = line.replace("\\\"" , "\"");  // remove java escape (i.e. \) for double quotes used for column aliases in selects
                         line = line.replaceFirst("^\\s*\\+?\\s*\"", ""); // remove lines starting with " or +"
-                        line = line.replaceAll("\"\\s*\\+?$", ""); // remove concat lines ending with "+
-                        line = line.replaceAll("\"\\s*;?$", ""); // remove lines ending with " or ";
+                        line = line.replaceAll("\"\\s*\\+?$", ""); // remove " and "+ from eol
+                        line = line.replaceAll("\"\\s*;+$", ""); // remove "; from eol
                         //replace ? with code template place holders
                         for (;line.indexOf("?")>0;++paramCount){
                           line = line.replaceFirst("\\?", "\\${<value_"+paramCount+">}");

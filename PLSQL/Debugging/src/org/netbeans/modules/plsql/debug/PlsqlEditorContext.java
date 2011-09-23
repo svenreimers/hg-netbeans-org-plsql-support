@@ -462,7 +462,7 @@ public class PlsqlEditorContext extends EditorContext {
             dataObject = (DataObject) result.get(1);
          }
       }
-      if (dataObject == null) {
+      if (dataObject == null || lineNumber < 1) {
          return null;
       }
       LineCookie lc = dataObject.getCookie(LineCookie.class);

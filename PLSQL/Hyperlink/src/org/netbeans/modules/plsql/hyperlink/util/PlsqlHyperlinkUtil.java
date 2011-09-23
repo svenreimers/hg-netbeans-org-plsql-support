@@ -72,6 +72,8 @@ import org.openide.util.Lookup;
  */
 public class PlsqlHyperlinkUtil {
 
+    private PlsqlHyperlinkUtil() { } //singleton    
+    
    /**
     * Get Return next non whitespace token for files
     * @param ts

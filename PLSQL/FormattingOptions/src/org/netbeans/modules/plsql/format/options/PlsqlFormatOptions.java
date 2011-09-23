@@ -46,6 +46,10 @@ import java.awt.Container;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -61,11 +65,9 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import org.netbeans.api.editor.mimelookup.MimeLookup;
 import org.netbeans.api.editor.settings.SimpleValueNames;
 import org.netbeans.modules.options.editor.spi.PreferencesCustomizer;
 import org.netbeans.modules.options.editor.spi.PreviewProvider;
-import org.netbeans.modules.options.indentation.FormattingPanelController;
 import org.openide.text.CloneableEditorSupport;
 import org.openide.util.HelpCtx;
 import org.openide.util.NbBundle;
@@ -149,24 +151,12 @@ public class PlsqlFormatOptions {
         private final Preferences preferences;
         private final Preferences previewPrefs;
 
-        protected CategorySupport(Preferences preferences, String id, JPanel panel, String previewText) {
-            //checkwhether override global options is in preferences already
-            Preferences prefs = MimeLookup.getLookup("text/x-plsql").lookup(Preferences.class);
-            if ((!prefs.getBoolean(FormattingPanelController.OVERRIDE_GLOBAL_FORMATTING_OPTIONS, false)) &&
-                    (prefs.getBoolean(FormattingPanelController.OVERRIDE_GLOBAL_FORMATTING_OPTIONS, true))) {
-                prefs.putBoolean(FormattingPanelController.OVERRIDE_GLOBAL_FORMATTING_OPTIONS, true);
-
-                //Set default values
-                prefs.putBoolean(expandTabToSpaces, getDefaultAsBoolean(expandTabToSpaces));
-                prefs.putInt(tabSize, getDefaultAsInt(tabSize));
-                prefs.putInt(spacesPerTab, getDefaultAsInt(spacesPerTab));
-                prefs.putInt(indentSize, getDefaultAsInt(indentSize));
-            }
-
+        protected CategorySupport(Preferences preferences, String id, JPanel panel, String previewText) throws IOException {
+            
             this.preferences = preferences;
             this.id = id;
             this.panel = panel;
-            this.previewText = previewText != null ? previewText : NbBundle.getMessage(PlsqlFormatOptions.class, "SAMPLE_Default"); //NOI18N
+            this.previewText =loadPreviewText(getClass().getClassLoader().getResourceAsStream("ifs/dev/nb/plsql/format/options/IndentationExample")); //NOI18N
 
             // Scan the panel for its components
             scan(panel, components);
@@ -211,7 +201,21 @@ public class PlsqlFormatOptions {
         public void changedUpdate(DocumentEvent e) {
             notifyChanged();
         }
+        
+        private static String loadPreviewText(InputStream is) throws IOException {
+            BufferedReader r = new BufferedReader(new InputStreamReader(is));
+            try {
+                StringBuilder sb = new StringBuilder();
+                for (String line = r.readLine(); line != null; line = r.readLine()) {
+                    sb.append(line).append('\n'); 
+                }
+                return sb.toString();
+            } finally {
+                r.close();
+            }
+        }
 
+        @Override
         public JComponent getPreviewComponent() {
             if (previewPane == null) {
                 previewPane = new JEditorPane();
@@ -220,6 +224,7 @@ public class PlsqlFormatOptions {
                 previewPane.putClientProperty("HighlightsLayerIncludes", "^org\\.netbeans\\.modules\\.editor\\.lib2\\.highlighting\\.SyntaxHighlighting$"); //NOI18N
                 previewPane.setEditorKit(CloneableEditorSupport.getEditorKit("text/x-plsql"));
                 previewPane.setEditable(false);
+                previewPane.setText(previewText);
             }
             return previewPane;
         }

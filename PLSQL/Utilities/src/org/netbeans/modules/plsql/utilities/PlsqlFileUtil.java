@@ -77,6 +77,9 @@ public class PlsqlFileUtil {
    private static final String SOURCE_CACHE_DIRECTORY = "source";
    private static final PlsqlFileLocatorService fileLocator = Lookup.getDefault().lookup(PlsqlFileLocatorService.class);
 
+    private PlsqlFileUtil() { //singleton
+    }   
+   
    /**
     * Method that will fetch the PACKAGE BODY from database,
     * save it at a tmp directory and open it

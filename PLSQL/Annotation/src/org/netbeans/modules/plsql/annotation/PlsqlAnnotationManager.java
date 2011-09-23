@@ -64,6 +64,7 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.Position;
 import javax.swing.text.StyledDocument;
+import org.netbeans.modules.plsqlsupport.options.IfsOptionsUtilities;
 import org.openide.cookies.EditorCookie;
 import org.openide.text.NbDocument;
 import org.openide.util.Exceptions;
@@ -72,43 +73,42 @@ import org.openide.util.NbPreferences;
 import org.openide.util.Task;
 import org.openide.util.lookup.ServiceProvider;
 
-@ServiceProvider(service=PlsqlAnnotationManager.class)
+@ServiceProvider(service = PlsqlAnnotationManager.class)
 public class PlsqlAnnotationManager implements Observer {
 
    public Document doc;
    public final Map<Integer, List<PlsqlAnnotation>> plsqlAnnotations;
    public final Map<Integer, String> errorSysCalls;
-   public static Map<String, Set<PlsqlAnnotation>> configuration;
    public final Map<Integer, Set<String>> allowedTablesOrViews;
-
    public static Annotation annotation = new GenericPlsqlAnnotations();
-   
+
    public PlsqlAnnotationManager() {
-      annotation.loadConfiguration();
-      
+      if (IfsOptionsUtilities.isPlSqlAnnotationsEnabled()) {
+         annotation.loadConfiguration();
+      }
+
       final PreferenceChangeListener listener = new PreferenceChangeListener() {
 
          @Override
          public void preferenceChange(final PreferenceChangeEvent evt) {
             if (evt.getKey().startsWith("plsql.annotations.")) {
-               annotation.loadConfiguration();
-               if(doc != null){
-                   configuration = null;
-                   configuration = annotation.getConfiguration();
-                   DataObject dataObj = (DataObject) doc.getProperty(Document.StreamDescriptionProperty);
-                   PlsqlBlockFactory apiBlockFac = dataObj.getLookup().lookup(PlsqlBlockFactory.class);
-                   initAnnotations(dataObj);
-                   update(apiBlockFac,doc);                   
+               if (IfsOptionsUtilities.isPlSqlAnnotationsEnabled()) {
+                  annotation.loadConfiguration();
+               } else {
+                  Annotation.configuration.clear();
+               }
+               if (doc != null) {
+                  DataObject dataObj = (DataObject) doc.getProperty(Document.StreamDescriptionProperty);
+                  initAnnotations(dataObj);
                }
             }
          }
       };
       NbPreferences.forModule(PLSQLAnnotationsPanel.class).addPreferenceChangeListener(listener);
-      
+
       plsqlAnnotations = new ConcurrentHashMap<Integer, List<PlsqlAnnotation>>();
       errorSysCalls = new ConcurrentHashMap<Integer, String>();
       allowedTablesOrViews = new ConcurrentHashMap<Integer, Set<String>>();
-      configuration = annotation.getConfiguration();     
    }
 
    @Override
@@ -125,7 +125,7 @@ public class PlsqlAnnotationManager implements Observer {
 
          //Add all annotation types relevant to new blocks which are added
          final Map<Integer, List<PlsqlAnnotation>> annotationsToAdd = new HashMap<Integer, List<PlsqlAnnotation>>();
-         
+
          updateAllowedTableOrViewOffsets(blockFactory.getStartParse(), blockFactory.getChangedLength());
          PlsqlPackageAnnotationUtil.getPackageAnnotations(this, blockFactory.getBlockHierarchy(), annotationsToAdd, doc); //New blocks wasn't passed since package spec is not reparsed
          PlsqlFileAnnotationUtil.getBlockAnnotations(this, blockFactory.getNewBlocks(), annotationsToAdd, doc);
@@ -173,7 +173,7 @@ public class PlsqlAnnotationManager implements Observer {
             final int docStartOffset = doc.getStartPosition().getOffset();
             final int docEndOffset = doc.getEndPosition().getOffset();
             PlsqlFileAnnotationUtil.getFileAnnotations(this, annotationsToAdd, doc, docStartOffset, docEndOffset, 0);
-            
+
             PlsqlPackageAnnotationUtil.getPackageAnnotations(this, blockhierarchy, annotationsToAdd, doc);
             PlsqlFileAnnotationUtil.getBlockAnnotations(this, blockhierarchy, annotationsToAdd, doc);
             attachAnnotations(annotationsToAdd);
@@ -192,8 +192,8 @@ public class PlsqlAnnotationManager implements Observer {
                }
             };
             try {
-               for (PlsqlAnnotation annotation : lstAnnotations) {
-                  attachAnnotation(position, annotation);
+               for (PlsqlAnnotation pa : lstAnnotations) {
+                  attachAnnotation(position, pa);
                }
             } catch (BadLocationException ex) {
                Exceptions.printStackTrace(ex);
@@ -356,9 +356,11 @@ public class PlsqlAnnotationManager implements Observer {
       }
    }
 
-   private void removePackageAnnotations(final List<PlsqlBlock> blockHierarchy) {}
-   
-   public void resetAllowedTablesOrViews(final Document doc, final int offset) {}
+   private void removePackageAnnotations(final List<PlsqlBlock> blockHierarchy) {
+   }
+
+   public void resetAllowedTablesOrViews(final Document doc, final int offset) {
+   }
 
    private void removeMethodAnnotations(final List<PlsqlBlock> blockHierarchy) {
       for (PlsqlBlock block : blockHierarchy) {
@@ -369,7 +371,7 @@ public class PlsqlAnnotationManager implements Observer {
    }
 
    public Set<PlsqlAnnotation> getConfiguration(final String type) {
-      return configuration.get(type);
+      return Annotation.configuration.get(type);
    }
 
    public Map<Integer, String> getErrorSysCalls() {

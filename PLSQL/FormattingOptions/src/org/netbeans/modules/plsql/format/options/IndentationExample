@@ -1,0 +1,14 @@
+CREATE OR REPLACE FUNCTION emptype (paytype CHAR)
+RETURN VARCHAR2 IS
+BEGIN
+   IF paytype = 'H' THEN
+      RETURN 'Hourly';
+   ELSIF paytype = 'S' THEN
+      RETURN 'Salaried';
+   ELSE
+      RETURN 'Invalid Type';
+   END IF;
+EXCEPTION
+   WHEN OTHERS THEN
+      RETURN 'Error Encountered';
+END emptype;

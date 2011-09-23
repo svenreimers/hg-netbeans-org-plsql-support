@@ -223,9 +223,8 @@ public class PlsqlFileLocatorServiceImplTest extends NbTestCase {
       final FileObject rootFolderA = FileUtil.toFileObject(new File(getDataDir(), WORKSPACE_A));
       instance.registerFolder(PROJECT_A, rootFolderA);
 
-
       PlsqlSearchObject searchObject = new PlsqlSearchObject(PlsqlBlockType.PACKAGE, "FND_SECURITY_PER_USER_RPI");
-      String expResult = PROJECT_A + File.separator + "workspace" + File.separator + "fndbas" + File.separator + "database" + File.separator + "fndbas" + File.separator + "FndSecurityPerUser.rdf";
+      String expResult = PROJECT_A + "/" + "workspace" + "/" + "fndbas" + "/" + "database" + "/" + "fndbas" + "/" + "FndSecurityPerUser.rdf";
       FileObject result = instance.findFile(PROJECT_A, searchObject);
       assertTrue(result.getPath().endsWith(expResult));
    }

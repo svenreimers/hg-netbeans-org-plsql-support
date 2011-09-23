@@ -65,8 +65,8 @@ import org.openide.windows.WindowManager;
  * Util class for annotations added to the file
  * @author YADHLK
  */
-public class PlsqlFileAnnotationUtil {
-
+public class PlsqlFileAnnotationUtil {    
+    
     public static void getFileAnnotations(final PlsqlAnnotationManager manager, final Map<Integer, List<PlsqlAnnotation>> annotationsToAdd, final Document doc, final int startParse, final int endParse, final int change) {
         TokenHierarchy tokenHierarchy = TokenHierarchy.get(doc);
         @SuppressWarnings("unchecked")
@@ -75,7 +75,7 @@ public class PlsqlFileAnnotationUtil {
         final Map<Integer, String> errorMsgs = new HashMap<Integer, String>();
 
         //check whether Error_SYS annotations are there in configuration
-        final Set<PlsqlAnnotation> annotations = manager.getConfiguration(manager.annotation.TOKEN_ERROR_SYS);
+        final Set<PlsqlAnnotation> annotations = manager.getConfiguration(Annotation.TOKEN_ERROR_SYS);
         if (annotations != null && annotations.size() > 0) {
             isErrorSys = true;
         }
@@ -89,7 +89,7 @@ public class PlsqlFileAnnotationUtil {
                 token = ts.token();
                 if (token.id() == PlsqlTokenId.KEYWORD && preText.toString().contains("\n")) {
                     //Call token annotations
-                    callTokenAnnotation(manager, annotationsToAdd, doc, token, ts.offset(), endParse, null, manager.annotation.TOKEN_START_KEYWORD);
+                    callTokenAnnotation(manager, annotationsToAdd, doc, token, ts.offset(), endParse, null, Annotation.TOKEN_START_KEYWORD);
                 } else if (token.toString().equalsIgnoreCase("ERROR_SYS") && isErrorSys) {
                     int offset = ts.offset();
                     boolean isString = false;
@@ -128,7 +128,7 @@ public class PlsqlFileAnnotationUtil {
             manager.resetErrorSysCalls(doc, startParse, endParse, change, errorMsgs);
 
             //Process ERROR_SYS tokens
-            callTokenAnnotation(manager, annotationsToAdd, doc, null, startParse, endParse, manager.getErrorSysCalls(), manager.annotation.TOKEN_ERROR_SYS);
+            callTokenAnnotation(manager, annotationsToAdd, doc, null, startParse, endParse, manager.getErrorSysCalls(), Annotation.TOKEN_ERROR_SYS);
         }
     }
 
@@ -170,7 +170,7 @@ public class PlsqlFileAnnotationUtil {
             if (block.getType() == PlsqlBlockType.PROCEDURE_DEF || block.getType() == PlsqlBlockType.PROCEDURE_IMPL || block.getType() == PlsqlBlockType.FUNCTION_DEF
                     || block.getType() == PlsqlBlockType.FUNCTION_IMPL || block.getType() == PlsqlBlockType.IF || block.getType() == PlsqlBlockType.CURSOR
                     || block.getType() == PlsqlBlockType.STATEMENT ) {
-                PlsqlAnnotationUtil.callBlockAnnotations(manager, annotationsToAdd, doc, block, null, null, manager.annotation.getType(block));
+                PlsqlAnnotationUtil.callBlockAnnotations(manager, annotationsToAdd, doc, block, null, null, PlsqlAnnotationManager.annotation.getType(block));
             }
 
             //check for child comments

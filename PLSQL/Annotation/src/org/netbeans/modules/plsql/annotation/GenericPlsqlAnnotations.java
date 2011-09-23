@@ -72,19 +72,14 @@ public class GenericPlsqlAnnotations implements Annotation{
    public static final String BLOCK_CURSOR = "CURSOR"; 
    public static final String DEFAULT_ANNOTATIONS = " DEFAULT_ANNOTATIONS";
    public static final String BLOCK_STATEMENT = "STATEMENT";
-    
-    public static Map<String, Set<PlsqlAnnotation>> configuration;
-    
-    
         
     @Override
     public void loadConfiguration() {
+      
       final PlsqlWrongFunctionParamAnnotation wrongParamAnnotation = PlsqlWrongFunctionParamAnnotation.getDummyInstance();
       final PlsqlWrongParamOrderAnnotation wrongOrderAnnotation = PlsqlWrongParamOrderAnnotation.getDummyInstance();
       final PlsqlMissingEndNameAnnotation endNameAnnotation = PlsqlMissingEndNameAnnotation.getDummyInstance();
       final PlsqlWrongEndNameAnnotation wrongEndAnnotation = PlsqlWrongEndNameAnnotation.getDummyInstance();
-
-      configuration = new HashMap<String, Set<PlsqlAnnotation>>();
 
       final Set<PlsqlAnnotation> procDefAnnotations = new HashSet<PlsqlAnnotation>();
       configuration.put(BLOCK_PROCEDURE_DEF, procDefAnnotations);

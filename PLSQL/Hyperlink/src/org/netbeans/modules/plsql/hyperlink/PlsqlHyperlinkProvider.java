@@ -1222,6 +1222,8 @@ public class PlsqlHyperlinkProvider implements HyperlinkProvider {
          if ((defBlock.getStartOffset() <= usageBlock.getStartOffset())
                  && (defBlock.getEndOffset() >= usageBlock.getEndOffset())) {
             isOffsetOk = true;
+         } else if (defBlock.getType().equals(PlsqlBlockType.CURSOR) && defBlock.getStartOffset() <= offset) {
+            isOffsetOk = true;
          }
       } else if (defBlock == null) {
          isOffsetOk = true;

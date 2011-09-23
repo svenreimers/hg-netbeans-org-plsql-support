@@ -107,15 +107,12 @@ public class ShowDatabaseObjectAction extends CookieAction {
                try {
                   if (cache.isView(objName, databaseConnection)) {
                      try {
-                        EditorCookie editorCookie = activatedNodes[0].getLookup().lookup(EditorCookie.class);
                         DataObject obj = null;
                         String aliasOf = cache.getViewForSynonym(objName);
                         if (aliasOf != null) {
                            objName = aliasOf;
                         }
-                        if (editorCookie != null) {
-                           obj = PlsqlFileUtil.openExistingFile(editorCookie.getDocument(), objName, VIEW, project);
-                        }
+                        obj = PlsqlFileUtil.openExistingFile(null, objName, VIEW, project);
                         if (obj == null) {
                            PlsqlHyperlinkUtil.openAsTempFile(objName, VIEW, databaseConnection, project, null);
                         } else {
@@ -129,7 +126,9 @@ public class ShowDatabaseObjectAction extends CookieAction {
                      action.goToPackage(objName, project, "", 1);
                   } else if (cache.isTable(objName, databaseConnection)) {
                      try {
-                        PlsqlHyperlinkUtil.openAsTempFile(objName, TABLE, databaseConnection, project, null);
+                        if(PlsqlFileUtil.openExistingFile(null, objName, TABLE, project)==null) {
+                           PlsqlHyperlinkUtil.openAsTempFile(objName, TABLE, databaseConnection, project, null);
+                        }
                      } catch (NotConnectedToDbException ex) {
                         Exceptions.printStackTrace(ex);
                      }

@@ -122,7 +122,7 @@ public class PlsqlParserUtil {
         if (usageParams.size() > params.size()) {
             return false;
         }
-        if ((usageParams.size() == 0) && (params.size() == 0)) {
+        if ((usageParams.isEmpty()) && (params.isEmpty())) {
             return true;
         }
 
