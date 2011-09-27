@@ -186,3 +186,4 @@ derby\.log
 ^netbeans\.zip$
 ^netbeans\.html$
 ^Libraries/ThirdParty/libs\.commons/release/modules/ext$
+.lastModified
