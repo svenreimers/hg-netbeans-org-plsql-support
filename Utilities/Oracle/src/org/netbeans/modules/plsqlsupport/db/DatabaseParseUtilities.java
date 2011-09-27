@@ -47,6 +47,9 @@ import java.util.Map;
 
 public class DatabaseParseUtilities {
 
+    private DatabaseParseUtilities() { } //singleton
+    
+       
     private static void addItem(Map<String, String> result, String line) {
         int index = line.lastIndexOf(' ');
         if (index == -1) {

@@ -1507,7 +1507,7 @@ public class DatabaseContentUtilities {
                List<String> objList = new ArrayList<String>();
                ResultSet objSet = null;
 
-               String query = "SELECT to_char(FILE_TIME_STAMP, 'yyyy-MM-dd HH:mm:ss') FROM FNDBAS_MODEL_OBJECT_TAB A WHERE OBJECT_TYPE = ? AND OBJECT_NAME= ?";
+               String query = "SELECT FILE_TIME_STAMP FROM FNDBAS_MODEL_OBJECT_TAB A WHERE OBJECT_TYPE = ? AND OBJECT_NAME= ?";
                PreparedStatement stmt = null;
                try {
                   stmt = connection.getJDBCConnection().prepareStatement(query);

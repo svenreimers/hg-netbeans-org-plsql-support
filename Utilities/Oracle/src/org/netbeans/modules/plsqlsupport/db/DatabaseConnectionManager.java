@@ -301,7 +301,7 @@ public class DatabaseConnectionManager {
                 }
             }
             logger.log(Level.FINEST, "Creating new connection. Total number of connections created={0}", ++connectionCount);
-            return DatabaseConnection.create(templateConnection.getJDBCDriver(), templateConnection.getDatabaseURL(), templateConnection.getUser(), templateConnection.getSchema(), templateConnection.getPassword(), true);
+            return DatabaseConnection.create(templateConnection.getJDBCDriver(), templateConnection.getDatabaseURL(), templateConnection.getUser(), templateConnection.getSchema(), templateConnection.getPassword(), true, templateConnection.getDisplayName());
         }
     }
 
@@ -532,7 +532,7 @@ public class DatabaseConnectionManager {
             if (!online) {
                 //ConnectionManager.getDefault().disconnect(templateConnection);
                 //reset the connection
-                templateConnection = DatabaseConnection.create(templateConnection.getJDBCDriver(), templateConnection.getDatabaseURL(), templateConnection.getUser(), templateConnection.getSchema(), templateConnection.getPassword(), true);
+                templateConnection = DatabaseConnection.create(templateConnection.getJDBCDriver(), templateConnection.getDatabaseURL(), templateConnection.getUser(), templateConnection.getSchema(), templateConnection.getPassword(), true, templateConnection.getDisplayName());
                 clearConnectionPool();
                 this.debugConnection = null;
                 DatabaseConnection[] oldConnections = new DatabaseConnection[connections.length];
