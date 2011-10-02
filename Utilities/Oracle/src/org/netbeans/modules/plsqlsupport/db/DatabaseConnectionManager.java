@@ -582,6 +582,7 @@ public class DatabaseConnectionManager {
 
         @Override
         public void exceptionThrown(Exception e) {
+            logger.log(Level.INFO, e.getMessage(), e);
             setOnline(false);
         }
     }
