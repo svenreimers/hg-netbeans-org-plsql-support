@@ -94,7 +94,7 @@ public class DatabaseContentUtilities {
             stmt.setString(2, connection.getSchema());
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
-               String owner = rs.getString(2);
+               //String owner = rs.getString(2);
                String module = rs.getString(3);
                String luName = rs.getString(4);
                info.setLuName(luName);
