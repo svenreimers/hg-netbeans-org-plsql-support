@@ -104,7 +104,7 @@
     
     <target name="daily" depends="update-binaries,build">
         <mkdir dir="dist"/>
-        <zip destfile="dist/netbeans-701-${build.id}-plsql.zip" duplicate="add">
+        <zip destfile="dist/netbeans-trunk-${build.id}-plsql.zip" duplicate="add">
             <zipfileset dir="build/cluster" prefix="netbeans/extra"/>
             <zipfileset dir="ide/netbeans" prefix="netbeans"/>
         </zip>
