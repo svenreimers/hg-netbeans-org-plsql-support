@@ -984,12 +984,14 @@ public class PlsqlFormatter extends ExtFormatter {
                     }
                 } else if (previousNWS.getImage().trim().equalsIgnoreCase(">")) {
                     //This will be useful for only the placeholders inside a template
-                    String previousKeyword = getPreviousKeyword(previousNWS).getImage().trim();
+	if (getPreviousKeyword(previousNWS) != null) {
+	    String previousKeyword = getPreviousKeyword(previousNWS).getImage().trim();
 
-                    if ((previousKeyword.equalsIgnoreCase("SELECT"))
-                            || (previousKeyword.equalsIgnoreCase("UPDATE"))) {
-                        return getTabSize();
-                    }
+	    if ((previousKeyword.equalsIgnoreCase("SELECT"))
+	            || (previousKeyword.equalsIgnoreCase("UPDATE"))) {
+	        return getTabSize();
+	    }
+	}
                 } else if (previousNWS.getImage().trim().equalsIgnoreCase(",")) {
                     //This will be useful for SELECT , UPDATE , INTO variables
                     TokenItem first = findLineFirstNonWhitespace(getPosition(previousNWS, 0)).getToken();
