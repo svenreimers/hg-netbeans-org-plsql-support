@@ -254,6 +254,42 @@ public class DatabaseContentUtilities {
       return columns;
    }
 
+   public static Map<String, String> getColumnDataTypeLengths(String name, String owner, Connection connection) throws SQLException {
+      Map<String, String> columns = new LinkedHashMap<String, String>();
+      PreparedStatement stmt = null;
+      String query = "SELECT COLUMN_NAME,DATA_LENGTH FROM ALL_TAB_COLUMNS WHERE TABLE_NAME=? AND OWNER=?";
+      if(!name.startsWith("\"")) {
+         name = name.toUpperCase(Locale.ENGLISH);
+      } else {
+         name = name.substring(1, name.length()-1);
+      }
+      try {
+         if (connection != null) {
+            stmt = connection.prepareStatement(query);
+            stmt.setString(1, name);
+            stmt.setString(2, owner.toUpperCase(Locale.ENGLISH));
+            ResultSet columnSet = stmt.executeQuery();
+            while (columnSet.next()) {
+               String column = columnSet.getString(1);
+               if(isCaseInsensitiveDbName(column)) {
+                  column = column.toLowerCase(Locale.ENGLISH);
+               } else {
+                  column = "\"" + column + "\"";
+               }
+               int datatypeLength = columnSet.getInt(2);
+               columns.put(column, Integer.toString(datatypeLength));
+            }
+            columnSet.close();
+         }
+      } finally {
+         if (stmt != null) {
+            stmt.close();
+         }
+      }
+
+      return columns;
+   }
+
    public static void getObjectNames(String objectType, String lastFetchDate, List<String> objects, List<DatabaseObjectInfo> owners, Connection connection) throws SQLException {
       CallableStatement plstmt = null;
       try {
