@@ -45,6 +45,13 @@
          <file name="SequenceStmt.xml" url="item/stmt/resource/SequenceStmt.xml"/>
          <file name="UpdateStmt.xml" url="item/stmt/resource/UpdateStmt.xml"/>
       </folder>
+      <folder name="DDL Statements">
+         <file name="CreateStmt.xml" url="item/ddlstmt/resource/CreateStmt.xml"/>
+         <file name="AlterStmt.xml" url="item/ddlstmt/resource/AlterStmt.xml"/>
+         <file name="DropStmt.xml" url="item/ddlstmt/resource/DropStmt.xml"/>
+         <file name="CreateIndexStmt.xml" url="item/ddlstmt/resource/CreateIndexStmt.xml"/>
+         <file name="DropIndexStmt.xml" url="item/ddlstmt/resource/DropIndexStmt.xml"/>
+      </folder>
       <folder name="Error Handling">
          <file name="ExceptionBlock.xml" url="item/errorhandling/resource/ExceptionBlock.xml"/>
          <file name="ExceptionInit.xml" url="item/errorhandling/resource/ExceptionInit.xml"/>
