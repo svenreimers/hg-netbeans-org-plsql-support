@@ -156,7 +156,7 @@ public class PlsqlFormatOptions {
             this.preferences = preferences;
             this.id = id;
             this.panel = panel;
-            this.previewText =loadPreviewText(getClass().getClassLoader().getResourceAsStream("ifs/dev/nb/plsql/format/options/IndentationExample")); //NOI18N
+            this.previewText =loadPreviewText(getClass().getClassLoader().getResourceAsStream("org/netbeans/modules/plsql/format/options/IndentationExample")); //NOI18N
 
             // Scan the panel for its components
             scan(panel, components);
