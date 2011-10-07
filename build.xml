@@ -274,4 +274,8 @@
       </propertyfile>
    </target>
 
+   <target name="echo-manifest" description="echo kit version that is found in manifest. Used by hudson" >
+      <echoproperties srcfile="plsql-support.kit/manifest.mf"/>
+   </target>
+
 </project>
