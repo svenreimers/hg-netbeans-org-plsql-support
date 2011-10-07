@@ -115,7 +115,7 @@
                 <dependency>
                     <code-name-base>org.netbeans.modules.plsqlsupport.db.project</code-name-base>
                     <run-dependency>
-                        <specification-version>1.0</specification-version>
+                        <specification-version>1.0.0</specification-version>
                     </run-dependency>
                 </dependency>
             </module-dependencies>
