@@ -3,6 +3,7 @@ Ant-Version: Apache Ant 1.7.1
 Created-By: 10.0-b23 (Sun Microsystems Inc.)
 AutoUpdate-Show-In-Client: false
 OpenIDE-Module: org.netbeans.modules.plsqlsupport.options
-OpenIDE-Module-Localizing-Bundle: org/netbeans/modules/plsqlsupport/options/Bundle.properties
-OpenIDE-Module-Specification-Version: 1.7.12
+OpenIDE-Module-Localizing-Bundle: org/netbeans/modules/plsqlsupport/op
+ tions/Bundle.properties
+OpenIDE-Module-Specification-Version: 1.7.13
 

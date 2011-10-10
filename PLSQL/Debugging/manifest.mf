@@ -3,8 +3,8 @@ Ant-Version: Apache Ant 1.7.1
 Created-By: 14.3-b01 (Sun Microsystems Inc.)
 OpenIDE-Module: org.netbeans.modules.plsql.debug
 OpenIDE-Module-Layer: org/netbeans/modules/plsql/debug/layer.xml
-OpenIDE-Module-Localizing-Bundle: org/netbeans/modules/plsql/debug/Bundle.proper
- ties
-OpenIDE-Module-Specification-Version: 1.7.18
+OpenIDE-Module-Localizing-Bundle: org/netbeans/modules/plsql/debug/Bun
+ dle.properties
+OpenIDE-Module-Specification-Version: 1.7.19
 AutoUpdate-Show-In-Client: false
 
