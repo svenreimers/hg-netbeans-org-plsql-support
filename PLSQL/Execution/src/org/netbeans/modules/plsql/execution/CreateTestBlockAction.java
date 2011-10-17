@@ -165,21 +165,11 @@ public final class CreateTestBlockAction extends CookieAction {
                   }
 
                   if (selectedBlock == null) {
-                     int result = JOptionPane.showConfirmDialog(WindowManager.getDefault().getMainWindow(),
-                             "This seems to be an implementation method that can’t be called directly from a client.\nDo you want to continue?", "Warning", JOptionPane.OK_CANCEL_OPTION);
-                     if (result == JOptionPane.CANCEL_OPTION) {
-                        return;
-                     } else {
-                        selectedBlock = temp;
-                     }
+	  JOptionPane.showMessageDialog(WindowManager.getDefault().getMainWindow(), "Failed creating the test block; selected method might not be there in the specification", "Error", JOptionPane.ERROR_MESSAGE);
+	  return;
                   }
                }
-
-               if (selectedBlock == null) {
-                  JOptionPane.showMessageDialog(WindowManager.getDefault().getMainWindow(), "Failed creating the test block; selected method might not be there in the specification", "Error", JOptionPane.ERROR_MESSAGE);
-                  return;
-               }
-
+               
                if (selectedBlock.getParent() != null) {
                   selectedName = selectedBlock.getParent().getName() + "." + selectedBlock.getName();
                }
