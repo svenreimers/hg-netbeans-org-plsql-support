@@ -108,7 +108,7 @@ public class PlsqlParserUtil {
             }
         }
 
-        return (match == null && findBestMatch && matchList.size() > 0) ? matchList.get(0) : match;
+        return (match == null && findBestMatch && matchList.size() > 0) ? null : match;
     }
 
     /**
