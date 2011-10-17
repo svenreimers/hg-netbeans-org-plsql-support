@@ -135,7 +135,9 @@ public final class CreateTestBlockAction extends CookieAction {
                      Document referredDoc = PlsqlFileUtil.getDocument(data);
                      selectMatchingBlock(data, referredDoc, position);
                   }
-               } else if (selectedBlock != null && !"".equals(parentName) && (selectedBlock.getType() == PROCEDURE_IMPL
+                  
+               //selected block in package body   
+               } else if (selectedBlock != null && (selectedBlock.getType() == PROCEDURE_IMPL
                        || selectedBlock.getType() == FUNCTION_IMPL)) {
                   //Find the definition of the method, we need to do this because if this is a implementation method,
                   //we cannot call it as Package.Method
@@ -605,7 +607,7 @@ public final class CreateTestBlockAction extends CookieAction {
             }
          } else {
             PlsqlBlock packageBlock = getEnclosingPackageBody(dataObject.getLookup().lookup(PlsqlBlockFactory.class).getBlockHierarchy(), startOffset);
-            if (packageBlock != null && isMethodName(packageBlock.getChildBlocks(), selected)) {
+            if (packageBlock != null && isMethodName(packageBlock.getChildBlocks(), selected, startOffset)) {
                return true;
             }
          }
@@ -627,17 +629,17 @@ public final class CreateTestBlockAction extends CookieAction {
       return null;
    }
 
-   private boolean isMethodName(List<PlsqlBlock> blockHier, String selected) {
+   private boolean isMethodName(List<PlsqlBlock> blockHier, String selected, int offset) {
       if (blockHier != null) {
          for (PlsqlBlock block : blockHier) {
             if (block.getType() == PACKAGE_BODY) {
-               if (isMethodName(block.getChildBlocks(), selected)) {
+               if (isMethodName(block.getChildBlocks(), selected, offset)) {
                   return true;
                }
             } else if ((block.getType() == FUNCTION_IMPL
                     || block.getType() == PROCEDURE_IMPL)
                     && block.getParent() != null
-                    && block.getName().equalsIgnoreCase(selected)) {
+                    && block.getName().equalsIgnoreCase(selected) && block.getStartOffset() == offset) {
                selectedBlock = block;
                selectedName = block.getName();
                return true;
