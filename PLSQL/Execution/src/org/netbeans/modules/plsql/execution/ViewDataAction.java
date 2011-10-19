@@ -57,84 +57,89 @@ import org.openide.util.actions.CookieAction;
 
 public final class ViewDataAction extends CookieAction {
 
-   /**
-    * Create a sql execution window for the selected methoad
-    * @param activatedNodes
-    */
-   protected void performAction(Node[] activatedNodes) {
-      String selectStatement = "SELECT ${*} FROM " + getSelectedViewOrTable(activatedNodes) + ";\n${cursor}";
-      SQLCommandWindow.createSQLCommandWindow(activatedNodes, selectStatement);
-   }
+    /**
+     * Create a sql execution window for the selected methoad
+     * @param activatedNodes
+     */
+    protected void performAction(Node[] activatedNodes) {
+        String selectStatement = "SELECT ${*} FROM " + getSelectedViewOrTable(activatedNodes) + ";\n${cursor}";
+        SQLCommandWindow.createSQLCommandWindow(activatedNodes, selectStatement, null);
+    }
 
-   protected int mode() {
-      return CookieAction.MODE_EXACTLY_ONE;
-   }
+    protected int mode() {
+        return CookieAction.MODE_EXACTLY_ONE;
+    }
 
-   public String getName() {
-      return NbBundle.getMessage(ViewDataAction.class, "CTL_ViewDataAction");
-   }
+    public String getName() {
+        return NbBundle.getMessage(ViewDataAction.class, "CTL_ViewDataAction");
+    }
 
-   protected Class[] cookieClasses() {
-      return new Class[] {DataObject.class, EditorCookie.class};
-   }
+    protected Class[] cookieClasses() {
+        return new Class[]{DataObject.class, EditorCookie.class};
+    }
 
-   @Override
-   protected void initialize() {
-      super.initialize();
-      // see org.openide.util.actions.SystemAction.iconResource() Javadoc for more details
-      putValue("noIconInMenu", Boolean.TRUE);
-   }
+    @Override
+    protected void initialize() {
+        super.initialize();
+        // see org.openide.util.actions.SystemAction.iconResource() Javadoc for more details
+        putValue("noIconInMenu", Boolean.TRUE);
+    }
 
-   public HelpCtx getHelpCtx() {
-      return HelpCtx.DEFAULT_HELP;
-   }
+    public HelpCtx getHelpCtx() {
+        return HelpCtx.DEFAULT_HELP;
+    }
 
-   @Override
-   protected boolean asynchronous() {
-      return false;
-   }
+    @Override
+    protected boolean asynchronous() {
+        return false;
+    }
 
-   /**
-    * Enable this action when right clicked on views or tables
-    * @param arg0
-    * @return
-    */
-   @Override
-   protected boolean enable(Node[] activatedNodes) {
-      Project project = null;
-      if (!super.enable(activatedNodes))
-         return false;
+    /**
+     * Enable this action when right clicked on views or tables
+     * @param arg0
+     * @return
+     */
+    @Override
+    protected boolean enable(Node[] activatedNodes) {
+        Project project = null;
+        if (!super.enable(activatedNodes)) {
+            return false;
+        }
 
-      DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
-      if(dataObject==null)
-         return false;
+        DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
+        if (dataObject == null) {
+            return false;
+        }
 
-      DatabaseConnectionManager connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
-      if(connectionProvider==null)
-         return false;
+        DatabaseConnectionManager connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
+        if (connectionProvider == null) {
+            return false;
+        }
 
-      DatabaseConnection connection = connectionProvider.getDatabaseConnection(false);
-      if(connection==null)
-         return false;
-      
-      String viewName =  getSelectedViewOrTable(activatedNodes);
-      if(viewName==null)
-         return false;
-      
-      DatabaseContentManager dbCache = DatabaseContentManager.getInstance(connection);
-      return dbCache.isView(viewName, connection) || dbCache.isTable(viewName, connection);
-   }
+        DatabaseConnection connection = connectionProvider.getDatabaseConnection(false);
+        if (connection == null) {
+            return false;
+        }
 
-   public static String getSelectedViewOrTable(Node[] activatedNodes) {
-      EditorCookie editorCookie = activatedNodes[0].getLookup().lookup(EditorCookie.class);
-      if(editorCookie==null)
-         return null;
+        String viewName = getSelectedViewOrTable(activatedNodes);
+        if (viewName == null) {
+            return false;
+        }
 
-      JEditorPane[] panes = editorCookie.getOpenedPanes();
-      if ((panes != null) && (panes.length != 0)) {
-         return panes[0].getSelectedText();
-      }
-      return null;
-   }
+        DatabaseContentManager dbCache = DatabaseContentManager.getInstance(connection);
+        return dbCache.isView(viewName, connection) || dbCache.isTable(viewName, connection);
+    }
+
+    public static String getSelectedViewOrTable(Node[] activatedNodes) {
+        EditorCookie editorCookie = activatedNodes[0].getLookup().lookup(EditorCookie.class);
+        if (editorCookie == null) {
+            return null;
+        }
+
+        JEditorPane[] panes = editorCookie.getOpenedPanes();
+        if ((panes != null) && (panes.length != 0)) {
+            return panes[0].getSelectedText();
+        }
+        return null;
+    }
 }
-

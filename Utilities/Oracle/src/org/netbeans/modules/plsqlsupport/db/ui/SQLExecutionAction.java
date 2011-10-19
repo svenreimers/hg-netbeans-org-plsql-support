@@ -50,46 +50,47 @@ import org.openide.util.actions.CookieAction;
 
 public final class SQLExecutionAction extends CookieAction {
 
-   protected void performAction(Node[] activatedNodes) {
-      SQLCommandWindow.createSQLCommandWindow(activatedNodes, null);
-   }
+    protected void performAction(Node[] activatedNodes) {
+        SQLCommandWindow.createSQLCommandWindow(activatedNodes, null, null);
+    }
 
-   public String getName() {
-      return NbBundle.getMessage(SQLExecutionAction.class, "CTL_SQLExecutionAction");
-   }
+    public String getName() {
+        return NbBundle.getMessage(SQLExecutionAction.class, "CTL_SQLExecutionAction");
+    }
 
-   @Override
-   protected void initialize() {
-      super.initialize();
-      // see org.openide.util.actions.SystemAction.iconResource() Javadoc for more details
-      putValue("noIconInMenu", Boolean.TRUE);
-   }
+    @Override
+    protected void initialize() {
+        super.initialize();
+        // see org.openide.util.actions.SystemAction.iconResource() Javadoc for more details
+        putValue("noIconInMenu", Boolean.TRUE);
+    }
 
-   public HelpCtx getHelpCtx() {
-      return HelpCtx.DEFAULT_HELP;
-   }
+    public HelpCtx getHelpCtx() {
+        return HelpCtx.DEFAULT_HELP;
+    }
 
-   @Override
-   protected boolean asynchronous() {
-      return false;
-   }
+    @Override
+    protected boolean asynchronous() {
+        return false;
+    }
 
-   @Override
-   protected int mode() {
-      return CookieAction.MODE_EXACTLY_ONE;
-   }
+    @Override
+    protected int mode() {
+        return CookieAction.MODE_EXACTLY_ONE;
+    }
 
-   @Override
-   protected Class<?>[] cookieClasses() {
-      return new Class[] {Project.class};
-   }
+    @Override
+    protected Class<?>[] cookieClasses() {
+        return new Class[]{Project.class};
+    }
 
-   @Override
-   protected boolean enable(Node[] activatedNodes) {
-      if (!super.enable(activatedNodes))
-         return false;
-      Project project = activatedNodes[0].getLookup().lookup(Project.class);
-      DatabaseConnectionManager provider = project.getLookup().lookup(DatabaseConnectionManager.class);
-      return provider != null && provider.hasConnection() && provider.isOnline();
-   }
+    @Override
+    protected boolean enable(Node[] activatedNodes) {
+        if (!super.enable(activatedNodes)) {
+            return false;
+        }
+        Project project = activatedNodes[0].getLookup().lookup(Project.class);
+        DatabaseConnectionManager provider = project.getLookup().lookup(DatabaseConnectionManager.class);
+        return provider != null && provider.hasConnection() && provider.isOnline();
+    }
 }

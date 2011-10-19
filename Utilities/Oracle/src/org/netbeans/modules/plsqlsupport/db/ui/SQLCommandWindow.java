@@ -67,86 +67,92 @@ import org.openide.windows.TopComponent.Registry;
 
 public class SQLCommandWindow {
 
-   public static final String SQL_EXECUTION_FILE_PREFIX = "sqlexecutionwindow";
+    public static final String SQL_EXECUTION_FILE_PREFIX = "sqlexecutionwindow";
 
-   public static DataObject createSQLCommandWindow(Node[] activatedNodes, String codeTemplate) {
-      Project project = activatedNodes[0].getLookup().lookup(Project.class);
-      if(project==null) {
-         DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
-         if(dataObject==null)
-            return null;
-         project = FileOwnerQuery.getOwner(dataObject.getPrimaryFile());
-         if (project == null)
-            return null;
-      }
-      DataObject dataObj = null;
-      try {
-         File tmpFile;
-         try {
-            tmpFile = File.createTempFile(SQL_EXECUTION_FILE_PREFIX, ".tdb",
-                  FileUtil.toFile(project.getLookup().lookup(CacheDirectoryProvider.class).getCacheDirectory()));
-         } catch (IOException ex) {
+    public static DataObject createSQLCommandWindow(Node[] activatedNodes, String codeTemplate, String displayName) {
+        Project project = activatedNodes[0].getLookup().lookup(Project.class);
+        if (project == null) {
+            DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
+            if (dataObject == null) {
+                return null;
+            }
+            project = FileOwnerQuery.getOwner(dataObject.getPrimaryFile());
+            if (project == null) {
+                return null;
+            }
+        }
+        DataObject dataObj = null;
+        try {
+            File tmpFile;
+            try {
+                tmpFile = File.createTempFile(SQL_EXECUTION_FILE_PREFIX, ".tdb",
+                        FileUtil.toFile(project.getLookup().lookup(CacheDirectoryProvider.class).getCacheDirectory()));
+            } catch (IOException ex) {
+                Exceptions.printStackTrace(ex);
+                return null;
+            }
+
+            dataObj = DataFolder.find(FileUtil.toFileObject(tmpFile));
+            if (dataObj != null) {
+                if (displayName == null || displayName.equals("")) {
+                    dataObj.getNodeDelegate().setDisplayName(NbBundle.getMessage(SQLCommandWindow.class, "LBL_SQLExecutionWindow"));
+                } else {
+                    dataObj.getNodeDelegate().setDisplayName(displayName);
+                }
+
+                //Get open cookie from the data object and open that
+                OpenCookie openCookie = dataObj.getCookie(OpenCookie.class);
+                if (openCookie != null) {
+                    openCookie.open();
+                    //Get the new pane and paste the code template there
+                    if (codeTemplate != null) {
+                        EditorCookie editorCookie = dataObj.getCookie(EditorCookie.class);
+                        JEditorPane[] panes = editorCookie.getOpenedPanes();
+                        if ((panes != null) && (panes.length != 0)) {
+                            JEditorPane component = panes[0];
+                            if (component != null) {
+                                //Ugly workaround for a bug in code templates.
+                                //This bug makes it impossible to insert code templates at the first position in a file.
+                                //By adding a comment line at the start of the file we avoid this problem for our test blocks...
+                                Document doc = component.getDocument();
+                                try {
+                                    doc.insertString(0, "-- Enter values for your parameters. Use enter to move to the next parameter\n", null);
+                                } catch (BadLocationException ex) {
+                                    Exceptions.printStackTrace(ex);
+                                }
+                                CodeTemplate ct = CodeTemplateManager.get(component.getDocument()).createTemporary(codeTemplate);
+                                ct.insert(component);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (DataObjectNotFoundException ex) {
             Exceptions.printStackTrace(ex);
             return null;
-         }
+        }
+        return dataObj;
+    }
 
-         dataObj = DataFolder.find(FileUtil.toFileObject(tmpFile));
-         if (dataObj != null) {
-               dataObj.getNodeDelegate().setDisplayName(NbBundle.getMessage(SQLCommandWindow.class, "LBL_SQLExecutionWindow"));
-
-            //Get open cookie from the data object and open that
-            OpenCookie openCookie = dataObj.getCookie(OpenCookie.class);
-            if (openCookie != null) {
-               openCookie.open();
-               //Get the new pane and paste the code template there
-               if(codeTemplate!=null) {
-                  EditorCookie editorCookie = dataObj.getCookie(EditorCookie.class);
-                  JEditorPane[] panes = editorCookie.getOpenedPanes();
-                  if ((panes != null) && (panes.length != 0)) {
-                     JEditorPane component = panes[0];
-                     if (component != null) {
-                        //Ugly workaround for a bug in code templates.
-                        //This bug makes it impossible to insert code templates at the first position in a file.
-                        //By adding a comment line at the start of the file we avoid this problem for our test blocks...
-                        Document doc = component.getDocument();
-                        try {
-                           doc.insertString(0, "-- Enter values for your parameters. Use enter to move to the next parameter\n", null);
-                        } catch (BadLocationException ex) {
-                           Exceptions.printStackTrace(ex);
-                        }
-                        CodeTemplate ct = CodeTemplateManager.get(component.getDocument()).createTemporary(codeTemplate);
-                        ct.insert(component);
-                     }
-                  }
-               }
+    private static String getCommandWindowSuffix() {
+        int maxIndex = -1;
+        String displayNamePrefix = NbBundle.getMessage(SQLCommandWindow.class, "LBL_SQLExecutionWindow");
+        Registry registry = TopComponent.getRegistry();
+        Set<TopComponent> topComponents = registry.getOpened();
+        for (TopComponent component : topComponents) {
+            if (component instanceof CloneableEditor && component.isVisible()) {
+                String displayName = component.getDisplayName();
+                if (displayName != null && displayName.startsWith(displayNamePrefix)) {
+                    String suffix = displayName.substring(displayNamePrefix.length());
+                    try {
+                        int candidate = suffix.length() > 0 ? Integer.parseInt(suffix.trim()) : 0;
+                        maxIndex = candidate > maxIndex ? candidate : maxIndex;
+                    } catch (NumberFormatException ex) {
+                        //do nothing - this isn't one of "our" windows.
+                    }
+                }
             }
-         }
-      } catch (DataObjectNotFoundException ex) {
-         Exceptions.printStackTrace(ex);
-         return null;
-      }
-      return dataObj;
-   }
-
-   private static String getCommandWindowSuffix() {
-      int maxIndex = -1;
-      String displayNamePrefix = NbBundle.getMessage(SQLCommandWindow.class, "LBL_SQLExecutionWindow");
-      Registry registry = TopComponent.getRegistry();
-      Set<TopComponent> topComponents = registry.getOpened();
-      for(TopComponent component : topComponents) {
-         if(component instanceof CloneableEditor && component.isVisible()) {
-            String displayName = component.getDisplayName();
-            if(displayName!=null && displayName.startsWith(displayNamePrefix)) {
-               String suffix = displayName.substring(displayNamePrefix.length());
-               try {
-                  int candidate = suffix.length()>0 ? Integer.parseInt(suffix.trim()) : 0;
-                  maxIndex = candidate > maxIndex ? candidate : maxIndex;
-               } catch(NumberFormatException ex) {
-                  //do nothing - this isn't one of "our" windows.
-               }
-            }
-         }
-      }
-      return maxIndex==-1 ? "" : " " + Integer.toString(maxIndex+1) + "";
-   }
+        }
+        return maxIndex == -1 ? "" : " " + Integer.toString(maxIndex + 1) + "";
+    }
 }
