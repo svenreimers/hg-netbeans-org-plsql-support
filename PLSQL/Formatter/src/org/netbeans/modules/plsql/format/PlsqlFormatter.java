@@ -555,7 +555,7 @@ public class PlsqlFormatter extends ExtFormatter {
 
         private boolean checkUpperCaseAllowed(TokenItem token) {
             TokenItem previousToken = getPreviousNonWhiteSpaceToken(token);
-            if (previousToken != null && (previousToken.getImage().trim().equalsIgnoreCase("PROCEDURE") || previousToken.getImage().trim().equalsIgnoreCase("FUNCTION") || (previousToken.getImage().trim().equalsIgnoreCase("END") && !(token.getImage().trim().equalsIgnoreCase("IF") || token.getImage().trim().equalsIgnoreCase("LOOP") || token.getImage().trim().equalsIgnoreCase("CASE")) ))) {
+            if (previousToken != null && (previousToken.getImage().trim().equalsIgnoreCase("PROCEDURE") || previousToken.getImage().trim().equalsIgnoreCase("FUNCTION") || (previousToken.getImage().trim().equalsIgnoreCase("END") && !(token.getImage().trim().equalsIgnoreCase("IF") || token.getImage().trim().equalsIgnoreCase("LOOP") || token.getImage().trim().equalsIgnoreCase("CASE"))))) {
                 return false;
             } else {
                 return true;
@@ -636,20 +636,43 @@ public class PlsqlFormatter extends ExtFormatter {
                     if ((tmp.getImage().trim().equalsIgnoreCase("CURSOR"))
                             || (tmp.getImage().trim().equalsIgnoreCase("TYPE"))) {
                         tokenTemp = getPreviousToken(tokenTemp);
-                    } else {
-                        tokenParent = tokenTemp;
-                        break;
+                    } else { // if it's not the cursor, first check whether previousToken is a ')', in cases where CURSOR consists of parameters in multiple lines
+                        TokenItem previousToken = getPreviousNonWhiteSpaceToken(tokenTemp);
+                        if (previousToken != null && previousToken.getTokenID().getNumericID() == PlsqlTokenContext.RPAREN_ID) {
+                            FormatTokenPosition cursorStartLine = getMethodStartPosition(previousToken);
+                            TokenItem tmpCursorItem = findLineFirstNonWhitespace(cursorStartLine).getToken();
+                            if ((tmpCursorItem.getImage().trim().equalsIgnoreCase("CURSOR"))
+                                    || (tmpCursorItem.getImage().trim().equalsIgnoreCase("TYPE"))) {
+                                tokenTemp = getPreviousToken(tokenTemp);
+                            } else { // still it's not the 'CURSOR', and it's 'IS' or "PROCEDURE" or "FUNCTION", it's the parent
+                                if (tmp.getImage().trim().equalsIgnoreCase("IS") || tmp.getImage().trim().equalsIgnoreCase("PROCEDURE") || tmp.getImage().trim().equalsIgnoreCase("FUNCTION")) {
+                                    tokenParent = tokenTemp;
+                                    break;
+                                } else {
+                                    tokenTemp = getPreviousToken(tokenTemp);
+                                }
+                            }
+                        } else { // if the token is 'IS' or "PROCEDURE" or "FUNCTION", it should be the parent line
+                            if (tmp.getImage().trim().equalsIgnoreCase("IS") || tmp.getImage().trim().equalsIgnoreCase("PROCEDURE") || tmp.getImage().trim().equalsIgnoreCase("FUNCTION")) {
+                                tokenParent = tokenTemp;
+                                break;
+                            } else {
+                                tokenTemp = getPreviousToken(tokenTemp);
+                            }
+                        }
                     }
                 } else if (imageTmp.equalsIgnoreCase("BEGIN")) {
                     break;
                 } else if (imageTmp.equalsIgnoreCase("END")) {
+                    TokenItem nextToken = getNextNonWhiteSpaceToken(tokenTemp);
+
                     //If this is an end of a function/procedure declaration inside function
                     TokenItem temp = getPreviousToken(tokenTemp);
 
                     if (temp != null) {
                         tokenTemp = getEndParent(temp);
-
-                        if (tokenTemp.getImage().trim().equalsIgnoreCase("BEGIN")) {
+                        // check whether this is not just BEGIN/END block. i.e it's part of function/procedure BEGIN
+                        if (tokenTemp.getImage().trim().equalsIgnoreCase("BEGIN") && !nextToken.getImage().trim().equals(";")) {
                             temp = getPreviousToken(tokenTemp);
 
                             if (temp != null) {
@@ -984,14 +1007,14 @@ public class PlsqlFormatter extends ExtFormatter {
                     }
                 } else if (previousNWS.getImage().trim().equalsIgnoreCase(">")) {
                     //This will be useful for only the placeholders inside a template
-	if (getPreviousKeyword(previousNWS) != null) {
-	    String previousKeyword = getPreviousKeyword(previousNWS).getImage().trim();
+                    if (getPreviousKeyword(previousNWS) != null) {
+                        String previousKeyword = getPreviousKeyword(previousNWS).getImage().trim();
 
-	    if ((previousKeyword.equalsIgnoreCase("SELECT"))
-	            || (previousKeyword.equalsIgnoreCase("UPDATE"))) {
-	        return getTabSize();
-	    }
-	}
+                        if ((previousKeyword.equalsIgnoreCase("SELECT"))
+                                || (previousKeyword.equalsIgnoreCase("UPDATE"))) {
+                            return getTabSize();
+                        }
+                    }
                 } else if (previousNWS.getImage().trim().equalsIgnoreCase(",")) {
                     //This will be useful for SELECT , UPDATE , INTO variables
                     TokenItem first = findLineFirstNonWhitespace(getPosition(previousNWS, 0)).getToken();
