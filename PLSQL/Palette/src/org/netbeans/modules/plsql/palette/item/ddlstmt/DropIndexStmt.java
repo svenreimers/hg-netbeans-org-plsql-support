@@ -61,7 +61,7 @@ public class DropIndexStmt extends PaletteItem{
 
     @Override
     public String createBody() {
-        String dropIndexStmt = "DROP INDEX <index_name>;\n";       
+        String dropIndexStmt = "DROP INDEX ${<index_name>};\n";       
         return dropIndexStmt;
     }
     

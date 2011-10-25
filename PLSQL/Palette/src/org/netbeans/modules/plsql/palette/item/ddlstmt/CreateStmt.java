@@ -61,7 +61,7 @@ public class CreateStmt extends PaletteItem{
 
     @Override
     public String createBody() {
-        String createStmt = "CREATE TABLE <table_name> (\n\t<attribute_name> <data_type>);\n";       
+        String createStmt = "CREATE TABLE ${<table_name>} (\n\t${<attribute_names>} ${<data_types>});\n";       
         return createStmt;
     }
     
