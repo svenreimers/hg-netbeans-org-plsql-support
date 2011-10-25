@@ -61,7 +61,7 @@ public class AlterStmt extends PaletteItem{
 
     @Override
     public String createBody() {
-        String alterStmt = "ALTER TABLE <table_name> \nADD CONSTRAINT <constraint_name> PRIMARY KEY (<attribute_list>);\n";       
+        String alterStmt = "ALTER TABLE ${<table_name>} \nADD CONSTRAINT ${<constraint_name>} PRIMARY KEY (${<attribute_list>});\n";       
         return alterStmt;
     }
     

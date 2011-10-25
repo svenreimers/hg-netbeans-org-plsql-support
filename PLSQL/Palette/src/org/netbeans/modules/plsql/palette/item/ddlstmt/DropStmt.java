@@ -61,7 +61,7 @@ public class DropStmt extends PaletteItem{
 
     @Override
     public String createBody() {
-        String dropStmt = "DROP TABLE <table_name>;\n";       
+        String dropStmt = "DROP TABLE ${<table_name>};\n";       
         return dropStmt;
     }
     

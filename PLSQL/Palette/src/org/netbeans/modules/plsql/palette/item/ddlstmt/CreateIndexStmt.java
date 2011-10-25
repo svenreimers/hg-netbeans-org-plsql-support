@@ -61,7 +61,7 @@ public class CreateIndexStmt extends PaletteItem{
 
     @Override
     public String createBody() {
-        String createIndexStmt = "CREATE INDEX <index_name> ON <table_name>(<attr_list>);\n";       
+        String createIndexStmt = "CREATE INDEX ${<index_name>} ON ${<table_name>}(${<attr_list>});\n";       
         return createIndexStmt;
     }
     
