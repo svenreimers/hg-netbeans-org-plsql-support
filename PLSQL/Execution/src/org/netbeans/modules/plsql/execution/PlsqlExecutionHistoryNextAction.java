@@ -65,6 +65,7 @@ public final class PlsqlExecutionHistoryNextAction extends AbstractAction implem
    }
 
    public PlsqlExecutionHistoryNextAction(Lookup context) {
+      putValue(NAME,getName());
       putValue(SHORT_DESCRIPTION, getName());
       dataObject = context.lookup(DataObject.class);
       setEnabled(dataObject != null && dataObject.getPrimaryFile().getNameExt().startsWith(SQLCommandWindow.SQL_EXECUTION_FILE_PREFIX));

@@ -108,6 +108,7 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
     }
 
     public PlsqlExecuteAction(Lookup context) {
+        putValue(NAME, NbBundle.getMessage(PlsqlExecuteAction.class, "CTL_fileExecution"));
         putValue(SHORT_DESCRIPTION, NbBundle.getMessage(PlsqlExecuteAction.class, "CTL_fileExecution"));
         putValue(SMALL_ICON, new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/execute.png")));
 
