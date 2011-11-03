@@ -77,12 +77,14 @@ public class PlsqlDataObject extends MultiDataObject {
    private boolean isAnnotationsEnabled = false;
    private final PlsqlEditorSupport editorSupport;
    private DatabaseConnection databaseConnection;
+   private StatementExecutionHistory statementExecutionHistory;
 
    public PlsqlDataObject(final FileObject fileObject, final PlsqlDataLoader loader) throws DataObjectExistsException, IOException {
       super(fileObject, loader);
       if (fileObject == null) {
          throw new IllegalArgumentException("FileObject cannot be null");
       }
+      statementExecutionHistory = new StatementExecutionHistory();
       editorSupport = new PlsqlEditorSupport(this);
       getCookieSet().add(editorSupport);
       blockFactory = new PlsqlBlockFactory();
@@ -165,7 +167,7 @@ public class PlsqlDataObject extends MultiDataObject {
    private void createLookup() {
       List<Object> objects = new ArrayList<Object>();
       objects.add(blockFactory);
-      objects.add(new StatementExecutionHistory());
+      objects.add(statementExecutionHistory);
       
        if (annotationManager != null) {
            objects.add(annotationManager);
