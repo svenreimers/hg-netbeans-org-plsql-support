@@ -632,7 +632,7 @@ public class PlsqlFormatter extends ExtFormatter {
                     break;
                 } else if (imageTmp.equalsIgnoreCase("IS")) {
                     //Check whether this is CURSOR
-                    TokenItem tmp = findLineFirstNonWhitespace(getPosition(tokenTemp, 0)).getToken();
+                    TokenItem tmp = getIsParent(tokenTemp.getPrevious());
                     if ((tmp.getImage().trim().equalsIgnoreCase("CURSOR"))
                             || (tmp.getImage().trim().equalsIgnoreCase("TYPE"))) {
                         tokenTemp = getPreviousToken(tokenTemp);
