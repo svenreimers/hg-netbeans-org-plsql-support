@@ -407,7 +407,7 @@ public class PlsqlFileExecutor {
 
         //Defines and define
         HashMap<String, String> definesMap = new HashMap<String, String>();
-        char define = '&';
+        char[] define = {'&', ':'};
         DataObject dataObj = FileExecutionUtil.getDataObject(doc);
         plsqlEditor = getPlsqlEditor(dataObj);
         String endMsg = "Done deploying " + FileExecutionUtil.getActivatedFileName(dataObj);
@@ -444,7 +444,7 @@ public class PlsqlFileExecutor {
                         }
                         //replace aliases since there are aliases in PROMPTS
                         if (!ignoreDefines) {
-                            plsqlText = replaceAliases(plsqlText, definesMap, define, io);
+	        plsqlText = replaceAliases(plsqlText, definesMap, define, io);
                         }
                         moreRowsToBeFetched = executeSelect(plsqlText, connection, doc, null);
                         return null;
@@ -518,8 +518,8 @@ public class PlsqlFileExecutor {
                 if ((exeObj.getType() != PlsqlExecutableObjectType.UNKNOWN) && (exeObj.getType() != PlsqlExecutableObjectType.COMMENT)) {
                     //replace aliases since there are aliases in PROMPTS
                     if (!ignoreDefines) {
-                        plsqlText = replaceAliases(plsqlText, definesMap, define, io);
-                        exeObjName = replaceAliases(exeObjName, definesMap, define, io);
+	    plsqlText = replaceAliases(plsqlText, definesMap, define, io);
+	        exeObjName = replaceAliases(exeObjName, definesMap, define, io);
                     }
                 }
                 PlsqlOutputListener outList = new PlsqlOutputListener();
@@ -703,10 +703,10 @@ public class PlsqlFileExecutor {
                         commit = true;
                     }
                     //Parse aliases
-                    define = getAliases(definesMap, doc, exeObj.getStartOffset(), exeObj.getEndOffset(), define, io);
+	 define = getAliases(definesMap, doc, exeObj.getStartOffset(), exeObj.getEndOffset(), define, io);
                     //Replace aliases
                     if (!ignoreDefines) {
-                        plsqlText = replaceAliases(plsqlText, definesMap, define, io);
+	     plsqlText = replaceAliases(plsqlText, definesMap, define, io);
                     }
                     plsqlText = plsqlText.trim();
                     // String firstWord;
@@ -745,8 +745,8 @@ public class PlsqlFileExecutor {
                                             String token = tokenizer.nextToken();
                                             ignoreDefines = "OFF".equalsIgnoreCase(token);
                                             if (!ignoreDefines && token.length() == 1) {
-                                                define = token.charAt(0);
-                                            }
+		        define[0] = token.charAt(0);
+		    }
                                         }
                                     }
                                     
@@ -1118,7 +1118,7 @@ public class PlsqlFileExecutor {
      * @param io
      * @return
      */
-    private char getAliases(HashMap<String, String> definesMap, Document doc, int start, int end, char define, InputOutput io) {
+    private char[] getAliases(HashMap<String, String> definesMap, Document doc, int start, int end, char[] define, InputOutput io) {
         TokenHierarchy tokenHierarchy = TokenHierarchy.get(doc);
         @SuppressWarnings("unchecked")
         TokenSequence<PlsqlTokenId> ts = tokenHierarchy.tokenSequence(PlsqlTokenId.language());
@@ -1178,10 +1178,10 @@ public class PlsqlFileExecutor {
                                 || (value.startsWith("\'") && value.endsWith("\'"))) {
                             value = value.substring(1, value.length() - 1);
                         }
-                        
-                        if (value.indexOf(define) >= 0) {
-                            value = replaceAliases(value, definesMap, define, io);
-                        }
+	    
+	        if (value.indexOf(define[0]) >= 0) {
+	            value = replaceAliases(value, definesMap, define, io);
+	        }
                         definesMap.put(alias.toUpperCase(Locale.ENGLISH), value);
                     }
                 } else if (tokenTxt.toUpperCase(Locale.ENGLISH).startsWith("SET ")) {
@@ -1199,7 +1199,7 @@ public class PlsqlFileExecutor {
                     }
                     
                     if (alias.length() == 1) {
-                        define = alias.charAt(0); //If define changed we catch it here
+	    define[0] = alias.charAt(0); //If define changed we catch it here
                     }
                 }
             }
@@ -1218,15 +1218,29 @@ public class PlsqlFileExecutor {
      * @param io
      * @return
      */
-    public String replaceAliases(String plsqlString, HashMap<String, String> definesMap, char define, InputOutput io) {
-        if (plsqlString.indexOf(define) < 0) {
+    public String replaceAliases(String plsqlString, HashMap<String, String> definesMap, char[] define, InputOutput io) {
+        boolean exists=false;
+        for (int a = 0; a < define.length; a++) {
+            if (plsqlString.indexOf(define[a]) >= 0) {
+                exists= true;
+                break;               
+            }         
+        }
+        if(!exists){
             return plsqlString;
         }
         
         StringBuilder newString = new StringBuilder();
         for (int i = 0; i < plsqlString.length(); i++) {
             char c = plsqlString.charAt(i);
-            if (c == define) {
+            char promtValue = 0;
+           
+            for(int a=0; a < define.length; a++){
+                if(c==define[a])
+	promtValue = define[a];
+            }                      
+             if (promtValue != 0) {
+               
                 for (int j = i + 1; j < plsqlString.length(); j++) {
                     char nextChar = plsqlString.charAt(j);
                     if (Character.isJavaIdentifierPart(nextChar) && j == plsqlString.length() - 1) { //we have reached the end of the text
@@ -1240,8 +1254,8 @@ public class PlsqlFileExecutor {
                         if (j > i + 1) { //substituion variable found
 
                             String name = plsqlString.substring(i + 1, j);
-                            String value = definesMap.get(name.toUpperCase(Locale.ENGLISH));
-                            if (value == null || value.startsWith(Character.toString(define))) {
+                            String value = definesMap.get(name.toUpperCase(Locale.ENGLISH));	         
+                            if (value == null || value.startsWith(Character.toString(promtValue))) {
                                 PromptDialog prompt = new PromptDialog(null, name, true);
                                 prompt.setVisible(true);
                                 value = prompt.getValue();
