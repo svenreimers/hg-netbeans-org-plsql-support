@@ -831,13 +831,19 @@ public class PlsqlFormatter extends ExtFormatter {
                         || (currentImage.equalsIgnoreCase("INTO")))
                         && (!(previousNWS.getImage().trim().equalsIgnoreCase(">")))) {
                     //IF select which is not SELECT <table> yet
-                    TokenItem beginParent = findLineFirstNonWhitespace(getPosition(previousNWS, 0)).getToken();
-
+                    TokenItem beginParent = findStatementStart(previousNWS);//findLineFirstNonWhitespace(getPosition(previousNWS, 0)).getToken();
+                    if (beginParent == null) {
+                        beginParent = findLineFirstNonWhitespace(getPosition(previousNWS, 0)).getToken();
+                    }
                     if (beginParent != null) {
                         if (beginParent.getImage().trim().equalsIgnoreCase("FETCH")) {
                             indent = getTabSize();
                         } else if (beginParent.getImage().trim().equalsIgnoreCase("SELECT")) {
-                            indent = getIndentationDiff(beginParent, previousNWS);
+                            if (!getPosition(beginParent, 0).equals(getPosition(findLineFirstNonWhitespace(getPosition(beginParent, 0)).getToken(), 0)) && (findLineEnd(getPosition(beginParent, 0))).equals(findLineEnd(findLineFirstNonWhitespace(getPosition(previousNWS, 0))))) {
+                                indent = getTabSize();
+                            } else {
+                                indent = getIndentationDiff(beginParent, previousNWS);
+                            }
                         } else {
                             //Get statement start
                             beginParent = findStatementStart(previousNWS);
@@ -847,15 +853,29 @@ public class PlsqlFormatter extends ExtFormatter {
                         }
                     }
                 } else if (currentImage.equalsIgnoreCase("WHERE")) {
-                    //Get nearest FROM or SET, no need to handle FROM
+                    //Get nearest FROM or SET
                     TokenItem tokenP = getPreviousTokenWithImage(previousNWS, "SET", ";");
                     if (tokenP != null) {
                         indent = getIndentationDiff(tokenP, previousNWS);
                     } else {
-                        //Get previous line start keyword
-                        tokenP = findStatementStart(previousNWS);
-                        if (tokenP != null && tokenP.getImage().trim().equalsIgnoreCase("SELECT")) {
-                            indent = getIndentationDiff(tokenP, previousNWS);
+                        tokenP = getPreviousTokenWithImage(previousNWS, "FROM", ";");
+                        if (tokenP != null) {
+                            if (!getPosition(tokenP, 0).equals(getPosition(findLineFirstNonWhitespace(getPosition(tokenP, 0)).getToken(), 0)) && !findLineFirstNonWhitespace(getPosition(tokenP, 0)).getToken().getImage().trim().equalsIgnoreCase("SELECT")) {
+                                indent = getTabSize();
+                            } else {
+                                indent = getIndentationDiff(tokenP, previousNWS);
+                            }
+                        } else {
+                            //Get previous line start keyword
+                            tokenP = findStatementStart(previousNWS);
+                            if (tokenP != null && tokenP.getImage().trim().equalsIgnoreCase("SELECT")) {
+                                //  if (tokenP.equals(findLineFirstNonWhitespace(getPosition(tokenP, 0)).getToken())) {
+                                if (!getPosition(tokenP, 0).equals(getPosition(findLineFirstNonWhitespace(getPosition(tokenP, 0)).getToken(), 0)) && (findLineEnd(getPosition(tokenP, 0))).equals(findLineEnd(findLineFirstNonWhitespace(getPosition(previousNWS, 0))))) {
+                                    indent = getTabSize();
+                                } else {
+                                    indent = getIndentationDiff(tokenP, previousNWS);
+                                }
+                            }
                         }
                     }
                 } else if ((currentImage.equalsIgnoreCase("WITH"))
@@ -895,6 +915,25 @@ public class PlsqlFormatter extends ExtFormatter {
             }
 
             return null;
+        }
+
+        private int getParenthesesStartIndent(TokenItem current) {
+            TokenItem previous = current.getPrevious();
+            int pCount = 1;
+            while (previous != null) {
+                if (previous.getTokenID().getNumericID() == PlsqlTokenContext.LPAREN_ID) {
+                    pCount--;
+                } else if (previous.getTokenID().getNumericID() == PlsqlTokenContext.RPAREN_ID) {
+                    pCount++;
+                }
+                if (pCount == 0) {
+                    return getIndentationDiff(previous, current);
+                }
+
+                previous = previous.getPrevious();
+            }
+
+            return 0;
         }
 
         /**
@@ -944,11 +983,11 @@ public class PlsqlFormatter extends ExtFormatter {
             } else if (tokenID == PlsqlTokenContext.LPAREN_ID) {
                 //keep tab after '(' e.x in procedure and function declarations
                 return getTabSize();
-            } else if (tokenID == PlsqlTokenContext.RPAREN_ID
-                    && ((token.getImage().trim().equalsIgnoreCase("VALUES"))
-                    || (token.getImage().trim().equalsIgnoreCase("RETURNING")))) {
+            } else if (tokenID == PlsqlTokenContext.RPAREN_ID /*&& ((token.getImage().trim().equalsIgnoreCase("VALUES"))
+                    || (token.getImage().trim().equalsIgnoreCase("RETURNING")))*/) {
+                return getParenthesesStartIndent(previousNWS);
                 //reduce tab after ')' e.x in '<columns>)' in 'INSERT INTO'
-                return (-getTabSize());
+                // return (-getTabSize());
             } else if (tokenID == PlsqlTokenContext.OPERATOR_ID) {
                 if (previousNWS.getImage().trim().equalsIgnoreCase(";")) {
                     /*When a statement is ended by ';' in some statements
