@@ -238,7 +238,7 @@ public class PlsqlHyperlinkProvider implements HyperlinkProvider {
          target.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
          boolean isBody = true;
          if (object instanceof DataObject) {
-            isBody = !globalFileValidator.isValidPackageSpec((DataObject) object);
+            isBody = globalFileValidator.isValidPackageBody((DataObject) object);
          }
          String child = tokenImage;
          //Can be a define
