@@ -48,10 +48,10 @@ import org.netbeans.spi.options.OptionsPanelController;
 import org.openide.util.HelpCtx;
 import org.openide.util.Lookup;
 
-@OptionsPanelController.SubRegistration(location = "IFSOptions",
-displayName = "#AdvancedOption_DisplayName_PLSQLAnnotations",
-keywords = "#AdvancedOption_Keywords_PLSQLAnnotations",
-keywordsCategory = "IFSOptions/PLSQLAnnotations", position = 300)
+@OptionsPanelController.SubRegistration(location = "Editor",
+displayName = "#AdvancedOption_DisplayName_PLSQLHints",
+keywords = "#AdvancedOption_Keywords_PLSQLHints",
+keywordsCategory = "Editor/PLSQLHints", position = 950)
 public final class PLSQLAnnotationsOptionsPanelController extends OptionsPanelController {
 
     private PLSQLAnnotationsPanel panel;
