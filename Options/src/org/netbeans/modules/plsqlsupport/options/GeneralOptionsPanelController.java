@@ -48,10 +48,10 @@ import org.netbeans.spi.options.OptionsPanelController;
 import org.openide.util.HelpCtx;
 import org.openide.util.Lookup;
 
-@OptionsPanelController.SubRegistration(location = "IFSOptions",
+@OptionsPanelController.SubRegistration(location = "Editor",
 displayName = "#AdvancedOption_DisplayName_General",
 keywords = "#AdvancedOption_Keywords_General",
-keywordsCategory = "IFSOptions/General", position = 100)
+keywordsCategory = "Editor/PLSQL", position = 900)
 public final class GeneralOptionsPanelController extends OptionsPanelController {
 
     private GeneralPanel panel;

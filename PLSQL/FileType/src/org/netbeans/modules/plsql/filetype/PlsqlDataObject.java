@@ -142,7 +142,7 @@ public class PlsqlDataObject extends MultiDataObject {
 
          @Override
          public void preferenceChange(PreferenceChangeEvent evt) {
-            if (evt.getKey().equals(IfsOptionsUtilities.plsql_annotations_enabled_key)) {
+            if (evt.getKey().equals(IfsOptionsUtilities.PLSQL_ANNOTATIONS_ENABLED_KEY)) {
                manageAnnotations();
             }
          }
@@ -168,11 +168,11 @@ public class PlsqlDataObject extends MultiDataObject {
       List<Object> objects = new ArrayList<Object>();
       objects.add(blockFactory);
       objects.add(statementExecutionHistory);
-      
+
        if (annotationManager != null) {
            objects.add(annotationManager);
        }
-      
+
       if (databaseConnection != null) {
          objects.add(databaseConnection);
       }
