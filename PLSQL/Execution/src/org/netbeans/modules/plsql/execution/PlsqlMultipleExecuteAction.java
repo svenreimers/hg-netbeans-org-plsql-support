@@ -42,7 +42,6 @@
 package org.netbeans.modules.plsql.execution;
 
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsqlsupport.options.IfsOptionsUtilities;
 import org.netbeans.modules.plsql.utilities.PlsqlExecutorService;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -60,6 +59,7 @@ import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.progress.ProgressHandleFactory;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
+import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.cookies.EditorCookie;
 import org.openide.cookies.SaveCookie;
 import org.openide.loaders.DataObject;
@@ -260,7 +260,7 @@ public final class PlsqlMultipleExecuteAction extends CookieAction {
             if (connectionProvider != null && connectionProvider.isDefaultDatabase(connection)) { //only use pooled connections for the "main" database.
                connection = connectionProvider.getPooledDatabaseConnection(false);
             } else {
-               if (!IfsOptionsUtilities.isDeployNoPromptEnabled()) {
+               if (!OptionsUtilities.isDeployNoPromptEnabled()) {
                   String msg = "You are now connecting to a secondary database.";
                   String title = "Connecting to a Secondary Database!";
                   if (JOptionPane.showOptionDialog(null,

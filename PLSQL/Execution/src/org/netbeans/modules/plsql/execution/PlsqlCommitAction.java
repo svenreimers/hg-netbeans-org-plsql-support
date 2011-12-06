@@ -42,7 +42,6 @@
 package org.netbeans.modules.plsql.execution;
 
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsqlsupport.options.IfsOptionsUtilities;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
@@ -58,6 +57,7 @@ import javax.swing.text.Document;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.progress.ProgressHandleFactory;
+import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.awt.DropDownButtonFactory;
 import org.openide.cookies.EditorCookie;
 import org.openide.cookies.SaveCookie;
@@ -108,7 +108,7 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
 
         if (dataObject != null) {
             setEnabled(true);
-            autoCommit = IfsOptionsUtilities.isCommandWindowAutoCommitEnabled();
+            autoCommit = OptionsUtilities.isCommandWindowAutoCommitEnabled();
         } else {
             setEnabled(false);
         }
@@ -129,11 +129,11 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
     }
 
     public void actionPerformed(ActionEvent event) {
-        
+
         prepareConnection();
-        if (connectionProvider == null || connection == null) 
+        if (connectionProvider == null || connection == null)
             return;
-        
+
         if(!connectionProvider.hasDataToCommit(connection))
             return;
 
@@ -150,7 +150,7 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
             io = IOProvider.getDefault().getIO(obj.getPrimaryFile().getNameExt(), false);
             if(!io.isClosed())
                 io.getOut().println((new StringBuilder()).append("> Commit Statement successfully"));
-               
+
                 if(connection.getJDBCConnection()!=null)
                   connectionProvider.commitRollbackTransactions(connection, true);
 
@@ -169,8 +169,8 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
         button = DropDownButtonFactory.createDropDownButton(
                 new ImageIcon(new BufferedImage(32, 32, BufferedImage.TYPE_BYTE_GRAY)), null);
         button.setAction(this);
-        button.setSelected(!IfsOptionsUtilities.isCommandWindowAutoCommitEnabled());
-        button.setEnabled(!IfsOptionsUtilities.isCommandWindowAutoCommitEnabled());
+        button.setSelected(!OptionsUtilities.isCommandWindowAutoCommitEnabled());
+        button.setEnabled(!OptionsUtilities.isCommandWindowAutoCommitEnabled());
         button.setDisabledIcon(new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/database_commit_disable.png")));
         return button;
     }

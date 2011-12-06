@@ -41,7 +41,6 @@
  */
 package org.netbeans.modules.plsql.fold;
 
-import org.netbeans.modules.plsqlsupport.options.IfsOptionsUtilities;
 import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
 import org.netbeans.modules.plsql.lexer.PlsqlBlock;
 import org.netbeans.modules.plsql.lexer.PlsqlBlockType;
@@ -61,6 +60,7 @@ import org.netbeans.api.editor.fold.Fold;
 import org.netbeans.api.editor.fold.FoldHierarchy;
 import org.netbeans.api.editor.fold.FoldType;
 import org.netbeans.editor.BaseDocument;
+import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.netbeans.spi.editor.fold.FoldHierarchyTransaction;
 import org.netbeans.spi.editor.fold.FoldManager;
 import org.netbeans.spi.editor.fold.FoldOperation;
@@ -252,7 +252,7 @@ public class PlsqlFoldManager implements FoldManager, Observer {
     */
    private boolean isCollapsed(final PlsqlBlock block, final FoldType foldType, final List<FoldInfo> foldInfoLst) {
       if (foldInfoLst == null) {
-         if (IfsOptionsUtilities.isPlSqlExpandFolds()) {
+         if (OptionsUtilities.isPlSqlExpandFolds()) {
             return false;
          } else {
             return foldType == PlsqlFoldTypes.COMMENT;
