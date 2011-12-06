@@ -42,7 +42,6 @@
 package org.netbeans.modules.plsql.execution;
 
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsqlsupport.options.IfsOptionsUtilities;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
@@ -58,6 +57,7 @@ import javax.swing.text.Document;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.progress.ProgressHandleFactory;
+import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.awt.DropDownButtonFactory;
 import org.openide.cookies.EditorCookie;
 import org.openide.cookies.SaveCookie;
@@ -90,7 +90,7 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
    public PlsqlRollbackAction(Lookup context) {
       putValue(SHORT_DESCRIPTION, NbBundle.getMessage(PlsqlRollbackAction.class, "CTL_PlsqlRollback"));
       putValue(SMALL_ICON, new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/database_rollback.png")));
-       
+
      dataObject = context.lookup(DataObject.class);
 
       //Enable execution for .spec .body files in workspace (copied using 'Copy to Workspace Folder')
@@ -110,7 +110,7 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
 
       if (dataObject != null) {
          setEnabled(true);
-         autoCommit = IfsOptionsUtilities.isCommandWindowAutoCommitEnabled();
+         autoCommit = OptionsUtilities.isCommandWindowAutoCommitEnabled();
       } else {
          setEnabled(false);
       }
@@ -131,12 +131,12 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
     public void actionPerformed(ActionEvent event) {
 
         prepareConnection();
-        if (connectionProvider == null || connection == null) 
+        if (connectionProvider == null || connection == null)
             return;
 
-        if (!connectionProvider.hasDataToCommit(connection)) 
+        if (!connectionProvider.hasDataToCommit(connection))
             return;
-        
+
         EditorCookie edCookie = dataObject.getLookup().lookup(EditorCookie.class);
         Document document = edCookie.getDocument();
         saveIfModified(dataObject);
@@ -171,12 +171,12 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
         button = DropDownButtonFactory.createDropDownButton(
                 new ImageIcon(new BufferedImage(32, 32, BufferedImage.TYPE_BYTE_GRAY)), null);
         button.setAction(this);
-        button.setSelected(!IfsOptionsUtilities.isCommandWindowAutoCommitEnabled());
-        button.setEnabled(!IfsOptionsUtilities.isCommandWindowAutoCommitEnabled());
+        button.setSelected(!OptionsUtilities.isCommandWindowAutoCommitEnabled());
+        button.setEnabled(!OptionsUtilities.isCommandWindowAutoCommitEnabled());
         button.setDisabledIcon(new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/database_rollback_disable.png")));
         return button;
     }
-   
+
    private void saveIfModified(DataObject dataObj) {
       try {
          SaveCookie saveCookie = dataObj.getCookie(SaveCookie.class);

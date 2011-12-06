@@ -161,26 +161,26 @@ public final class PLSQLAnnotationsPanel extends javax.swing.JPanel implements T
    }
 
    void load() {
-      cbPlsqlAnnotations.setSelected(NbPreferences.forModule(PLSQLAnnotationsPanel.class).getBoolean(IfsOptionsUtilities.PLSQL_ANNOTATIONS_ENABLED_KEY, true));
+      cbPlsqlAnnotations.setSelected(NbPreferences.forModule(PLSQLAnnotationsPanel.class).getBoolean(OptionsUtilities.PLSQL_ANNOTATIONS_ENABLED_KEY, true));
       root.removeAllChildren();
-      DefaultMutableTreeNode generalNode = new DefaultMutableTreeNode(new PrefNode(IfsOptionsUtilities.PLSQL_ANNOTATIONS_GENERAL_KEY));
+      DefaultMutableTreeNode generalNode = new DefaultMutableTreeNode(new PrefNode(OptionsUtilities.PLSQL_ANNOTATIONS_GENERAL_KEY));
       root.add(generalNode);
 
-      generalNode.add(new DefaultMutableTreeNode(new PrefNode(IfsOptionsUtilities.PLSQL_ANNOTATIONS_CURSOR_WHERE_KEY)));
-      generalNode.add(new DefaultMutableTreeNode(new PrefNode(IfsOptionsUtilities.PLSQL_ANNOTATIONS_FUNCTION_RETURN_KEY)));
-      generalNode.add(new DefaultMutableTreeNode(new PrefNode(IfsOptionsUtilities.PLSQL_ANNOTATIONS_IF_NULL_KEY)));
-      generalNode.add(new DefaultMutableTreeNode(new PrefNode(IfsOptionsUtilities.PLSQL_ANNOTATIONS_MISSING_END_NAME_KEY)));
-      generalNode.add(new DefaultMutableTreeNode(new PrefNode(IfsOptionsUtilities.PLSQL_ANNOTATIONS_UNREACHABLE_KEY)));
-      generalNode.add(new DefaultMutableTreeNode(new PrefNode(IfsOptionsUtilities.PLSQL_ANNOTATIONS_WRONG_END_NAME_KEY)));
-      generalNode.add(new DefaultMutableTreeNode(new PrefNode(IfsOptionsUtilities.PLSQL_ANNOTATIONS_WRONG_FUNC_PARAM_KEY)));
-      generalNode.add(new DefaultMutableTreeNode(new PrefNode(IfsOptionsUtilities.PLSQL_ANNOTATIONS_WRONG_PARAM_ORDER_KEY)));
+      generalNode.add(new DefaultMutableTreeNode(new PrefNode(OptionsUtilities.PLSQL_ANNOTATIONS_CURSOR_WHERE_KEY)));
+      generalNode.add(new DefaultMutableTreeNode(new PrefNode(OptionsUtilities.PLSQL_ANNOTATIONS_FUNCTION_RETURN_KEY)));
+      generalNode.add(new DefaultMutableTreeNode(new PrefNode(OptionsUtilities.PLSQL_ANNOTATIONS_IF_NULL_KEY)));
+      generalNode.add(new DefaultMutableTreeNode(new PrefNode(OptionsUtilities.PLSQL_ANNOTATIONS_MISSING_END_NAME_KEY)));
+      generalNode.add(new DefaultMutableTreeNode(new PrefNode(OptionsUtilities.PLSQL_ANNOTATIONS_UNREACHABLE_KEY)));
+      generalNode.add(new DefaultMutableTreeNode(new PrefNode(OptionsUtilities.PLSQL_ANNOTATIONS_WRONG_END_NAME_KEY)));
+      generalNode.add(new DefaultMutableTreeNode(new PrefNode(OptionsUtilities.PLSQL_ANNOTATIONS_WRONG_FUNC_PARAM_KEY)));
+      generalNode.add(new DefaultMutableTreeNode(new PrefNode(OptionsUtilities.PLSQL_ANNOTATIONS_WRONG_PARAM_ORDER_KEY)));
       DefaultTreeModel model = new DefaultTreeModel(root);
       treeAnnotations.setModel(model);
       setChildrenEnabled(root, true, cbPlsqlAnnotations.isSelected());
    }
 
    void store() {
-      NbPreferences.forModule(PLSQLAnnotationsPanel.class).putBoolean(IfsOptionsUtilities.PLSQL_ANNOTATIONS_ENABLED_KEY, cbPlsqlAnnotations.isSelected());
+      NbPreferences.forModule(PLSQLAnnotationsPanel.class).putBoolean(OptionsUtilities.PLSQL_ANNOTATIONS_ENABLED_KEY, cbPlsqlAnnotations.isSelected());
       savePreferences(root);
    }
 

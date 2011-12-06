@@ -64,7 +64,7 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.Position;
 import javax.swing.text.StyledDocument;
-import org.netbeans.modules.plsqlsupport.options.IfsOptionsUtilities;
+import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.cookies.EditorCookie;
 import org.openide.text.NbDocument;
 import org.openide.util.Exceptions;
@@ -83,7 +83,7 @@ public class PlsqlAnnotationManager implements Observer {
    public static Annotation annotation = new GenericPlsqlAnnotations();
 
    public PlsqlAnnotationManager() {
-      if (IfsOptionsUtilities.isPlSqlAnnotationsEnabled()) {
+      if (OptionsUtilities.isPlSqlAnnotationsEnabled()) {
          annotation.loadConfiguration();
       }
 
@@ -92,7 +92,7 @@ public class PlsqlAnnotationManager implements Observer {
          @Override
          public void preferenceChange(final PreferenceChangeEvent evt) {
             if (evt.getKey().startsWith("plsql.annotations.")) {
-               if (IfsOptionsUtilities.isPlSqlAnnotationsEnabled()) {
+               if (OptionsUtilities.isPlSqlAnnotationsEnabled()) {
                   annotation.loadConfiguration();
                } else {
                   Annotation.configuration.clear();

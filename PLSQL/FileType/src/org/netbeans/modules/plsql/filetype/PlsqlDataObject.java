@@ -41,7 +41,6 @@
  */
 package org.netbeans.modules.plsql.filetype;
 
-import org.netbeans.modules.plsqlsupport.options.IfsOptionsUtilities;
 import org.netbeans.modules.plsqlsupport.options.PLSQLAnnotationsPanel;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import java.io.IOException;
@@ -65,6 +64,7 @@ import org.openide.util.NbPreferences;
 import org.openide.util.lookup.Lookups;
 import org.openide.util.lookup.ProxyLookup;
 import org.netbeans.api.db.explorer.DatabaseConnection;
+import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 
 public class PlsqlDataObject extends MultiDataObject {
 
@@ -142,7 +142,7 @@ public class PlsqlDataObject extends MultiDataObject {
 
          @Override
          public void preferenceChange(PreferenceChangeEvent evt) {
-            if (evt.getKey().equals(IfsOptionsUtilities.PLSQL_ANNOTATIONS_ENABLED_KEY)) {
+            if (evt.getKey().equals(OptionsUtilities.PLSQL_ANNOTATIONS_ENABLED_KEY)) {
                manageAnnotations();
             }
          }
@@ -151,12 +151,12 @@ public class PlsqlDataObject extends MultiDataObject {
    }
 
    private void manageAnnotations() {
-      if (IfsOptionsUtilities.isPlSqlAnnotationsEnabled() && !isAnnotationsEnabled) {
+      if (OptionsUtilities.isPlSqlAnnotationsEnabled() && !isAnnotationsEnabled) {
          blockFactory.addObserver(annotationManager);
          isAnnotationsEnabled = true;
          modifyLookupAnnotationManager(annotationManager);
          annotationManager.initAnnotations(this);
-      } else if (!IfsOptionsUtilities.isPlSqlAnnotationsEnabled() && isAnnotationsEnabled) {
+      } else if (!OptionsUtilities.isPlSqlAnnotationsEnabled() && isAnnotationsEnabled) {
          blockFactory.deleteObserver(annotationManager);
          annotationManager.clearAnnotations();
          isAnnotationsEnabled = false;
