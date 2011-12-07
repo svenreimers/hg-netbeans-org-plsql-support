@@ -145,11 +145,6 @@
                 <test-type>
                     <name>unit</name>
                     <test-dependency>
-                        <code-name-base>ifs.dev.mockito</code-name-base>
-                        <recursive/>
-                        <compile-dependency/>
-                    </test-dependency>
-                    <test-dependency>
                         <code-name-base>org.netbeans.modules.plsql.annotation</code-name-base>
                         <compile-dependency/>
                     </test-dependency>
