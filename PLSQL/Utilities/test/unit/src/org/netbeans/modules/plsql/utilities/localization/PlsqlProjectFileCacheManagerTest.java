@@ -240,7 +240,7 @@ public class PlsqlProjectFileCacheManagerTest extends NbTestCase {
       // file in .ifs should not be added
       fileObject = FileUtil.toFileObject(new File(getWorkDir(), WORKSPACE_B + File.separator + ACTOR_GEN_APY_PATH));
       cache.addFileToCache(fileObject);
-      assertEquals(25, cache.numberPlsqlObjects());
-      assertEquals(22, cache.numberFileObjects());      
+      assertEquals("file in .ifs should not be added", 25, cache.numberPlsqlObjects());
+      assertEquals("file in .ifs should not be added", 22, cache.numberFileObjects());
    }
 }
