@@ -111,19 +111,20 @@ public class DatabaseContentManager {
    private Map<String, Map<String, String>> pkgInfoMap = new HashMap<String, Map<String, String>>();
    private Map<String, DatabaseObjectInfo> seqMap = new HashMap<String, DatabaseObjectInfo>();
    private Map<String, String> ownerMap = new HashMap<String, String>();
-   private Set<String> schemaSet = new HashSet<String>();
+   private final Set<String> schemaSet = new HashSet<String>();
    private Set<String> enumerationSet = new HashSet<String>();
    private Set<String> logicalUnitSet = new HashSet<String>();
    private Map<String, String> viewSynonyms = new HashMap<String, String>();
    private Map<String, String> tableSynonyms = new HashMap<String, String>();
    private Map<String, String> packageSynonyms = new HashMap<String, String>();
    private Map<String, String> moduleVersionMap = new HashMap<String, String>();
-   private Map<String, DatabaseObjectInfo> functionNameMap = new HashMap<String, DatabaseObjectInfo>();
-   private Map<String, DatabaseObjectInfo> procedureNameMap = new HashMap<String, DatabaseObjectInfo>();
+   private final Map<String, DatabaseObjectInfo> functionNameMap = new HashMap<String, DatabaseObjectInfo>();
+   private final Map<String, DatabaseObjectInfo> procedureNameMap = new HashMap<String, DatabaseObjectInfo>();
    private RequestProcessor.Task updateThread = null;
+   private static final RequestProcessor PROCESSOR = new RequestProcessor(DatabaseContentManager.class.getName());
    private boolean disconnecting = false;
    private final Object updateLock = new Object();
-   private List<ExceptionListener> listeners = new ArrayList<ExceptionListener>();
+   private final List<ExceptionListener> listeners = new ArrayList<ExceptionListener>();
 
    private DatabaseContentManager(DatabaseConnection connection) {
       String databaseURL = connection.getDatabaseURL();
@@ -180,8 +181,7 @@ public class DatabaseContentManager {
    @SuppressWarnings("unchecked")
    public void updateCache(final DatabaseConnectionManager connectionManager, final boolean forceUpdate) {
       if (updateThread == null || updateThread.isFinished()) {
-         RequestProcessor processor = RequestProcessor.getDefault();
-         updateThread = processor.post(new Runnable() {
+         updateThread = PROCESSOR.post(new Runnable() {
 
             @Override
             public void run() {
