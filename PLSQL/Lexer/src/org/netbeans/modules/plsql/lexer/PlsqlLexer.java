@@ -98,8 +98,7 @@ public class PlsqlLexer implements Lexer<PlsqlTokenId> {
 
          switch (c) {
             case '_':
-            case '&':
-            case '$':
+            case '&':           
             case '#':
                return finishIdentifier();
 
@@ -173,7 +172,7 @@ public class PlsqlLexer implements Lexer<PlsqlTokenId> {
                      input.backup(1);
                      return token(PlsqlTokenId.OPERATOR);
                }
-
+            case '$':
             case 'a':
             case 'b':
             case 'c':

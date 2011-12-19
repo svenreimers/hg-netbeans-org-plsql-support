@@ -172,6 +172,12 @@ public class PlsqlFormatter extends ExtFormatter {
                     || (lineText.startsWith("IF"))
                     || (lineText.startsWith("ELSIF"))
                     || (lineText.startsWith("ELSE"))
+	|| (lineText.startsWith("$IF"))
+                    || (lineText.startsWith("$ELSIF"))
+                    || (lineText.startsWith("$ELSE"))
+	|| (lineText.startsWith("$THEN"))
+	|| (lineText.startsWith("$END"))
+                    || (lineText.startsWith("$ERROR"))
                     || (lineText.startsWith("CASE"))
                     || (lineText.startsWith("WHEN"))
                     || (lineText.startsWith("MATCHED"))
@@ -555,7 +561,7 @@ public class PlsqlFormatter extends ExtFormatter {
 
         private boolean checkUpperCaseAllowed(TokenItem token) {
             TokenItem previousToken = getPreviousNonWhiteSpaceToken(token);
-            if (previousToken != null && (previousToken.getImage().trim().equalsIgnoreCase("PROCEDURE") || previousToken.getImage().trim().equalsIgnoreCase("FUNCTION") || (previousToken.getImage().trim().equalsIgnoreCase("END") && !(token.getImage().trim().equalsIgnoreCase("IF") || token.getImage().trim().equalsIgnoreCase("LOOP") || token.getImage().trim().equalsIgnoreCase("CASE"))))) {
+            if (previousToken != null && (previousToken.getImage().trim().equalsIgnoreCase("PROCEDURE") || previousToken.getImage().trim().equalsIgnoreCase("FUNCTION") || (previousToken.getImage().trim().equalsIgnoreCase("END") && !(token.getImage().trim().equalsIgnoreCase("IF") || token.getImage().trim().equalsIgnoreCase("$IF") || token.getImage().trim().equalsIgnoreCase("LOOP") || token.getImage().trim().equalsIgnoreCase("CASE"))))) {
                 return false;
             } else {
                 return true;
@@ -713,6 +719,10 @@ public class PlsqlFormatter extends ExtFormatter {
                         && (!imageTmpPre.equalsIgnoreCase(";")))
                         || (imageTmp.equalsIgnoreCase("EXCEPTION")
                         && (!imageTmpPre.equalsIgnoreCase(";")))
+	    || (imageTmp.equalsIgnoreCase("$IF")
+                        && (!imageTmpPre.equalsIgnoreCase(";")))
+	    || (imageTmp.equalsIgnoreCase("$ERROR")
+                        && (!imageTmpPre.equalsIgnoreCase(";")))
                         || (imageTmp.equalsIgnoreCase("LOOP")
                         && (!imageTmpPre.equalsIgnoreCase(";")))
                         || (imageTmp.equalsIgnoreCase("BEGIN"))
@@ -732,7 +742,7 @@ public class PlsqlFormatter extends ExtFormatter {
                         --endNo;
                     }
                     //If we have reached another end note that
-                    if (imageTmp.equalsIgnoreCase("END")) {
+                    if (imageTmp.equalsIgnoreCase("END")  || imageTmp.equalsIgnoreCase("$END")) {
                         ++endNo;
                     }
 
@@ -765,7 +775,7 @@ public class PlsqlFormatter extends ExtFormatter {
                     if (previousWhen != null) {
                         indent = getIndentationDiff(previousWhen, previousNWS);
                     }
-                } else if (currentImage.equalsIgnoreCase("END")) {
+                } else if (currentImage.equalsIgnoreCase("END") || currentImage.equalsIgnoreCase("$END")) {
                     //END can be ending BEGIN, EXCEPTION, LOOP, IF
                     //need the corresponding one
                     TokenItem endParent = getEndParent(previousNWS);
@@ -783,14 +793,14 @@ public class PlsqlFormatter extends ExtFormatter {
                         indent = getTabSize();
                         //Check whether previous line is a COMMENT declaration
                     }
-                } else if (currentImage.equalsIgnoreCase("ELSIF")) {
+                } else if (currentImage.equalsIgnoreCase("ELSIF") || currentImage.equalsIgnoreCase("$ELSIF")) {
                     //will come after a IF, get the corresponding IF
                     TokenItem parentIf = getParentIf(previousNWS);
 
                     if (parentIf != null) {
                         indent = getIndentationDiff(parentIf, previousNWS);
                     }
-                } else if (currentImage.equalsIgnoreCase("ELSE")) {
+                } else if (currentImage.equalsIgnoreCase("ELSE") || currentImage.equalsIgnoreCase("$ELSE")) {
                     //will come after a IF, get the corresponding IF
                     TokenItem parent = getParentIf(previousNWS);
 
@@ -961,6 +971,11 @@ public class PlsqlFormatter extends ExtFormatter {
                         || (tokenImage.equalsIgnoreCase("IF"))
                         || (tokenImage.equalsIgnoreCase("ELSIF"))
                         || (tokenImage.equalsIgnoreCase("ELSE"))
+	    || (tokenImage.startsWith("$IF"))
+	    || (tokenImage.startsWith("$THEN"))
+	    || (tokenImage.startsWith("$ELSIF"))
+	    || (tokenImage.startsWith("$ELSE"))
+	    || (tokenImage.startsWith("$ERROR"))
                         || (tokenImage.equalsIgnoreCase("CASE"))
                         || (tokenImage.equalsIgnoreCase("WHEN"))
                         || (tokenImage.equalsIgnoreCase("MATCHED"))
@@ -1171,7 +1186,9 @@ public class PlsqlFormatter extends ExtFormatter {
                         || (image.equalsIgnoreCase("BEGIN"))
                         || (image.equalsIgnoreCase("LOOP"))
                         || (image.equalsIgnoreCase("ELSE"))
+	    || (image.equalsIgnoreCase("$ELSE"))
                         || (image.equalsIgnoreCase("THEN"))
+	    || (image.equalsIgnoreCase("$THEN"))
                         || (image.equalsIgnoreCase("CURSOR"))) {
                     //METHOD declarations inside a
                     break;
@@ -1276,7 +1293,7 @@ public class PlsqlFormatter extends ExtFormatter {
                 boolean isParent = false;
 
                 //Ignore END IF;
-                if (imageTmp.equalsIgnoreCase("IF")
+                if ((imageTmp.equalsIgnoreCase("IF") || imageTmp.equalsIgnoreCase("$IF"))
                         && (!imageTmpPre.equalsIgnoreCase(";"))) {
                     isParent = true;
                 }
@@ -1292,7 +1309,7 @@ public class PlsqlFormatter extends ExtFormatter {
                     }
 
                     //If we have reached another END IF that
-                    if (imageTmp.equalsIgnoreCase("END") && imageTmpPre.equalsIgnoreCase("IF")) {
+                    if (imageTmp.equalsIgnoreCase("END") && (imageTmpPre.equalsIgnoreCase("IF") || imageTmpPre.equalsIgnoreCase("$IF"))) {
                         ++endNo;
                     }
 
@@ -1324,7 +1341,9 @@ public class PlsqlFormatter extends ExtFormatter {
                         || (image.equalsIgnoreCase("BEGIN"))
                         || (image.equalsIgnoreCase("LOOP"))
                         || (image.equalsIgnoreCase("ELSE"))
+	    || (image.equalsIgnoreCase("$ELSE"))
                         || (image.equalsIgnoreCase("THEN"))
+	    || (image.equalsIgnoreCase("$THEN"))
                         || (image.equalsIgnoreCase("CURSOR"))) {
                     if (image.equalsIgnoreCase("CURSOR")) {
                         tokenTempPre = tokenTemp;
@@ -1436,6 +1455,10 @@ public class PlsqlFormatter extends ExtFormatter {
                 //If we have reached the beginning of a block stop
                 if ((imageTmp.equalsIgnoreCase("IF"))
                         || (imageTmp.equalsIgnoreCase("ELSE"))
+	    || (imageTmp.equalsIgnoreCase("$IF"))
+	    || (imageTmp.equalsIgnoreCase("$ELSE"))
+	    || (imageTmp.equalsIgnoreCase("$ELSIF"))
+	    || (imageTmp.equalsIgnoreCase("$ERROR"))
                         || (imageTmp.equalsIgnoreCase("BEGIN"))
                         || (imageTmp.equalsIgnoreCase("EXCEPTION"))
                         || (imageTmp.equalsIgnoreCase("LOOP"))
@@ -1450,7 +1473,7 @@ public class PlsqlFormatter extends ExtFormatter {
                     tokenWhen = tokenTemp;
                     break;
                 } else {
-                    if ((imageTmp.equalsIgnoreCase("THEN"))
+                    if ((imageTmp.equalsIgnoreCase("THEN") || imageTmp.equalsIgnoreCase("$THEN"))
                             && (tokenWhen == null)) {
                         //Get previous "THEN"
                         tokenThen = tokenTemp;
