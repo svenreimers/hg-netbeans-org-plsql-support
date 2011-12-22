@@ -42,7 +42,6 @@
 package org.netbeans.modules.plsql.execution;
 
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsqlsupport.options.IfsOptionsUtilities;
 import org.netbeans.modules.plsql.filetype.PlsqlDataObject;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
 import java.awt.Component;
@@ -73,6 +72,7 @@ import javax.swing.text.Document;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.progress.ProgressHandleFactory;
+import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.awt.DropDownButtonFactory;
 import org.openide.cookies.EditorCookie;
 import org.openide.cookies.SaveCookie;
@@ -128,7 +128,7 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
 
         setEnabled(dataObject != null);
         if (validator.isValidTDB(dataObject)) {
-            autoCommit = IfsOptionsUtilities.isCommandWindowAutoCommitEnabled();
+            autoCommit = OptionsUtilities.isCommandWindowAutoCommitEnabled();
         }
     }
 
@@ -261,7 +261,7 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
         }
 
         if (autoCommit && !connectionProvider.isDefaultDatabase(connection)) {
-            if (!IfsOptionsUtilities.isDeployNoPromptEnabled()) {
+            if (!OptionsUtilities.isDeployNoPromptEnabled()) {
                 String msg = "You are now connecting to a secondary database.";
                 String title = "Connecting to a Secondary Database!";
                 if (JOptionPane.showOptionDialog(null,

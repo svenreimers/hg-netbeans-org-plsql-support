@@ -41,7 +41,7 @@
  */
 package org.netbeans.modules.plsql.annotation;
 
-import org.netbeans.modules.plsqlsupport.options.IfsOptionsUtilities;
+import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.netbeans.modules.plsql.annotation.annotations.PlsqlAnnotation;
 import org.netbeans.modules.plsql.annotation.annotations.PlsqlCursorWhereAnnotation;
 import org.netbeans.modules.plsql.annotation.annotations.PlsqlFunctionReturnAnnotation;
@@ -53,7 +53,6 @@ import org.netbeans.modules.plsql.annotation.annotations.PlsqlWrongFunctionParam
 import org.netbeans.modules.plsql.annotation.annotations.PlsqlWrongParamOrderAnnotation;
 import org.netbeans.modules.plsql.lexer.PlsqlBlock;
 import org.netbeans.modules.plsql.lexer.PlsqlBlockType;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -63,19 +62,19 @@ import java.util.Set;
  * @author subslk
  */
 public class GenericPlsqlAnnotations implements Annotation{
-    
-   public static final String BLOCK_FUNCTION_IMPL = "FUNCTION_IMPL"; 
+
+   public static final String BLOCK_FUNCTION_IMPL = "FUNCTION_IMPL";
    public static final String BLOCK_FUNCTION_DEF = "FUNCTION_DEF";
-   public static final String BLOCK_PROCEDURE_IMPL = "PROCEDURE_IMPL"; 
+   public static final String BLOCK_PROCEDURE_IMPL = "PROCEDURE_IMPL";
    public static final String BLOCK_PROCEDURE_DEF = "PROCEDURE_DEF";
-   public static final String BLOCK_IF = "IF"; 
-   public static final String BLOCK_CURSOR = "CURSOR"; 
+   public static final String BLOCK_IF = "IF";
+   public static final String BLOCK_CURSOR = "CURSOR";
    public static final String DEFAULT_ANNOTATIONS = " DEFAULT_ANNOTATIONS";
    public static final String BLOCK_STATEMENT = "STATEMENT";
-        
+
     @Override
     public void loadConfiguration() {
-      
+
       final PlsqlWrongFunctionParamAnnotation wrongParamAnnotation = PlsqlWrongFunctionParamAnnotation.getDummyInstance();
       final PlsqlWrongParamOrderAnnotation wrongOrderAnnotation = PlsqlWrongParamOrderAnnotation.getDummyInstance();
       final PlsqlMissingEndNameAnnotation endNameAnnotation = PlsqlMissingEndNameAnnotation.getDummyInstance();
@@ -84,7 +83,7 @@ public class GenericPlsqlAnnotations implements Annotation{
       final Set<PlsqlAnnotation> procDefAnnotations = new HashSet<PlsqlAnnotation>();
       configuration.put(BLOCK_PROCEDURE_DEF, procDefAnnotations);
 
-      final Set<PlsqlAnnotation> procImplAnnotations = new HashSet<PlsqlAnnotation>(); 
+      final Set<PlsqlAnnotation> procImplAnnotations = new HashSet<PlsqlAnnotation>();
       configuration.put(BLOCK_PROCEDURE_IMPL, procImplAnnotations);
 
       final Set<PlsqlAnnotation> funcDefAnnotations = new HashSet<PlsqlAnnotation>();
@@ -93,48 +92,48 @@ public class GenericPlsqlAnnotations implements Annotation{
       final Set<PlsqlAnnotation> funcImplAnnotations = new HashSet<PlsqlAnnotation>();
       configuration.put(BLOCK_FUNCTION_IMPL, funcImplAnnotations);
 
-      final Set<PlsqlAnnotation> ifAnnotations = new HashSet<PlsqlAnnotation>(); 
+      final Set<PlsqlAnnotation> ifAnnotations = new HashSet<PlsqlAnnotation>();
       configuration.put(BLOCK_IF, ifAnnotations);
 
-      final Set<PlsqlAnnotation> cursorAnnotations = new HashSet<PlsqlAnnotation>(); 
+      final Set<PlsqlAnnotation> cursorAnnotations = new HashSet<PlsqlAnnotation>();
       configuration.put(BLOCK_CURSOR, cursorAnnotations);
 
-      if (IfsOptionsUtilities.isPlSqlAnnotationWrongParamOrderEnabled()) { 
+      if (OptionsUtilities.isPlSqlAnnotationWrongParamOrderEnabled()) {
          procDefAnnotations.add(wrongOrderAnnotation);
          procImplAnnotations.add(wrongOrderAnnotation);
          funcDefAnnotations.add(wrongOrderAnnotation);
          funcImplAnnotations.add(wrongOrderAnnotation);
       }
 
-      if (IfsOptionsUtilities.isPlSqlAnnotationMissingEndNameEnabled()) { 
+      if (OptionsUtilities.isPlSqlAnnotationMissingEndNameEnabled()) {
          procImplAnnotations.add(endNameAnnotation);
          funcImplAnnotations.add(endNameAnnotation);
       }
 
-      if (IfsOptionsUtilities.isPlSqlAnnotationWrongEndNameEnabled()) {
+      if (OptionsUtilities.isPlSqlAnnotationWrongEndNameEnabled()) {
          procImplAnnotations.add(wrongEndAnnotation);
          funcImplAnnotations.add(wrongEndAnnotation);
       }
 
-      if (IfsOptionsUtilities.isPlSqlAnnotationWrongFuncParamEnabled()) {
+      if (OptionsUtilities.isPlSqlAnnotationWrongFuncParamEnabled()) {
          funcDefAnnotations.add(wrongParamAnnotation);
          funcImplAnnotations.add(wrongParamAnnotation);
       }
 
-      if (IfsOptionsUtilities.isPlSqlAnnotationFunctionReturnEnabled()) {
+      if (OptionsUtilities.isPlSqlAnnotationFunctionReturnEnabled()) {
          funcImplAnnotations.add(PlsqlFunctionReturnAnnotation.getDummyInstance());
       }
 
-      if (IfsOptionsUtilities.isPlSqlAnnotationUnreachableEnabled()) {
-         funcImplAnnotations.add(PlsqlUnreachableAnnotation.getDummyInstance()); 
+      if (OptionsUtilities.isPlSqlAnnotationUnreachableEnabled()) {
+         funcImplAnnotations.add(PlsqlUnreachableAnnotation.getDummyInstance());
       }
 
-      if (IfsOptionsUtilities.isPlSqlAnnotationIfNullEnabled()) {
-         ifAnnotations.add(PlsqlIfNullAnnotation.getDummyInstance()); 
+      if (OptionsUtilities.isPlSqlAnnotationIfNullEnabled()) {
+         ifAnnotations.add(PlsqlIfNullAnnotation.getDummyInstance());
       }
 
-      if (IfsOptionsUtilities.isPlSqlAnnotationCursorWhereEnabled()) {
-         cursorAnnotations.add(PlsqlCursorWhereAnnotation.getDummyInstance()); 
+      if (OptionsUtilities.isPlSqlAnnotationCursorWhereEnabled()) {
+         cursorAnnotations.add(PlsqlCursorWhereAnnotation.getDummyInstance());
       }
    }
 
@@ -142,7 +141,7 @@ public class GenericPlsqlAnnotations implements Annotation{
     public Map<String, Set<PlsqlAnnotation>> getConfiguration() {
         return configuration;
     }
-    
+
     @Override
     public String getType(PlsqlBlock block) {
         if (block == null) {

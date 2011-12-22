@@ -52,13 +52,14 @@ import java.util.Set;
  * @author subslk
  */
 public interface Annotation {
-    public final String TOKEN_ERROR_SYS = "ERROR_SYS";
-    public final String TOKEN_START_KEYWORD = "START_KEYWORD";
-    public static final Map<String, Set<PlsqlAnnotation>> configuration= new HashMap<String, Set<PlsqlAnnotation>>();
-    
-    public abstract void loadConfiguration();
-    
-    public abstract Map<String, Set<PlsqlAnnotation>> getConfiguration();
-    
-    public abstract String getType(PlsqlBlock block);   
+
+   String TOKEN_ERROR_SYS = "ERROR_SYS";
+   String TOKEN_START_KEYWORD = "START_KEYWORD";
+   static final Map<String, Set<PlsqlAnnotation>> configuration = new HashMap<String, Set<PlsqlAnnotation>>();
+
+   void loadConfiguration();
+
+   Map<String, Set<PlsqlAnnotation>> getConfiguration();
+
+   String getType(PlsqlBlock block);
 }

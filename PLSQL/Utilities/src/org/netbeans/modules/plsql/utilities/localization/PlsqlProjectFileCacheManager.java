@@ -56,6 +56,7 @@ import java.util.logging.Logger;
 import org.openide.filesystems.FileChangeAdapter;
 import org.openide.filesystems.FileEvent;
 import org.openide.filesystems.FileObject;
+import org.openide.filesystems.FileUtil;
 import org.openide.util.Exceptions;
 
 /**
@@ -147,9 +148,13 @@ class PlsqlProjectFileCacheManager extends FileChangeAdapter implements Serializ
    }
 
    private boolean isValidFileObject(final FileObject fileObject) throws IOException {
-      return fileObject.getPath().startsWith(rootFolder.getCanonicalPath())
-              && !cache.contains(fileObject)
-              && !fileObject.getPath().contains(File.separator + ".");
+      return isFileInRootFolder(fileObject) && !cache.contains(fileObject)
+              && !FileUtil.toFile(fileObject).getPath().contains(File.separator + ".");
+
+   }
+
+   private boolean isFileInRootFolder(final FileObject fileObject) throws IOException {
+      return FileUtil.toFile(fileObject).getPath().startsWith(rootFolder.getCanonicalPath());
    }
 
    private boolean writeCacheToFile(final PlsqlFileCache cache, final File file) {

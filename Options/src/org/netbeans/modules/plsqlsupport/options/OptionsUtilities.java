@@ -43,7 +43,7 @@ package org.netbeans.modules.plsqlsupport.options;
 
 import org.openide.util.NbPreferences;
 
-public class IfsOptionsUtilities {
+public class OptionsUtilities {
 
    public static final String AUTO_DEPLOY_ALL_DATABASES_KEY = "auto.deploy.all.databases";
    public static final String PLSQL_ANNOTATIONS_ENABLED_KEY = "plsql.annotations.enabled";
@@ -60,7 +60,7 @@ public class IfsOptionsUtilities {
    public static final String PLSQL_ANNOTATIONS_WRONG_FUNC_PARAM_KEY = "plsql.annotations.wrong.func.param";
    public static final String PLSQL_ANNOTATIONS_WRONG_PARAM_ORDER_KEY = "plsql.annotations.wrong.param.order";
 
-   private IfsOptionsUtilities() {
+   private OptionsUtilities() {
    } //singleton
 
    public static boolean isDeployNoPromptEnabled() {
@@ -76,7 +76,7 @@ public class IfsOptionsUtilities {
    }
 
    public static boolean isCommandWindowAutoCommitEnabled() {
-      return NbPreferences.forModule(GeneralPanel.class).getBoolean(COMMAND_WINDOW_AUTO_COMMIT_KEY, true);
+      return NbPreferences.forModule(GeneralPanel.class).getBoolean(COMMAND_WINDOW_AUTO_COMMIT_KEY, false);
    }
 
    public static boolean isPlSqlAnnotationCursorWhereEnabled() {
