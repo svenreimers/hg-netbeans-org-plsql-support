@@ -232,7 +232,7 @@ public class PlsqlExecutableBlocksMaker {
                 break;
             }
 
-            if (startOfBlock && (token.id() == PlsqlTokenId.LINE_COMMENT || token.id() == PlsqlTokenId.BLOCK_COMMENT || token.id() == PlsqlTokenId.WHITESPACE)) {
+            if (startOfBlock && (token.id() == PlsqlTokenId.LINE_COMMENT || token.id() == PlsqlTokenId.BLOCK_COMMENT || token.id() == PlsqlTokenId.WHITESPACE || token.id() == PlsqlTokenId.IGNORE_MARKER)) {
                 //skip comments at the beginning of a statement (and in between or after statement)
                 offset = ts.offset() - startDoc + token.toString().length();
             } else if (token.id() == PlsqlTokenId.OPERATOR) {
