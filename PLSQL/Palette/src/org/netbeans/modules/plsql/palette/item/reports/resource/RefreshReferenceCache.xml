@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE editor_palette_item PUBLIC "-//NetBeans//Editor Palette Item 1.0//EN" "http://www.netbeans.org/dtds/editor-palette-item-1_0.dtd">
+<editor_palette_item version="1.0">
+     <body>
+        <![CDATA[
+-- Provide a view or module as parameter, empty string ('') will result in a full refresh
+BEGIN
+    Reference_SYS.Refresh_Active_List__('&VIEW_OR_MODULE');
+END;
+/
+]]>
+    </body>
+    <icon16 urlvalue="org/netbeans/modules/palette/resources/unknown16.gif" />
+    <icon32 urlvalue="org/netbeans/modules/palette/resources/unknown32.gif" />
+    <description localizing-bundle="org.netbeans.modules.plsql.palette.item.reports.resource.Bundle"
+                 display-name-key="NAME_Refresh_Reference_Cache"
+                 tooltip-key="HINT_Refresh_Reference_Cache" />
+</editor_palette_item>

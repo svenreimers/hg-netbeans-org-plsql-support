@@ -184,6 +184,7 @@
          <file name="ListDebugCompiledPkgs.xml" url="item/reports/resource/ListDebugCompiledPkgs.xml"/>      
          <file name="RemoveDebugInfo.xml" url="item/reports/resource/RemoveDebugInfo.xml"/>
          <file name="RefreshDictionary.xml" url="item/reports/resource/RefreshDictionary.xml"/>
+         <file name="RefreshReferenceCache.xml" url="item/reports/resource/RefreshReferenceCache.xml"/>
          <file name="GrantIfssys.xml" url="item/reports/resource/GrantIfssys.xml"/>
       </folder>
    </folder>
