@@ -1,0 +1,9 @@
+[patterns]
+**.api = CRLF
+**.apy = CRLF
+**.cdb = CRLF
+**.cre = CRLF
+**.ins = CRLF
+**.rdf = CRLF
+**.upg = CRLF
+
