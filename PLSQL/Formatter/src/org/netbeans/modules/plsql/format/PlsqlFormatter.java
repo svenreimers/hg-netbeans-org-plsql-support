@@ -596,8 +596,9 @@ public class PlsqlFormatter extends ExtFormatter {
                     //Get forward indentation difference
                     parentIndent = getIndentDiffOnPrevious(previousNWS, token/*pos.getToken()*/);
                 }
-
-                indent = getLineIndent(getPosition(previousNWS, 0), true);
+                if(!previousNWS.getImage().equals("/")){
+	indent = getLineIndent(getPosition(previousNWS, 0), true);
+                }
                 indent = indent + parentIndent;
             }
 
