@@ -186,6 +186,7 @@
          <file name="RefreshDictionary.xml" url="item/reports/resource/RefreshDictionary.xml"/>
          <file name="RefreshReferenceCache.xml" url="item/reports/resource/RefreshReferenceCache.xml"/>
          <file name="GrantIfssys.xml" url="item/reports/resource/GrantIfssys.xml"/>
+         <file name="GrantPlSqlAp.xml" url="item/reports/resource/GrantPlSqlAp.xml"/>
       </folder>
    </folder>
 </filesystem>
