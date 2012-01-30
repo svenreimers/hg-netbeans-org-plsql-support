@@ -281,6 +281,11 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
                     return;
                 }
             }
+        } else {
+            //to reconnect if the connection is gone. 
+            if (connection.getJDBCConnection() == null) {
+                connectionProvider.connect(connection);
+            }
         }
 
         //if the user has selected any text in the window, create exec block using selected text only
