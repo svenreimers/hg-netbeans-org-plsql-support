@@ -996,6 +996,9 @@ public class PlsqlFormatter extends ExtFormatter {
                         }
                     }
                 }
+                if (tokenImage.equalsIgnoreCase("DISTINCT")) {
+	return getIndentForSelect(previousNWS);
+                }
             } else if (tokenID == PlsqlTokenContext.LPAREN_ID) {
                 //keep tab after '(' e.x in procedure and function declarations
                 return getTabSize();
@@ -1074,13 +1077,19 @@ public class PlsqlFormatter extends ExtFormatter {
                     //This will be useful for SELECT , UPDATE , INTO variables
                     TokenItem first = findLineFirstNonWhitespace(getPosition(previousNWS, 0)).getToken();
                     String previousKeyword = first.getImage().trim();
+	TokenItem findStatementStart = findStatementStart(first);
+	if (findStatementStart != null) {
+	    previousKeyword = findStatementStart.getImage().trim();
+	}
 
-                    if ((previousKeyword.equalsIgnoreCase("SELECT"))
-                            || (previousKeyword.equalsIgnoreCase("INTO"))
-                            || (previousKeyword.equalsIgnoreCase("FROM"))
-                            || (previousKeyword.equalsIgnoreCase("SET"))) {
-                        return getTabSize();
-                    }
+	if (previousKeyword.equalsIgnoreCase("SELECT") || (previousKeyword.equalsIgnoreCase("FROM"))) {
+	    return getIndentForSelect(previousNWS);
+	}
+
+	if ((previousKeyword.equalsIgnoreCase("INTO"))
+	        || (previousKeyword.equalsIgnoreCase("SET"))) {
+	    return getTabSize();
+	}
                 } else if (previousNWS.getImage().trim().equalsIgnoreCase("*")) {
                     //Used for a case like 'Select *'
                     if (getPreviousKeyword(previousNWS).getImage().trim().equalsIgnoreCase("SELECT")) {
@@ -1418,6 +1427,32 @@ public class PlsqlFormatter extends ExtFormatter {
             }
 
             return tokenRes;
+        }
+        
+         /**
+         * Get the correct indent for Select statements 
+         * @param previousNWS
+         * @return token item, null if not found
+         */
+        private int getIndentForSelect(TokenItem previousNWS) {
+
+            int indent = getTabSize();
+            TokenItem first = findLineFirstNonWhitespace(getPosition(previousNWS, 0)).getToken();
+
+            int parent = getVisualColumnOffset(getPosition(first, 0));
+            TokenItem findStatementStart = findStatementStart(first);
+
+            if (findStatementStart != null) {
+                first = findStatementStart;
+            }
+            
+            do {
+                first = first.getNext();
+                if ((first != null) && (first.getTokenID() != PlsqlTokenContext.WHITESPACE) && (first.getTokenID() != PlsqlTokenContext.BLOCK_COMMENT)  && (first.getTokenID() != PlsqlTokenContext.LINE_COMMENT)) {
+	return getVisualColumnOffset(getPosition(first, 0)) - parent;
+                }
+            } while (first != null);
+            return indent;
         }
 
         /**
