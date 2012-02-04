@@ -726,7 +726,7 @@ public class PlsqlFormatter extends ExtFormatter {
                         && (!imageTmpPre.equalsIgnoreCase(";")))
                         || (imageTmp.equalsIgnoreCase("LOOP")
                         && (!imageTmpPre.equalsIgnoreCase(";")))
-                        || (imageTmp.equalsIgnoreCase("BEGIN"))
+                        || (imageTmp.equalsIgnoreCase("BEGIN"))                       
                         || (imageTmp.equalsIgnoreCase("CASE"))
                         || (imageTmp.equalsIgnoreCase("PACKAGE"))) {
                     isParent = true;
@@ -754,7 +754,7 @@ public class PlsqlFormatter extends ExtFormatter {
 
             return tokenParent;
         }
-
+        
         /**
          * Get the backward indentation for the current token
          * based on the previous token and the current token.
@@ -780,7 +780,7 @@ public class PlsqlFormatter extends ExtFormatter {
                     //END can be ending BEGIN, EXCEPTION, LOOP, IF
                     //need the corresponding one
                     TokenItem endParent = getEndParent(previousNWS);
-
+	
                     if (endParent != null) {
                         indent = getIndentationDiff(endParent, previousNWS);
                     }
@@ -1438,7 +1438,7 @@ public class PlsqlFormatter extends ExtFormatter {
 
             int indent = getTabSize();
             TokenItem first = findLineFirstNonWhitespace(getPosition(previousNWS, 0)).getToken();
-
+           
             int parent = getVisualColumnOffset(getPosition(first, 0));
             TokenItem findStatementStart = findStatementStart(first);
 
@@ -1448,8 +1448,12 @@ public class PlsqlFormatter extends ExtFormatter {
             
             do {
                 first = first.getNext();
-                if ((first != null) && (first.getTokenID() != PlsqlTokenContext.WHITESPACE) && (first.getTokenID() != PlsqlTokenContext.BLOCK_COMMENT)  && (first.getTokenID() != PlsqlTokenContext.LINE_COMMENT)) {
-	return getVisualColumnOffset(getPosition(first, 0)) - parent;
+                if ((first != null) && (first.getTokenID() != PlsqlTokenContext.WHITESPACE) && (first.getTokenID() != PlsqlTokenContext.BLOCK_COMMENT) && (first.getTokenID() != PlsqlTokenContext.LINE_COMMENT)) {
+	if (parent != 0 && parent < getVisualColumnOffset(getPosition(first, 0))) {
+	    return 0;
+	} else {
+	    return getVisualColumnOffset(getPosition(first, 0)) - parent;
+	}
                 }
             } while (first != null);
             return indent;
