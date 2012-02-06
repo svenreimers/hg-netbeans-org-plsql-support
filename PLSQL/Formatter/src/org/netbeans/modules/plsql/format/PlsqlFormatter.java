@@ -726,8 +726,9 @@ public class PlsqlFormatter extends ExtFormatter {
                         && (!imageTmpPre.equalsIgnoreCase(";")))
                         || (imageTmp.equalsIgnoreCase("LOOP")
                         && (!imageTmpPre.equalsIgnoreCase(";")))
-                        || (imageTmp.equalsIgnoreCase("BEGIN"))                       
-                        || (imageTmp.equalsIgnoreCase("CASE"))
+	    || (imageTmp.equalsIgnoreCase("CASE")
+                        && (!imageTmpPre.equalsIgnoreCase(";")))
+	    || (imageTmp.equalsIgnoreCase("BEGIN"))
                         || (imageTmp.equalsIgnoreCase("PACKAGE"))) {
                     isParent = true;
                 }
@@ -1493,16 +1494,10 @@ public class PlsqlFormatter extends ExtFormatter {
                 String imageTmp = tokenTemp.getImage().trim();
 
                 //If we have reached the beginning of a block stop
-                if ((imageTmp.equalsIgnoreCase("IF"))
-                        || (imageTmp.equalsIgnoreCase("ELSE"))
-	    || (imageTmp.equalsIgnoreCase("$IF"))
-	    || (imageTmp.equalsIgnoreCase("$ELSE"))
-	    || (imageTmp.equalsIgnoreCase("$ELSIF"))
-	    || (imageTmp.equalsIgnoreCase("$ERROR"))
+                if ( (imageTmp.equalsIgnoreCase("$ERROR"))
                         || (imageTmp.equalsIgnoreCase("BEGIN"))
                         || (imageTmp.equalsIgnoreCase("EXCEPTION"))
-                        || (imageTmp.equalsIgnoreCase("LOOP"))
-                        || (imageTmp.equalsIgnoreCase("ELSIF"))) {
+                        || (imageTmp.equalsIgnoreCase("LOOP"))) {
                     break;
                 } else if ((imageTmp.equalsIgnoreCase(";"))
                         && (tokenThen != null)) {
