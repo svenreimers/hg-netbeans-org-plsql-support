@@ -6,5 +6,5 @@ OpenIDE-Module: org.netbeans.modules.plsql.usage
 OpenIDE-Module-Layer: org/netbeans/modules/plsql/usage/layer.xml
 OpenIDE-Module-Localizing-Bundle: org/netbeans/modules/plsql/usage/Bun
  dle.properties
-OpenIDE-Module-Specification-Version: 1.8.4
+OpenIDE-Module-Specification-Version: 1.8.5
 
