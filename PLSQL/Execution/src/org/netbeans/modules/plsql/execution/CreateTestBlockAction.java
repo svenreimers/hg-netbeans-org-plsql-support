@@ -66,6 +66,10 @@ import org.netbeans.api.lexer.TokenHierarchy;
 import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
+import org.openide.awt.ActionID;
+import org.openide.awt.ActionReference;
+import org.openide.awt.ActionReferences;
+import org.openide.awt.ActionRegistration;
 import org.openide.cookies.EditorCookie;
 import org.openide.loaders.DataObject;
 import org.openide.nodes.Node;
@@ -76,6 +80,11 @@ import org.openide.util.NbBundle;
 import org.openide.util.actions.CookieAction;
 import org.openide.windows.WindowManager;
 
+@ActionID(id = "org.netbeans.modules.plsql.execution.CreateTestBlockAction", category = "PLSQL")
+@ActionRegistration(displayName = "#CTL_CreateTestBlockAction")
+@ActionReferences(value = {
+   @ActionReference(path = "Shortcuts", name = "AS-B"),
+   @ActionReference(path = "Editors/text/x-plsql/Popup", position = 281)})
 public final class CreateTestBlockAction extends CookieAction {
 
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);

@@ -41,13 +41,18 @@
  */
 package org.netbeans.modules.plsql.execution;
 
-import org.netbeans.modules.plsql.filetype.StatementExecutionHistory;
-import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
 import java.awt.event.ActionEvent;
+
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.StyledDocument;
+
+import org.netbeans.modules.plsql.filetype.StatementExecutionHistory;
+import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
+import org.openide.awt.ActionID;
+import org.openide.awt.ActionReference;
+import org.openide.awt.ActionRegistration;
 import org.openide.cookies.EditorCookie;
 import org.openide.loaders.DataObject;
 import org.openide.util.ContextAwareAction;
@@ -57,44 +62,51 @@ import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
 import org.openide.util.Utilities;
 
+@ActionID(id = "org.netbeans.modules.plsql.execution.PlsqlExecutionHistoryNextAction", category = "PLSQL")
+@ActionRegistration(displayName = "#CTL_PlsqlExecutionHistoryNextAction")
+@ActionReference(path = "Shortcuts", name = "AS-N")
 public final class PlsqlExecutionHistoryNextAction extends AbstractAction implements ContextAwareAction {
-   private DataObject dataObject;
 
-   public PlsqlExecutionHistoryNextAction() {
-      this(Utilities.actionsGlobalContext());
-   }
+    private DataObject dataObject;
 
-   public PlsqlExecutionHistoryNextAction(Lookup context) {
-      putValue(NAME,getName());
-      putValue(SHORT_DESCRIPTION, getName());
-      dataObject = context.lookup(DataObject.class);
-      setEnabled(dataObject != null && dataObject.getPrimaryFile().getNameExt().startsWith(SQLCommandWindow.SQL_EXECUTION_FILE_PREFIX));
-   }
+    public PlsqlExecutionHistoryNextAction() {
+        this(Utilities.actionsGlobalContext());
+    }
 
-   public Action createContextAwareInstance(Lookup context) {
-      return new PlsqlExecutionHistoryNextAction(context);
-   }
+    public PlsqlExecutionHistoryNextAction(Lookup context) {
+        putValue(NAME, getName());
+        putValue(SHORT_DESCRIPTION, getName());
+        dataObject = context.lookup(DataObject.class);
+        setEnabled(dataObject != null && dataObject.getPrimaryFile().getNameExt().startsWith(SQLCommandWindow.SQL_EXECUTION_FILE_PREFIX));
+    }
 
-   private String getName() {
-      return NbBundle.getMessage(PlsqlExecutionHistoryNextAction.class, "CTL_PlsqlExecutionHistoryNextAction");
-   }
+    @Override
+    public Action createContextAwareInstance(Lookup context) {
+        return new PlsqlExecutionHistoryNextAction(context);
+    }
 
-   public HelpCtx getHelpCtx() {
-      return HelpCtx.DEFAULT_HELP;
-   }
+    private String getName() {
+        return NbBundle.getMessage(PlsqlExecutionHistoryNextAction.class, "CTL_PlsqlExecutionHistoryNextAction");
+    }
 
-   public void actionPerformed(ActionEvent e) {
-      StatementExecutionHistory history = dataObject.getLookup().lookup(StatementExecutionHistory.class);
-      if(history!=null) {
-         boolean moveOk = history.moveNext();
-         StyledDocument document = dataObject.getLookup().lookup(EditorCookie.class).getDocument();
-         try {
-            document.remove(0, document.getLength());
-            if(moveOk)
-               document.insertString(0, history.getSelectedEntry(), null);
-         } catch (BadLocationException ex) {
-            Exceptions.printStackTrace(ex);
-         }
-      }
-   }
+    public HelpCtx getHelpCtx() {
+        return HelpCtx.DEFAULT_HELP;
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        StatementExecutionHistory history = dataObject.getLookup().lookup(StatementExecutionHistory.class);
+        if (history != null) {
+            boolean moveOk = history.moveNext();
+            StyledDocument document = dataObject.getLookup().lookup(EditorCookie.class).getDocument();
+            try {
+                document.remove(0, document.getLength());
+                if (moveOk) {
+                    document.insertString(0, history.getSelectedEntry(), null);
+                }
+            } catch (BadLocationException ex) {
+                Exceptions.printStackTrace(ex);
+            }
+        }
+    }
 }

@@ -50,10 +50,12 @@ import org.openide.util.actions.CookieAction;
 
 public final class SQLExecutionAction extends CookieAction {
 
+   @Override
     protected void performAction(Node[] activatedNodes) {
         SQLCommandWindow.createSQLCommandWindow(activatedNodes, null, null);
     }
 
+   @Override
     public String getName() {
         return NbBundle.getMessage(SQLExecutionAction.class, "CTL_SQLExecutionAction");
     }
@@ -65,6 +67,7 @@ public final class SQLExecutionAction extends CookieAction {
         putValue("noIconInMenu", Boolean.TRUE);
     }
 
+   @Override
     public HelpCtx getHelpCtx() {
         return HelpCtx.DEFAULT_HELP;
     }

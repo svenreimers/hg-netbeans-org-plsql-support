@@ -41,7 +41,6 @@
  */
 package org.netbeans.modules.plsql.execution;
 
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
@@ -49,15 +48,20 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.text.Document;
+
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.progress.ProgressHandleFactory;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
+import org.openide.awt.ActionID;
+import org.openide.awt.ActionRegistration;
 import org.openide.awt.DropDownButtonFactory;
 import org.openide.cookies.EditorCookie;
 import org.openide.cookies.SaveCookie;
@@ -71,6 +75,9 @@ import org.openide.util.Utilities;
 import org.openide.util.actions.Presenter;
 import org.openide.windows.IOProvider;
 import org.openide.windows.InputOutput;
+
+@ActionID(id = "org.netbeans.modules.plsql.execution.PlsqlCommitAction", category = "PLSQL")
+@ActionRegistration(displayName = "#CTL_PlsqlCommit")
 public class PlsqlCommitAction extends AbstractAction implements ContextAwareAction, Presenter.Toolbar {
 
     private static final List<String> EXTENSIONS = Arrays.asList(new String[]{"tdb"});
@@ -82,7 +89,6 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
 
     public PlsqlCommitAction() {
         this(Utilities.actionsGlobalContext());
-
     }
 
     public PlsqlCommitAction(Lookup context) {
@@ -112,9 +118,9 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
         } else {
             setEnabled(false);
         }
-
     }
 
+    @Override
     public Action createContextAwareInstance(Lookup context) {
         return new PlsqlCommitAction(context);
 
@@ -125,17 +131,20 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
             connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
         }
 
-         connection = dataObject.getLookup().lookup(DatabaseConnection.class);
+        connection = dataObject.getLookup().lookup(DatabaseConnection.class);
     }
 
+    @Override
     public void actionPerformed(ActionEvent event) {
 
         prepareConnection();
-        if (connectionProvider == null || connection == null)
+        if (connectionProvider == null || connection == null) {
             return;
+        }
 
-        if(!connectionProvider.hasDataToCommit(connection))
+        if (!connectionProvider.hasDataToCommit(connection)) {
             return;
+        }
 
         EditorCookie edCookie = dataObject.getLookup().lookup(EditorCookie.class);
         Document document = edCookie.getDocument();
@@ -148,20 +157,23 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
 
         try {
             io = IOProvider.getDefault().getIO(obj.getPrimaryFile().getNameExt(), false);
-            if(!io.isClosed())
+            if (!io.isClosed()) {
                 io.getOut().println((new StringBuilder()).append("> Commit Statement successfully"));
+            }
 
-                if(connection.getJDBCConnection()!=null)
-                  connectionProvider.commitRollbackTransactions(connection, true);
+            if (connection.getJDBCConnection() != null) {
+                connectionProvider.commitRollbackTransactions(connection, true);
+            }
 
         } catch (Exception ex) {
-           io.getOut().println((new StringBuilder()).append(">!!! Error Commit Statement"));
-           Exceptions.printStackTrace(ex);
+            io.getOut().println((new StringBuilder()).append(">!!! Error Commit Statement"));
+            Exceptions.printStackTrace(ex);
         } finally {
             handle.finish();
         }
     }
 
+    @Override
     public Component getToolbarPresenter() {
         if (!isEnabled()) {
             return null;
@@ -173,10 +185,6 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
         button.setEnabled(!OptionsUtilities.isCommandWindowAutoCommitEnabled());
         button.setDisabledIcon(new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/database_commit_disable.png")));
         return button;
-    }
-
-    private void updateButton() {
-          button.setEnabled(true);
     }
 
     private void saveIfModified(DataObject dataObj) {

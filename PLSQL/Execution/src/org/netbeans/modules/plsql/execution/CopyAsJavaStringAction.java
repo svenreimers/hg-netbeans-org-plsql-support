@@ -46,6 +46,9 @@ import java.awt.datatransfer.StringSelection;
 import javax.swing.JEditorPane;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
+import org.openide.awt.ActionID;
+import org.openide.awt.ActionReference;
+import org.openide.awt.ActionRegistration;
 import org.openide.cookies.EditorCookie;
 import org.openide.loaders.DataObject;
 import org.openide.nodes.Node;
@@ -56,6 +59,9 @@ import org.openide.util.NbBundle;
 import org.openide.util.actions.CookieAction;
 import org.openide.util.datatransfer.ExClipboard;
 
+@ActionID(id = "org.netbeans.modules.plsql.execution.CopyAsJavaStringAction", category = "PLSQL")
+@ActionRegistration(displayName = "#CTL_CopyAsJavaStringAction")
+@ActionReference(path = "Editors/text/x-plsql/Popup", position = 285)
 public class CopyAsJavaStringAction extends CookieAction {
 
     @Override

@@ -41,22 +41,24 @@
  */
 package org.netbeans.modules.plsql.execution;
 
-import org.netbeans.modules.plsqlsupport.db.ui.SQLExecutionAction;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+
 import javax.swing.JOptionPane;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
+
 import org.netbeans.api.db.explorer.DatabaseConnection;
-import org.netbeans.api.project.FileOwnerQuery;
-import org.netbeans.api.project.Project;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
+import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
+import org.openide.awt.ActionID;
+import org.openide.awt.ActionRegistration;
 import org.openide.cookies.EditorCookie;
 import org.openide.loaders.DataObject;
 import org.openide.nodes.Node;
+import org.openide.util.Exceptions;
 import org.openide.util.HelpCtx;
 import org.openide.util.NbBundle;
 import org.openide.util.actions.CookieAction;
@@ -64,8 +66,11 @@ import org.openide.windows.IOProvider;
 import org.openide.windows.InputOutput;
 import org.openide.windows.OutputWriter;
 
+@ActionID(id = "org.netbeans.modules.plsql.execution.PlsqlExplainPlanAction", category = "PLSQL")
+@ActionRegistration(displayName = "#CTL_PlsqlExplainPlanAction")
 public final class PlsqlExplainPlanAction extends CookieAction {
 
+    @Override
    protected void performAction(Node[] activatedNodes) {
       EditorCookie editorCookie = activatedNodes[0].getLookup().lookup(EditorCookie.class);
       DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
@@ -87,19 +92,22 @@ public final class PlsqlExplainPlanAction extends CookieAction {
                dbConnectionManager.releaseDatabaseConnection(dbConnection);
             }
          } catch (BadLocationException ex) {
-            ex.printStackTrace();
+            Exceptions.printStackTrace(ex);
          }
       }
    }
 
+    @Override
    protected int mode() {
       return CookieAction.MODE_EXACTLY_ONE;
    }
 
+    @Override
    public String getName() {
       return NbBundle.getMessage(PlsqlExplainPlanAction.class, "CTL_PlsqlExplainPlanAction");
    }
 
+    @Override
    protected Class[] cookieClasses() {
       return new Class[]{DataObject.class};
    }
@@ -109,6 +117,7 @@ public final class PlsqlExplainPlanAction extends CookieAction {
       return "org/netbeans/modules/plsql/execution/explain.png";
    }
 
+    @Override
    public HelpCtx getHelpCtx() {
       return HelpCtx.DEFAULT_HELP;
    }

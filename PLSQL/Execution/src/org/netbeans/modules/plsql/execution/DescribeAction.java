@@ -47,8 +47,9 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.text.Document;
 import org.netbeans.api.db.explorer.DatabaseConnection;
-import org.netbeans.api.project.FileOwnerQuery;
-import org.netbeans.api.project.Project;
+import org.openide.awt.ActionID;
+import org.openide.awt.ActionReference;
+import org.openide.awt.ActionRegistration;
 import org.openide.cookies.EditorCookie;
 import org.openide.loaders.DataObject;
 import org.openide.nodes.Node;
@@ -61,6 +62,9 @@ import org.openide.util.actions.CookieAction;
  *
  * @author YADHLK
  */
+@ActionID(id = "org.netbeans.modules.plsql.execution.DescribeAction", category = "PLSQL")
+@ActionRegistration(displayName = "#CTL_DescribeAction")
+@ActionReference(path = "Editors/text/x-plsql/Popup", position = 283)
 public class DescribeAction extends CookieAction {
 
    private String viewName = null;
@@ -78,7 +82,6 @@ public class DescribeAction extends CookieAction {
    @Override
    protected void performAction(Node[] activatedNodes) {
       DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
-      Project project = FileOwnerQuery.getOwner(dataObject.getPrimaryFile());
       EditorCookie ec = dataObject.getCookie(EditorCookie.class);
       final Document doc = ec.getDocument();
       final DatabaseConnectionManager connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
@@ -117,10 +120,10 @@ public class DescribeAction extends CookieAction {
       return HelpCtx.DEFAULT_HELP;
    }
 
+   @Override
    protected boolean enable(Node[] activatedNodes) {
       viewName = null;
 
-      Project project = null;
       if (!super.enable(activatedNodes)) {
          return false;
       }

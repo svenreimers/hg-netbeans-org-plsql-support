@@ -41,9 +41,6 @@
  */
 package org.netbeans.modules.plsql.execution;
 
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsql.filetype.PlsqlDataObject;
-import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -58,6 +55,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ImageIcon;
@@ -69,10 +67,17 @@ import javax.swing.JPopupMenu;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import javax.swing.text.Document;
+
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.progress.ProgressHandleFactory;
+import org.netbeans.modules.plsql.filetype.PlsqlDataObject;
+import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
+import org.openide.awt.ActionID;
+import org.openide.awt.ActionReference;
+import org.openide.awt.ActionRegistration;
 import org.openide.awt.DropDownButtonFactory;
 import org.openide.cookies.EditorCookie;
 import org.openide.cookies.SaveCookie;
@@ -88,336 +93,339 @@ import org.openide.util.RequestProcessor;
 import org.openide.util.Utilities;
 import org.openide.util.actions.Presenter;
 
+@ActionID(id = "org.netbeans.modules.plsql.execution.PlsqlExecuteAction", category = "PLSQL")
+@ActionRegistration(displayName = "#CTL_fileExecution")
+@ActionReference(path = "Shortcuts", name = "AS-E")
 public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAction, Presenter.Toolbar {
 
-    private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
-    private static final String DATABASE_CONNECTION_KEY = "databaseConnection";
-    private static final String TEST_BLOCK_NAME_PREFIX = "TestBlock:";
-    private DataObject dataObject;
-    private PlsqlDataObject plsqlDataobject;
-    private DatabaseConnectionManager connectionProvider;
-    private DatabaseConnection connection;
-    private PopupMenuPopulator popupMenuPopulator = null;
-    private JPopupMenu popup;
-    private JButton button;
-    private ActionListener buttonListener = new ButtonListener();
-    private boolean autoCommit = true;
+   private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
+   private static final String DATABASE_CONNECTION_KEY = "databaseConnection";
+   private static final String TEST_BLOCK_NAME_PREFIX = "TestBlock:";
+   private DataObject dataObject;
+   private PlsqlDataObject plsqlDataobject;
+   private DatabaseConnectionManager connectionProvider;
+   private DatabaseConnection connection;
+   private PopupMenuPopulator popupMenuPopulator = null;
+   private JPopupMenu popup;
+   private JButton button;
+   private ActionListener buttonListener = new ButtonListener();
+   private boolean autoCommit = true;
 
-    public PlsqlExecuteAction() {
-        this(Utilities.actionsGlobalContext());
-    }
+   public PlsqlExecuteAction() {
+      this(Utilities.actionsGlobalContext());
+   }
 
-    public PlsqlExecuteAction(Lookup context) {
-        putValue(NAME, NbBundle.getMessage(PlsqlExecuteAction.class, "CTL_fileExecution"));
-        putValue(SHORT_DESCRIPTION, NbBundle.getMessage(PlsqlExecuteAction.class, "CTL_fileExecution"));
-        putValue(SMALL_ICON, new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/execute.png")));
+   public PlsqlExecuteAction(Lookup context) {
+      putValue(NAME, NbBundle.getMessage(PlsqlExecuteAction.class, "CTL_fileExecution"));
+      putValue(SHORT_DESCRIPTION, NbBundle.getMessage(PlsqlExecuteAction.class, "CTL_fileExecution"));
+      putValue(SMALL_ICON, new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/execute.png")));
 
-        dataObject = context.lookup(DataObject.class);
+      dataObject = context.lookup(DataObject.class);
 
-        //Enable execution for .spec .body files in workspace (copied using 'Copy to Workspace Folder')
-        if (dataObject != null && (validator.isValidPackageDefault(dataObject)
-                || dataObject.getPrimaryFile().getExt().toLowerCase(Locale.ENGLISH).equals("db"))) {
-            if (!dataObject.getPrimaryFile().canWrite()) {
-                dataObject = null;
-            }
-        }
-
-        if (dataObject != null && dataObject.getLookup().lookup(EditorCookie.class) == null) {
+      //Enable execution for .spec .body files in workspace (copied using 'Copy to Workspace Folder')
+      if (dataObject != null && (validator.isValidPackageDefault(dataObject)
+              || dataObject.getPrimaryFile().getExt().toLowerCase(Locale.ENGLISH).equals("db"))) {
+         if (!dataObject.getPrimaryFile().canWrite()) {
             dataObject = null;
-        }
+         }
+      }
 
-        setEnabled(dataObject != null);
-        if (validator.isValidTDB(dataObject)) {
-            autoCommit = OptionsUtilities.isCommandWindowAutoCommitEnabled();
-        }
-    }
+      if (dataObject != null && dataObject.getLookup().lookup(EditorCookie.class) == null) {
+         dataObject = null;
+      }
 
-    @Override
-    public Action createContextAwareInstance(Lookup context) {
-        return new PlsqlExecuteAction(context);
-    }
+      setEnabled(dataObject != null);
+      if (validator.isValidTDB(dataObject)) {
+         autoCommit = OptionsUtilities.isCommandWindowAutoCommitEnabled();
+      }
+   }
 
-    private void prepareConnection() {
-        if (dataObject != null) {
-            connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
-            if (connectionProvider != null) {
-                if (popupMenuPopulator == null) {
-                    popupMenuPopulator = new PopupMenuPopulator();
-                    connectionProvider.addPropertyChangeListener(popupMenuPopulator);
-                }
+   @Override
+   public Action createContextAwareInstance(Lookup context) {
+      return new PlsqlExecuteAction(context);
+   }
+
+   private void prepareConnection() {
+      if (dataObject != null) {
+         connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
+         if (connectionProvider != null) {
+            if (popupMenuPopulator == null) {
+               popupMenuPopulator = new PopupMenuPopulator();
+               connectionProvider.addPropertyChangeListener(popupMenuPopulator);
             }
-        }
-    }
+         }
+      }
+   }
 
-    @Override
-    public void actionPerformed(ActionEvent event) {
-        if (connectionProvider == null) {
-            prepareConnection();
-        }
-        if (connectionProvider == null) {
-            return;
-        }
+   @Override
+   public void actionPerformed(ActionEvent event) {
+      if (connectionProvider == null) {
+         prepareConnection();
+      }
+      if (connectionProvider == null) {
+         return;
+      }
 
-        // If autocommit OFF - take the connection from data object.
-        if (!autoCommit) {
-            connection = dataObject.getLookup().lookup(DatabaseConnection.class);
-        }
+      // If autocommit OFF - take the connection from data object.
+      if (!autoCommit) {
+         connection = dataObject.getLookup().lookup(DatabaseConnection.class);
+      }
 
-        if (connection == null) {
-            connection = connectionProvider.getTemplateConnection();
-        }
+      if (connection == null) {
+         connection = connectionProvider.getTemplateConnection();
+      }
 
-        if (connection == null) {
-            return;
-        }
-        saveAndExecute();
-    }
+      if (connection == null) {
+         return;
+      }
+      saveAndExecute();
+   }
 
-    @Override
-    public Component getToolbarPresenter() {
-        if (!isEnabled()) {
-            return null;
-        }
+   @Override
+   public Component getToolbarPresenter() {
+      if (!isEnabled()) {
+         return null;
+      }
 
-        popup = new JPopupMenu();
-        if (connectionProvider == null) {
-            prepareConnection();
-        }
+      popup = new JPopupMenu();
+      if (connectionProvider == null) {
+         prepareConnection();
+      }
 
-        if (connectionProvider != null) {
-            populatePopupMenu();
-        }
+      if (connectionProvider != null) {
+         populatePopupMenu();
+      }
 
-        button = DropDownButtonFactory.createDropDownButton(
-                new ImageIcon(new BufferedImage(32, 32, BufferedImage.TYPE_BYTE_GRAY)), popup);
-        button.setAction(this);
-        button.addItemListener(new ItemListener() {
+      button = DropDownButtonFactory.createDropDownButton(
+              new ImageIcon(new BufferedImage(32, 32, BufferedImage.TYPE_BYTE_GRAY)), popup);
+      button.setAction(this);
+      button.addItemListener(new ItemListener() {
 
-            @Override
-            public void itemStateChanged(ItemEvent e) {
-                if (e.getStateChange() == ItemEvent.SELECTED) {
-                    popup.show(button, 0, button.getHeight());
-                }
+         @Override
+         public void itemStateChanged(ItemEvent e) {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+               popup.show(button, 0, button.getHeight());
             }
-        });
+         }
+      });
 
-        popup.addPopupMenuListener(new PopupMenuListener() {
+      popup.addPopupMenuListener(new PopupMenuListener() {
 
-            @Override
-            public void popupMenuCanceled(PopupMenuEvent e) {
-                button.setSelected(false);
+         @Override
+         public void popupMenuCanceled(PopupMenuEvent e) {
+            button.setSelected(false);
+         }
+
+         @Override
+         public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+            button.setSelected(false);
+         }
+
+         @Override
+         public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+         }
+      });
+
+      return button;
+   }
+
+   private void populatePopupMenu() {
+      popup.removeAll();
+      if (autoCommit) {
+         for (DatabaseConnection c : connectionProvider.getDatabaseConnections()) {
+            String url = c.getDatabaseURL();
+            String schema = c.getUser();
+            int pos = url.indexOf("@") + 1;
+            if (pos > 0) {
+               url = url.substring(pos);
             }
-
-            @Override
-            public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
-                button.setSelected(false);
+            url = schema + "@" + url;
+            String alias = c.getDisplayName();
+            if (alias != null && !alias.equals(c.getName())) {
+               url = alias + " [" + url + "]";
             }
+            JMenuItem item = new JMenuItem(url);
+            item.putClientProperty(DATABASE_CONNECTION_KEY, c);
+            item.addActionListener(buttonListener);
+            popup.add(item);
+         }
+      }
+   }
 
-            @Override
-            public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+   public void saveAndExecute() {
+      if (connectionProvider == null) {
+         prepareConnection();
+      }
+
+      EditorCookie edCookie = dataObject.getLookup().lookup(EditorCookie.class);
+      Document document = edCookie.getDocument();
+      saveIfModified(dataObject);
+      List<PlsqlExecutableObject> blocks = null;
+
+      DataObject obj = FileExecutionUtil.getDataObject(document);
+      FileObject file = obj.getPrimaryFile();
+      if (file == null) {
+         return;
+      }
+
+      if (autoCommit && !connectionProvider.isDefaultDatabase(connection)) {
+         if (!OptionsUtilities.isDeployNoPromptEnabled()) {
+            String msg = "You are now connecting to a secondary database.";
+            String title = "Connecting to a Secondary Database!";
+            if (JOptionPane.showOptionDialog(null,
+                    msg,
+                    title,
+                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE,
+                    null, null, null) == JOptionPane.NO_OPTION) {
+               return;
             }
-        });
-
-        return button;
-    }
-
-    private void populatePopupMenu() {
-        popup.removeAll();
-        if (autoCommit) {
-            for (DatabaseConnection c : connectionProvider.getDatabaseConnections()) {
-                String url = c.getDatabaseURL();
-                String schema = c.getUser();
-                int pos = url.indexOf("@") + 1;
-                if (pos > 0) {
-                    url = url.substring(pos);
-                }
-                url = schema + "@" + url;
-                String alias = c.getDisplayName();
-                if (alias != null && !alias.equals(c.getName())) {
-                    url = alias + " [" + url + "]";
-                }
-                JMenuItem item = new JMenuItem(url);
-                item.putClientProperty(DATABASE_CONNECTION_KEY, c);
-                item.addActionListener(buttonListener);
-                popup.add(item);
-            }
-        }
-    }
-
-    public void saveAndExecute() {
-        if (connectionProvider == null) {
-            prepareConnection();
-        }
-
-        EditorCookie edCookie = dataObject.getLookup().lookup(EditorCookie.class);
-        Document document = edCookie.getDocument();
-        saveIfModified(dataObject);
-        List<PlsqlExecutableObject> blocks = null;
-
-        DataObject obj = FileExecutionUtil.getDataObject(document);
-        FileObject file = obj.getPrimaryFile();
-        if (file == null) {
-            return;
-        }
-
-        if (autoCommit && !connectionProvider.isDefaultDatabase(connection)) {
-            if (!OptionsUtilities.isDeployNoPromptEnabled()) {
-                String msg = "You are now connecting to a secondary database.";
-                String title = "Connecting to a Secondary Database!";
-                if (JOptionPane.showOptionDialog(null,
-                        msg,
-                        title,
-                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE,
-                        null, null, null) == JOptionPane.NO_OPTION) {
-                    return;
-                }
-                connectionProvider.connect(connection);
-                try {
-                    Connection jdbcConnection = connection.getJDBCConnection();
-                    if (jdbcConnection == null || !jdbcConnection.isValid(1000)) {
-                        return;
-                    }
-                } catch (SQLException ex) {
-                    return;
-                }
-            }
-        } else {
-            //to reconnect if the connection is gone. 
-            if (connection.getJDBCConnection() == null) {
-                connectionProvider.connect(connection);
-            }
-        }
-
-        //if the user has selected any text in the window, create exec block using selected text only
-        if (validator.isValidTDB(dataObject)) {
-            JEditorPane[] panes = edCookie.getOpenedPanes();
-            if ((panes != null) && (panes.length > 0)) {
-                String selectedSql = panes[0].getSelectedText();
-                if (selectedSql != null && !selectedSql.trim().equals("")) { //some text has been selected
-                    //create executable block with selected sql
-                    blocks = new ArrayList<PlsqlExecutableObject>();
-                    blocks.add(new PlsqlExecutableObject(0, selectedSql, "SQL", PlsqlExecutableObjectType.STATEMENT, 0, selectedSql.length() - 1));
-                }
-            }
-        }
-
-        //if blocks were not created using selected text, use entire document to create exec blocks
-        if (blocks == null) {
-            PlsqlExecutableBlocksMaker blockMaker = new PlsqlExecutableBlocksMaker(document);
-            blocks = blockMaker.makeExceutableObjects();
-        }
-        String extension = file.getExt();
-        if (blocks.size() > 0 && "tdb".equalsIgnoreCase(extension) && (dataObject.getNodeDelegate().getDisplayName() == null || !dataObject.getNodeDelegate().getDisplayName().contains(TEST_BLOCK_NAME_PREFIX))) {
-            String str = blocks.get(0).getPlsqlString().replaceAll("\n", " ");
-            dataObject.getNodeDelegate().setDisplayName(str.length() > 30 ? str.substring(0, 30) + "..." : str);
-        }
-        RequestProcessor processor = RequestProcessor.getDefault();
-        processor.post(new ExecutionHandler(connectionProvider, connection, blocks, document));
-
-    }
-
-    private void saveIfModified(DataObject dataObj) {
-        try {
-            SaveCookie saveCookie = dataObj.getCookie(SaveCookie.class);
-            if (saveCookie != null) {
-                saveCookie.save();
-            }
-        } catch (IOException ex) {
-            Exceptions.printStackTrace(ex);
-        }
-    }
-
-    private class ExecutionHandler implements Runnable, Cancellable {
-
-        private DatabaseConnectionManager connectionProvider;
-        private DatabaseConnection connection;
-        private List<PlsqlExecutableObject> blocks;
-        private Document document;
-        private PlsqlFileExecutor executor;
-
-        public ExecutionHandler(DatabaseConnectionManager connectionProvider, DatabaseConnection connection,
-                List<PlsqlExecutableObject> blocks, Document doc) {
-            this.connectionProvider = connectionProvider;
-            this.connection = connection;
-            this.blocks = blocks;
-            this.document = doc;
-        }
-
-        @Override
-        public void run() {
-            ProgressHandle handle = ProgressHandleFactory.createHandle("Executing database file...", this);
-            DataObject obj = null;
+            connectionProvider.connect(connection);
             try {
-                handle.start();
-                if (connection == connectionProvider.getTemplateConnection()) {
-                    connection = connectionProvider.getPooledDatabaseConnection(false, true);
-                    if (connection == null) {
-                        return;
-                    }
-                }
-
-                obj = FileExecutionUtil.getDataObject(document);
-                FileObject file = obj.getPrimaryFile();
-                if (file == null) {
-                    return;
-                }
-
-                executor = new PlsqlFileExecutor(connectionProvider, connection);
-                executor.executePLSQL(blocks, document, false, autoCommit);
-
-            } finally {
-                if (autoCommit) {
-                    connectionProvider.releaseDatabaseConnection(connection);
-                } else {
-                    //set connection to the lookup when autocommit is OFF
-                    modifyConnection();
-                }
-                handle.finish();
+               Connection jdbcConnection = connection.getJDBCConnection();
+               if (jdbcConnection == null || !jdbcConnection.isValid(1000)) {
+                  return;
+               }
+            } catch (SQLException ex) {
+               return;
             }
-        }
+         }
+      } else {
+         //to reconnect if the connection is gone. 
+         if (connection.getJDBCConnection() == null) {
+            connectionProvider.connect(connection);
+         }
+      }
 
-        @Override
-        public boolean cancel() {
-            if (executor != null) {
-                executor.cancel();
+      //if the user has selected any text in the window, create exec block using selected text only
+      if (validator.isValidTDB(dataObject)) {
+         JEditorPane[] panes = edCookie.getOpenedPanes();
+         if ((panes != null) && (panes.length > 0)) {
+            String selectedSql = panes[0].getSelectedText();
+            if (selectedSql != null && !selectedSql.trim().equals("")) { //some text has been selected
+               //create executable block with selected sql
+               blocks = new ArrayList<PlsqlExecutableObject>();
+               blocks.add(new PlsqlExecutableObject(0, selectedSql, "SQL", PlsqlExecutableObjectType.STATEMENT, 0, selectedSql.length() - 1));
             }
-            return true;
-        }
+         }
+      }
 
-        private void modifyConnection() {
+      //if blocks were not created using selected text, use entire document to create exec blocks
+      if (blocks == null) {
+         PlsqlExecutableBlocksMaker blockMaker = new PlsqlExecutableBlocksMaker(document);
+         blocks = blockMaker.makeExceutableObjects();
+      }
+      String extension = file.getExt();
+      if (blocks.size() > 0 && "tdb".equalsIgnoreCase(extension) && (dataObject.getNodeDelegate().getDisplayName() == null || !dataObject.getNodeDelegate().getDisplayName().contains(TEST_BLOCK_NAME_PREFIX))) {
+         String str = blocks.get(0).getPlsqlString().replaceAll("\n", " ");
+         dataObject.getNodeDelegate().setDisplayName(str.length() > 30 ? str.substring(0, 30) + "..." : str);
+      }
+      RequestProcessor processor = RequestProcessor.getDefault();
+      processor.post(new ExecutionHandler(connectionProvider, connection, blocks, document));
 
-            plsqlDataobject = (PlsqlDataObject) dataObject;
-            plsqlDataobject.modifyLookupDatabaseConnection(connection);
-            dataObject = plsqlDataobject;
-        }
-    }
+   }
 
-    private class ButtonListener implements ActionListener {
+   private void saveIfModified(DataObject dataObj) {
+      try {
+         SaveCookie saveCookie = dataObj.getCookie(SaveCookie.class);
+         if (saveCookie != null) {
+            saveCookie.save();
+         }
+      } catch (IOException ex) {
+         Exceptions.printStackTrace(ex);
+      }
+   }
 
-        public ButtonListener() {
-        }
+   private class ExecutionHandler implements Runnable, Cancellable {
 
-        @Override
-        public void actionPerformed(ActionEvent e) {
+      private DatabaseConnectionManager connectionProvider;
+      private DatabaseConnection connection;
+      private List<PlsqlExecutableObject> blocks;
+      private Document document;
+      private PlsqlFileExecutor executor;
 
-            JMenuItem item = (JMenuItem) e.getSource();
-            connection = (DatabaseConnection) item.getClientProperty(DATABASE_CONNECTION_KEY);
-            saveAndExecute();
+      public ExecutionHandler(DatabaseConnectionManager connectionProvider, DatabaseConnection connection,
+              List<PlsqlExecutableObject> blocks, Document doc) {
+         this.connectionProvider = connectionProvider;
+         this.connection = connection;
+         this.blocks = blocks;
+         this.document = doc;
+      }
 
-        }
-    };
-
-    private class PopupMenuPopulator implements PropertyChangeListener {
-
-        public PopupMenuPopulator() {
-        }
-
-        @Override
-        public void propertyChange(PropertyChangeEvent event) {
-            if (popup != null) {
-                prepareConnection();
-                populatePopupMenu();
+      @Override
+      public void run() {
+         ProgressHandle handle = ProgressHandleFactory.createHandle("Executing database file...", this);
+         DataObject obj = null;
+         try {
+            handle.start();
+            if (connection == connectionProvider.getTemplateConnection()) {
+               connection = connectionProvider.getPooledDatabaseConnection(false, true);
+               if (connection == null) {
+                  return;
+               }
             }
-        }
-    }
+
+            obj = FileExecutionUtil.getDataObject(document);
+            FileObject file = obj.getPrimaryFile();
+            if (file == null) {
+               return;
+            }
+
+            executor = new PlsqlFileExecutor(connectionProvider, connection);
+            executor.executePLSQL(blocks, document, false, autoCommit);
+
+         } finally {
+            if (autoCommit) {
+               connectionProvider.releaseDatabaseConnection(connection);
+            } else {
+               //set connection to the lookup when autocommit is OFF
+               modifyConnection();
+            }
+            handle.finish();
+         }
+      }
+
+      @Override
+      public boolean cancel() {
+         if (executor != null) {
+            executor.cancel();
+         }
+         return true;
+      }
+
+      private void modifyConnection() {
+
+         plsqlDataobject = (PlsqlDataObject) dataObject;
+         plsqlDataobject.modifyLookupDatabaseConnection(connection);
+         dataObject = plsqlDataobject;
+      }
+   }
+
+   private class ButtonListener implements ActionListener {
+
+      public ButtonListener() {
+      }
+
+      @Override
+      public void actionPerformed(ActionEvent e) {
+
+         JMenuItem item = (JMenuItem) e.getSource();
+         connection = (DatabaseConnection) item.getClientProperty(DATABASE_CONNECTION_KEY);
+         saveAndExecute();
+
+      }
+   };
+
+   private class PopupMenuPopulator implements PropertyChangeListener {
+
+      public PopupMenuPopulator() {
+      }
+
+      @Override
+      public void propertyChange(PropertyChangeEvent event) {
+         if (popup != null) {
+            prepareConnection();
+            populatePopupMenu();
+         }
+      }
+   }
 }

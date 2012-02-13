@@ -41,7 +41,6 @@
  */
 package org.netbeans.modules.plsql.execution;
 
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
@@ -49,15 +48,20 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.text.Document;
+
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.progress.ProgressHandleFactory;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
+import org.openide.awt.ActionID;
+import org.openide.awt.ActionRegistration;
 import org.openide.awt.DropDownButtonFactory;
 import org.openide.cookies.EditorCookie;
 import org.openide.cookies.SaveCookie;
@@ -72,54 +76,56 @@ import org.openide.util.actions.Presenter;
 import org.openide.windows.IOProvider;
 import org.openide.windows.InputOutput;
 
-
+@ActionID(id = "org.netbeans.modules.plsql.execution.PlsqlRollbackAction", category = "PLSQL")
+@ActionRegistration(displayName = "#CTL_PlsqlRollback")
 public class PlsqlRollbackAction extends AbstractAction implements ContextAwareAction, Presenter.Toolbar {
 
-   private static final List<String> EXTENSIONS = Arrays.asList(new String[]{"tdb"});
-   private DataObject dataObject;
-   private DatabaseConnectionManager connectionProvider;
-   private JButton button;
-   public boolean autoCommit = true;
-   private DatabaseConnection connection;
+    private static final List<String> EXTENSIONS = Arrays.asList(new String[]{"tdb"});
+    private DataObject dataObject;
+    private DatabaseConnectionManager connectionProvider;
+    private JButton button;
+    public boolean autoCommit = true;
+    private DatabaseConnection connection;
 
-   public PlsqlRollbackAction() {
-      this(Utilities.actionsGlobalContext());
+    public PlsqlRollbackAction() {
+        this(Utilities.actionsGlobalContext());
 
-   }
+    }
 
-   public PlsqlRollbackAction(Lookup context) {
-      putValue(SHORT_DESCRIPTION, NbBundle.getMessage(PlsqlRollbackAction.class, "CTL_PlsqlRollback"));
-      putValue(SMALL_ICON, new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/database_rollback.png")));
+    public PlsqlRollbackAction(Lookup context) {
+        putValue(SHORT_DESCRIPTION, NbBundle.getMessage(PlsqlRollbackAction.class, "CTL_PlsqlRollback"));
+        putValue(SMALL_ICON, new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/database_rollback.png")));
 
-     dataObject = context.lookup(DataObject.class);
+        dataObject = context.lookup(DataObject.class);
 
-      //Enable execution for .spec .body files in workspace (copied using 'Copy to Workspace Folder')
-      if (dataObject != null && (dataObject.getPrimaryFile().getExt().toLowerCase(Locale.ENGLISH).equals("spec")
-              || dataObject.getPrimaryFile().getExt().toLowerCase(Locale.ENGLISH).equals("body")
-              || dataObject.getPrimaryFile().getExt().toLowerCase(Locale.ENGLISH).equals("db"))) {
-         if (!dataObject.getPrimaryFile().canWrite()) {
+        //Enable execution for .spec .body files in workspace (copied using 'Copy to Workspace Folder')
+        if (dataObject != null && (dataObject.getPrimaryFile().getExt().toLowerCase(Locale.ENGLISH).equals("spec")
+                || dataObject.getPrimaryFile().getExt().toLowerCase(Locale.ENGLISH).equals("body")
+                || dataObject.getPrimaryFile().getExt().toLowerCase(Locale.ENGLISH).equals("db"))) {
+            if (!dataObject.getPrimaryFile().canWrite()) {
+                dataObject = null;
+            }
+        } else if (dataObject != null && !EXTENSIONS.contains(dataObject.getPrimaryFile().getExt().toLowerCase(Locale.ENGLISH))) {
             dataObject = null;
-         }
-      } else if (dataObject != null && !EXTENSIONS.contains(dataObject.getPrimaryFile().getExt().toLowerCase(Locale.ENGLISH))) {
-         dataObject = null;
-      }
+        }
 
-      if (dataObject != null && dataObject.getLookup().lookup(EditorCookie.class) == null) {
-         dataObject = null;
-      }
+        if (dataObject != null && dataObject.getLookup().lookup(EditorCookie.class) == null) {
+            dataObject = null;
+        }
 
-      if (dataObject != null) {
-         setEnabled(true);
-         autoCommit = OptionsUtilities.isCommandWindowAutoCommitEnabled();
-      } else {
-         setEnabled(false);
-      }
-   }
+        if (dataObject != null) {
+            setEnabled(true);
+            autoCommit = OptionsUtilities.isCommandWindowAutoCommitEnabled();
+        } else {
+            setEnabled(false);
+        }
+    }
 
-   public Action createContextAwareInstance(Lookup context) {
-      return new PlsqlRollbackAction(context);
+    @Override
+    public Action createContextAwareInstance(Lookup context) {
+        return new PlsqlRollbackAction(context);
 
-   }
+    }
 
     private void prepareConnection() {
         if (dataObject != null) {
@@ -128,14 +134,17 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
         connection = dataObject.getLookup().lookup(DatabaseConnection.class);
     }
 
+    @Override
     public void actionPerformed(ActionEvent event) {
 
         prepareConnection();
-        if (connectionProvider == null || connection == null)
+        if (connectionProvider == null || connection == null) {
             return;
+        }
 
-        if (!connectionProvider.hasDataToCommit(connection))
+        if (!connectionProvider.hasDataToCommit(connection)) {
             return;
+        }
 
         EditorCookie edCookie = dataObject.getLookup().lookup(EditorCookie.class);
         Document document = edCookie.getDocument();
@@ -164,6 +173,7 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
         }
     }
 
+    @Override
     public Component getToolbarPresenter() {
         if (!isEnabled()) {
             return null;
@@ -177,14 +187,14 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
         return button;
     }
 
-   private void saveIfModified(DataObject dataObj) {
-      try {
-         SaveCookie saveCookie = dataObj.getCookie(SaveCookie.class);
-         if (saveCookie != null) {
-            saveCookie.save();
-         }
-      } catch (IOException ex) {
-         Exceptions.printStackTrace(ex);
-      }
-   }
+    private void saveIfModified(DataObject dataObj) {
+        try {
+            SaveCookie saveCookie = dataObj.getCookie(SaveCookie.class);
+            if (saveCookie != null) {
+                saveCookie.save();
+            }
+        } catch (IOException ex) {
+            Exceptions.printStackTrace(ex);
+        }
+    }
 }

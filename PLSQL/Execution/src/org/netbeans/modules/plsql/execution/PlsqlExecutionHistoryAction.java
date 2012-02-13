@@ -41,8 +41,6 @@
  */
 package org.netbeans.modules.plsql.execution;
 
-import org.netbeans.modules.plsql.filetype.StatementExecutionHistory;
-import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -51,6 +49,7 @@ import java.awt.event.ItemListener;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ImageIcon;
@@ -60,6 +59,11 @@ import javax.swing.JPopupMenu;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.StyledDocument;
+
+import org.netbeans.modules.plsql.filetype.StatementExecutionHistory;
+import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
+import org.openide.awt.ActionID;
+import org.openide.awt.ActionRegistration;
 import org.openide.awt.DropDownButtonFactory;
 import org.openide.cookies.EditorCookie;
 import org.openide.loaders.DataObject;
@@ -75,6 +79,8 @@ import org.openide.windows.IOProvider;
 import org.openide.windows.InputOutput;
 import org.openide.windows.OutputWriter;
 
+@ActionID(id = "org.netbeans.modules.plsql.execution.PlsqlExecutionHistoryAction", category = "PLSQL")
+@ActionRegistration(displayName = "#CTL_PlsqlExecutionHistoryAction")
 public final class PlsqlExecutionHistoryAction extends AbstractAction implements ContextAwareAction, Presenter.Toolbar {
 
     private JPopupMenu popup;
@@ -95,6 +101,7 @@ public final class PlsqlExecutionHistoryAction extends AbstractAction implements
         setEnabled(dataObject != null && dataObject.getPrimaryFile().getNameExt().startsWith(SQLCommandWindow.SQL_EXECUTION_FILE_PREFIX));
     }
 
+    @Override
     public Action createContextAwareInstance(Lookup context) {
         return new PlsqlExecutionHistoryAction(context);
     }
@@ -113,9 +120,10 @@ public final class PlsqlExecutionHistoryAction extends AbstractAction implements
 
     @Override
     public Component getToolbarPresenter() {
-        if (!isEnabled())
+        if (!isEnabled()) {
             return null;
-        
+        }
+
         popup = new JPopupMenu();
         populatePopupMenu();
 
@@ -124,6 +132,7 @@ public final class PlsqlExecutionHistoryAction extends AbstractAction implements
         button.setAction(this);
         button.addItemListener(new ItemListener() {
 
+            @Override
             public void itemStateChanged(ItemEvent e) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
                     popup.show(button, 0, button.getHeight());
@@ -133,14 +142,17 @@ public final class PlsqlExecutionHistoryAction extends AbstractAction implements
 
         popup.addPopupMenuListener(new javax.swing.event.PopupMenuListener() {
 
+            @Override
             public void popupMenuCanceled(PopupMenuEvent e) {
                 button.setSelected(false);
             }
 
+            @Override
             public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
                 button.setSelected(false);
             }
 
+            @Override
             public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
                 populatePopupMenu();
             }
@@ -169,6 +181,7 @@ public final class PlsqlExecutionHistoryAction extends AbstractAction implements
         }
     }
 
+    @Override
     public void actionPerformed(ActionEvent e) {
         StatementExecutionHistory history = dataObject.getLookup().lookup(StatementExecutionHistory.class);
         List<String> statements = history != null ? history.getStatementHistory() : new ArrayList<String>();
@@ -186,9 +199,7 @@ public final class PlsqlExecutionHistoryAction extends AbstractAction implements
 
     private class ButtonListener implements ActionListener {
 
-        public ButtonListener() {
-        }
-
+        @Override
         public void actionPerformed(ActionEvent e) {
             JMenuItem item = (JMenuItem) e.getSource();
             String statement = (String) item.getClientProperty("STATEMENT");
