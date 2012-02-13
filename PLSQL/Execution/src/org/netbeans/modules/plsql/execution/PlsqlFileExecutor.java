@@ -489,20 +489,6 @@ public class PlsqlFileExecutor {
 
             stm = con.createStatement();
             stm.setEscapeProcessing(false);
-            if (connectionProvider.isUsagesEnabled() && validator.isValidPackage(dataObj)) {
-                String plsqlText = "ALTER SYSTEM SET PLSCOPE_SETTINGS = 'IDENTIFIERS:ALL' \t\n";
-                try {
-                    //io.getOut().println((new StringBuilder()).append("> Enabling Usages for ").append(fileName));
-                    stm.execute(plsqlText);
-                } catch (SQLException sqlEx) {
-                    int errLine = getLineNumberFromMsg(sqlEx.getMessage());
-                    int outLine = errLine - 1;
-                    String msg = getmodifiedErorrMsg(sqlEx.getMessage(), outLine);
-                    // io.getErr().println((new StringBuilder()).append("!!!Error Creating View ").append(exeObjName).toString());
-                    io.getOut().println(plsqlText);
-                    deploymentOk = false;
-                }
-            }
             boolean firstSelectStatement = true;
             for (int i = 0; i < executableObjs.size(); i++) {
                 if (cancel) {
