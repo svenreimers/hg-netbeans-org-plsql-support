@@ -30,12 +30,10 @@
                         <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
                         <attr name="position" intvalue="273"/>
                     </file>     
-                      
                     <file name="org-netbeans-modules-plsql-execution-separatorBefore.instance">
                         <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
                         <attr name="position" intvalue="284"/>
                     </file>  
-                      
                     <file name="org-netbeans-modules-plsql-execution-separatorAfter.instance">
                         <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
                         <attr name="position" intvalue="290"/>

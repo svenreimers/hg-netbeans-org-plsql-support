@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011 Oracle and/or its affiliates. All rights reserved.
+ * Copyright 2011-2012 Oracle and/or its affiliates. All rights reserved.
  *
  * Oracle and Java are registered trademarks of Oracle and/or its affiliates.
  * Other names may be trademarks of their respective owners.
@@ -42,12 +42,10 @@
 package org.netbeans.modules.plsql.execution;
 
 import java.awt.event.ActionEvent;
-
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.StyledDocument;
-
 import org.netbeans.modules.plsql.filetype.StatementExecutionHistory;
 import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
 import org.openide.awt.ActionID;
@@ -55,12 +53,7 @@ import org.openide.awt.ActionReference;
 import org.openide.awt.ActionRegistration;
 import org.openide.cookies.EditorCookie;
 import org.openide.loaders.DataObject;
-import org.openide.util.ContextAwareAction;
-import org.openide.util.Exceptions;
-import org.openide.util.HelpCtx;
-import org.openide.util.Lookup;
-import org.openide.util.NbBundle;
-import org.openide.util.Utilities;
+import org.openide.util.*;
 
 @ActionID(id = "org.netbeans.modules.plsql.execution.PlsqlExecutionHistoryNextAction", category = "PLSQL")
 @ActionRegistration(displayName = "#CTL_PlsqlExecutionHistoryNextAction")

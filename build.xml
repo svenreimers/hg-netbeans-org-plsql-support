@@ -56,7 +56,7 @@
     <target name="check-harness">
         <echo>nbplatform.default.netbeans.dest.dir resolved to ${nbplatform.default.netbeans.dest.dir}</echo>
         <echo>nbplatform.default.harness.dir resolved to ${nbplatform.default.harness.dir}</echo>
-        <fail message="Harness is missing. Specify nbplatform.default.netbeans.dest.dir={path-to-your-sources-root}/ide/netbeans in nbproject/private/platform-private.propetries">
+        <fail message="Harness is missing. Specify nbplatform.default.netbeans.dest.dir={path-to-your-sources-root}/ide/netbeans in nbproject/private/platform-private.properties">
             <condition>
                 <not>
                     <available file="${nbplatform.default.harness.dir}" type="dir"/>
@@ -104,7 +104,7 @@
     
     <target name="daily" depends="update-binaries,build">
         <mkdir dir="dist"/>
-        <zip destfile="dist/netbeans-701-${build.id}-plsql.zip" duplicate="add">
+        <zip destfile="dist/netbeans-trunk-${build.id}-plsql.zip" duplicate="add">
             <zipfileset dir="build/cluster" prefix="netbeans/extra"/>
             <zipfileset dir="ide/netbeans" prefix="netbeans"/>
         </zip>

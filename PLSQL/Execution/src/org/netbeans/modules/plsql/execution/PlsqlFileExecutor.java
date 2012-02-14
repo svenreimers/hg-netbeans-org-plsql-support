@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011 Oracle and/or its affiliates. All rights reserved.
+ * Copyright 2011-2012 Oracle and/or its affiliates. All rights reserved.
  *
  * Oracle and Java are registered trademarks of Oracle and/or its affiliates.
  * Other names may be trademarks of their respective owners.
@@ -41,33 +41,12 @@
  */
 package org.netbeans.modules.plsql.execution;
 
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
-import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
-import org.netbeans.modules.plsql.filetype.PlsqlEditor;
-import org.netbeans.modules.plsql.filetype.StatementExecutionHistory;
-import org.netbeans.modules.plsql.lexer.PlsqlTokenId;
-import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
 import java.awt.Component;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.SQLWarning;
-import java.sql.Savepoint;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
+import java.sql.*;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.StringTokenizer;
+import java.util.*;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.text.BadLocationException;
@@ -86,6 +65,13 @@ import org.netbeans.modules.db.sql.execute.SQLExecutionResults;
 import org.netbeans.modules.db.sql.execute.StatementInfo;
 import org.netbeans.modules.db.sql.history.SQLHistory;
 import org.netbeans.modules.db.sql.history.SQLHistoryManager;
+import org.netbeans.modules.plsql.filetype.PlsqlEditor;
+import org.netbeans.modules.plsql.filetype.StatementExecutionHistory;
+import org.netbeans.modules.plsql.lexer.PlsqlTokenId;
+import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
+import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
+import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
 import org.openide.DialogDisplayer;
 import org.openide.NotifyDescriptor;
 import org.openide.filesystems.FileObject;
@@ -419,7 +405,7 @@ public class PlsqlFileExecutor {
         if (fileName.endsWith(".tdb")) {
             endMsg = "Finished executing command ";
         }
-        Connection con = null;
+        Connection con;
         Statement stm = null;
         String firstWord = null;
         boolean commit = false;
@@ -431,8 +417,6 @@ public class PlsqlFileExecutor {
             if (executionObject.getType() == PlsqlExecutableObjectType.STATEMENT || executionObject.getType() == PlsqlExecutableObjectType.UNKNOWN) {
                 String plsqlText = executionObject.getPlsqlString();
                 try {
-                    // String firstWord;
-                    firstWord = null;
                     StringTokenizer tokenizer = new StringTokenizer(plsqlText, " \t\n");
                     if (tokenizer.hasMoreTokens()) {
                         firstWord = tokenizer.nextToken();
@@ -447,7 +431,7 @@ public class PlsqlFileExecutor {
                         if (!ignoreDefines) {
                             plsqlText = replaceAliases(plsqlText, definesMap, define, io);
                         }
-                        moreRowsToBeFetched = executeSelect(plsqlText, connection, doc, null);
+                        executeSelect(plsqlText, connection, doc, null);
                         return null;
                     } else if (firstWord.equalsIgnoreCase("DESC") || firstWord.equalsIgnoreCase("DESCRIBE")) {
                         describeObject(connection, doc, tokenizer, io);
@@ -532,8 +516,6 @@ public class PlsqlFileExecutor {
                 }
                 if (exeObj.getType() == PlsqlExecutableObjectType.STATEMENT) {
                     try {
-                        // String firstWord;
-                        firstWord = null;
                         StringTokenizer tokenizer = new StringTokenizer(plsqlText, " \t\n;");
                         if (tokenizer.hasMoreTokens()) {
                             firstWord = tokenizer.nextToken();
