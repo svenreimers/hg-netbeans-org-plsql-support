@@ -1,152 +1,24 @@
 -----------------------------------------------------------------------------
 --
---  Logical unit: <<<LU:   Put your LU name here>>>
+--  Logical unit: <<<LU: Put your LU name here>>>
 --
---  IFS/Design Template Version 2.3
+--  IFS Developer Studio Template Version 2.5
 --
---  Date    Sign  History
---  ------  ----  -----------------------------------------------------------
+--  Date    Sign    History
+--  ------  ------  ---------------------------------------------------------
 -----------------------------------------------------------------------------
 
-define MODULE        = <<<MODULE:   Put your module name here>>>
-define LU            = <<<LU:       Put your lu name here>>>
-define SERVICE       = <<<SERVICE:  Put your system service name here>>>
-define PKG           = <<<PKG:      Put your package name here>>>
-define DOMAIN        = <<<DOMAIN:   Put your domain name here>>>
-
+DEFINE MODULE        = <<<MODULE:   Put your module name here>>>
+DEFINE LU            = <<<LU:       Put your lu name here>>>
+DEFINE PKG           = <<<PKG:      Put your package name here>>>
 
 PROMPT Creating &PKG specification
 
 CREATE OR REPLACE PACKAGE &PKG IS
 
-module_  CONSTANT VARCHAR2(25) := '&MODULE';
-lu_name_ CONSTANT VARCHAR2(25) := '&LU';
-domain_  CONSTANT VARCHAR2(25) := '&DOMAIN';
-service_ CONSTANT VARCHAR2(25) := '&SERVICE';
-
-<<<PUBREC: public record definition>>>
-
------------------------------------------------------------------------------
--------------- STATEPACKAGE: PRIVATE FINITE STATE MACHINE -------------------
------------------------------------------------------------------------------
-
-FUNCTION Finite_State_Decode__ (
-   db_state_ IN VARCHAR2 ) RETURN VARCHAR2;
-PRAGMA restrict_references(Finite_State_Decode__, WNDS);
-
-FUNCTION Finite_State_Encode__ (
-   client_state_ IN VARCHAR2 ) RETURN VARCHAR2;
-PRAGMA restrict_references(Finite_State_Encode__, WNDS);
-
-PROCEDURE Enumerate_States__ (
-   client_values_ OUT VARCHAR2 );
-
-FUNCTION Finite_State_Events__ (
-   db_state_ IN VARCHAR2 ) RETURN VARCHAR2;
-PRAGMA restrict_references(Finite_State_Events__, WNDS);
-
-PROCEDURE Enumerate_Events__ (
-   db_events_ OUT VARCHAR2 );
-
------------------------------------------------------------------------------
--------------------- PRIVATE FINITE STATE MACHINE ---------------------------
------------------------------------------------------------------------------
-
-FUNCTION Finite_State_Decode__ (
-   db_state_ IN VARCHAR2 ) RETURN VARCHAR2;
-PRAGMA restrict_references(Finite_State_Decode__, WNDS);
-
-FUNCTION Finite_State_Encode__ (
-   client_state_ IN VARCHAR2 ) RETURN VARCHAR2;
-PRAGMA restrict_references(Finite_State_Encode__, WNDS);
-
-PROCEDURE Enumerate_States__ (
-   client_values_ OUT VARCHAR2 );
-
-FUNCTION Finite_State_Events__ (
-   db_state_ IN VARCHAR2 ) RETURN VARCHAR2;
-PRAGMA restrict_references(Finite_State_Events__, WNDS);
-
-PROCEDURE Enumerate_Events__ (
-   db_events_ OUT VARCHAR2 );
-
------------------------------------------------------------------------------
--------------------- PRIVATE BASE METHODS -----------------------------------
------------------------------------------------------------------------------
-
-PROCEDURE Lock__ (
-   info_       OUT VARCHAR2,
-   objid_      IN  VARCHAR2,
-   objversion_ IN  VARCHAR2 );
-
-PROCEDURE New__ (
-   info_       OUT    VARCHAR2,
-   objid_      OUT    VARCHAR2,
-   objversion_ OUT    VARCHAR2,
-   attr_       IN OUT VARCHAR2,
-   action_     IN     VARCHAR2 );
-
-PROCEDURE Modify__ (
-   info_       OUT    VARCHAR2,
-   objid_      IN     VARCHAR2,
-   objversion_ IN OUT VARCHAR2,
-   attr_       IN OUT VARCHAR2,
-   action_     IN     VARCHAR2 );
-
-PROCEDURE Remove__ (
-   info_       OUT VARCHAR2,
-   objid_      IN  VARCHAR2,
-   objversion_ IN  VARCHAR2,
-   action_     IN  VARCHAR2 );
-
------------------------------------------------------------------------------
--------------------- PUBLIC BASE METHODS ------------------------------------
------------------------------------------------------------------------------
-
-PROCEDURE Exist (
-   <<<KEYARG: Put your primary key parameters here>>> );
-
-PROCEDURE Exist_Db (
-   <<<DBKARG: Put your primary key parameters here>>> );
-
------------------------------------------------------------------------------
--------------------- PUBLIC DOMAIN METHODS ----------------------------------
------------------------------------------------------------------------------
-
-PROCEDURE Exist (
-   client_value_ IN VARCHAR2 );
-
-PROCEDURE Enumerate (
-   client_values_ OUT VARCHAR2 );
-
-PROCEDURE Exist_Db (
-   db_value_ IN VARCHAR2 );
-
------------------------------------------------------------------------------
--------------------- PUBLIC DOMAIN METHODS ----------------------------------
------------------------------------------------------------------------------
-
-FUNCTION Encode (
-   client_value_ IN VARCHAR2 ) RETURN VARCHAR2;
-PRAGMA restrict_references(Encode, WNDS);
-
-FUNCTION Decode (
-   db_value_ IN VARCHAR2 ) RETURN VARCHAR2;
-PRAGMA restrict_references(Decode, WNDS);
-
-FUNCTION Get_Db_Value (
-   index_ IN NUMBER ) RETURN VARCHAR2;
-PRAGMA restrict_references(Get_Db_Value, WNDS);
-
-FUNCTION Get_Client_Value (
-   index_ IN NUMBER ) RETURN VARCHAR2;
-PRAGMA restrict_references(Get_Client_Value, WNDS);
-
------------------------------------------------------------------------------
--------------------- PUBLIC TRANSLATION METHODS -----------------------------
------------------------------------------------------------------------------
-
-PROCEDURE Language_Refreshed;
+module_  CONSTANT VARCHAR2(25) := '&MODULE'; 
+lu_name_ CONSTANT VARCHAR2(25) := '&LU'; 
+lu_type_ CONSTANT VARCHAR2(15) := 'Utility';
 
 -----------------------------------------------------------------------------
 -------------------- LU SPECIFIC PRIVATE METHODS ----------------------------
@@ -164,124 +36,15 @@ PROCEDURE Language_Refreshed;
 
 
 -----------------------------------------------------------------------------
--------------------- SERVICE SPECIFIC PRIVATE METHODS -----------------------
------------------------------------------------------------------------------
-
-
------------------------------------------------------------------------------
--------------------- SERVICE SPECIFIC PROTECTED METHODS ---------------------
------------------------------------------------------------------------------
-
-
------------------------------------------------------------------------------
--------------------- SERVICE SPECIFIC PUBLIC METHODS ------------------------
------------------------------------------------------------------------------
-
-
------------------------------------------------------------------------------
 -------------------- FOUNDATION1 METHODS ------------------------------------
 -----------------------------------------------------------------------------
 
 PROCEDURE Init;
 
-
 END &PKG;
 /
 SHOW ERROR
 
-undefine MODULE
-undefine LU
-undefine SERVICE
-undefine PKG
-undefine DOMAIN
-
------------------------------------------------------------------------------
------------------------------ STATEPACKAGE ----------------------------------
------------------------------------------------------------------------------
--- Separate Finite State Machine Package
------------------------------------------------------------------------------
-
-define VIEW          = <<<VIEW:     Put your view name here>>>
-define STATEPKG      = <<<STATEPKG: Put your statepackage name here>>>
-
-define OBJID         = <<<OBJID:    Put your object key (or rowid) here>>>
-define OBJVERSION    = <<<OBJVER:   Put your objversion column (or list) here>>>
-define OBJSTATE      = <<<OBJSTA:   Put your object state column here>>>
-define OBJEVENTS     = <<<OBJEVE:   Put your object events column here>>>
-define STATE         = <<<STATE:    Put your encoded object state column here>>>
-
-
-PROMPT Creating &VIEW view
-
-CREATE OR REPLACE VIEW &VIEW AS
-SELECT <<<VIEWCOL: Put your view column here>>>
-FROM   <<<VIEWTAB: Put your view table(s) here>>>
-WHERE  <<<VIEWSEC: Put your security restrictions on rows here>>>
-WITH   read only;
-
-
-
-PROMPT Creating &STATEPKG specification
-
-CREATE OR REPLACE PACKAGE &STATEPKG IS
-
-module_  CONSTANT VARCHAR2(25) := '&MODULE';
-lu_name_ CONSTANT VARCHAR2(25) := '&LU';
-
------------------------------------------------------------------------------
----------------- STATEPACKAGE IMPLEMENTATION METHODS ------------------------
------------------------------------------------------------------------------
-
-PROCEDURE Finite_State_Machine___ (
-   rec_   IN OUT &VIEW%ROWTYPE,
-   event_ IN     VARCHAR2,
-   attr_  IN OUT VARCHAR2 );
-
------------------------------------------------------------------------------
--------------------- STATEPACKAGE PRIVATE METHODS ---------------------------
------------------------------------------------------------------------------
-
-FUNCTION Finite_State_Decode__ (
-   db_state_ IN VARCHAR2 ) RETURN VARCHAR2;
-PRAGMA restrict_references(Finite_State_Decode__, WNDS);
-
-FUNCTION Finite_State_Encode__ (
-   client_state_ IN VARCHAR2 ) RETURN VARCHAR2;
-PRAGMA restrict_references(Finite_State_Encode__, WNDS);
-
-PROCEDURE Enumerate_States__ (
-   client_values_ OUT VARCHAR2);
-
-FUNCTION Finite_State_Events__ (
-   db_state_ IN VARCHAR2 ) RETURN VARCHAR2;
-PRAGMA restrict_references(Finite_State_Events__, WNDS);
-
-PROCEDURE Enumerate_Events__ (
-   db_events_ OUT VARCHAR2 );
-
------------------------------------------------------------------------------
------------------- STATEPACKAGE TRANSLATION METHODS -------------------------
------------------------------------------------------------------------------
-
-PROCEDURE Language_Refreshed;
-
------------------------------------------------------------------------------
-------------------- STATEPACKAGE FOUNDATION1 METHODS ------------------------
------------------------------------------------------------------------------
-
-PROCEDURE Init;
-
-
-END &STATEPKG;
-/
-SHOW ERROR
-
-undefine VIEW
-undefine STATEPKG
-
-undefine OBJID
-undefine OBJVERSION
-undefine OBJSTATE
-undefine OBJEVENTS
-undefine STATE
-
+UNDEFINE MODULE
+UNDEFINE LU
+UNDEFINE PKG

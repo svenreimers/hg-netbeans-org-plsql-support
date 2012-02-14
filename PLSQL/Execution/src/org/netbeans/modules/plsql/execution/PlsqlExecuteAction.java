@@ -41,9 +41,6 @@
  */
 package org.netbeans.modules.plsql.execution;
 
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsql.filetype.PlsqlDataObject;
-import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -58,6 +55,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ImageIcon;
@@ -69,10 +67,17 @@ import javax.swing.JPopupMenu;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import javax.swing.text.Document;
+
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.progress.ProgressHandleFactory;
+import org.netbeans.modules.plsql.filetype.PlsqlDataObject;
+import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
+import org.openide.awt.ActionID;
+import org.openide.awt.ActionReference;
+import org.openide.awt.ActionRegistration;
 import org.openide.awt.DropDownButtonFactory;
 import org.openide.cookies.EditorCookie;
 import org.openide.cookies.SaveCookie;
@@ -88,6 +93,9 @@ import org.openide.util.RequestProcessor;
 import org.openide.util.Utilities;
 import org.openide.util.actions.Presenter;
 
+@ActionID(id = "org.netbeans.modules.plsql.execution.PlsqlExecuteAction", category = "PLSQL")
+@ActionRegistration(displayName = "#CTL_fileExecution")
+@ActionReference(path = "Shortcuts", name = "AS-E")
 public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAction, Presenter.Toolbar {
 
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
@@ -280,6 +288,11 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
                 } catch (SQLException ex) {
                     return;
                 }
+            }
+        } else {
+            //to reconnect if the connection is gone. 
+            if (connection.getJDBCConnection() == null) {
+                connectionProvider.connect(connection);
             }
         }
 

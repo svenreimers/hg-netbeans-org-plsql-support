@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011 Oracle and/or its affiliates. All rights reserved.
+ * Copyright 2011-2012 Oracle and/or its affiliates. All rights reserved.
  *
  * Oracle and Java are registered trademarks of Oracle and/or its affiliates.
  * Other names may be trademarks of their respective owners.
@@ -41,8 +41,8 @@
  */
 package org.netbeans.modules.plsqlsupport.db.ui;
 
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.api.project.Project;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.openide.nodes.Node;
 import org.openide.util.HelpCtx;
 import org.openide.util.NbBundle;
@@ -50,10 +50,12 @@ import org.openide.util.actions.CookieAction;
 
 public final class SQLExecutionAction extends CookieAction {
 
+    @Override
     protected void performAction(Node[] activatedNodes) {
         SQLCommandWindow.createSQLCommandWindow(activatedNodes, null, null);
     }
 
+    @Override
     public String getName() {
         return NbBundle.getMessage(SQLExecutionAction.class, "CTL_SQLExecutionAction");
     }
@@ -65,6 +67,7 @@ public final class SQLExecutionAction extends CookieAction {
         putValue("noIconInMenu", Boolean.TRUE);
     }
 
+    @Override
     public HelpCtx getHelpCtx() {
         return HelpCtx.DEFAULT_HELP;
     }

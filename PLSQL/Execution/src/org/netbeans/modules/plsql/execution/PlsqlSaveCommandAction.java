@@ -49,6 +49,8 @@ import java.io.OutputStreamWriter;
 import javax.swing.JFileChooser;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
+import org.openide.awt.ActionID;
+import org.openide.awt.ActionRegistration;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.loaders.DataObject;
@@ -58,84 +60,90 @@ import org.openide.util.HelpCtx;
 import org.openide.util.NbBundle;
 import org.openide.util.actions.CookieAction;
 
+@ActionID(id = "org.netbeans.modules.plsql.execution.PlsqlSaveCommandAction", category = "PLSQL")
+@ActionRegistration(displayName = "#CTL_PlsqlSaveAsAction")
 public final class PlsqlSaveCommandAction extends CookieAction {
 
-   protected void performAction(Node[] activatedNodes) {
-      try {
-         DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
-         if (dataObject == null) {
-            return;
-         }
+    @Override
+    protected void performAction(Node[] activatedNodes) {
+        try {
+            DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
+            if (dataObject == null) {
+                return;
+            }
 
-         PlsqlEditorSupport editorSupport = dataObject.getCookie(PlsqlEditorSupport.class);
-         if (editorSupport == null) {
-            return;
-         }
+            PlsqlEditorSupport editorSupport = dataObject.getCookie(PlsqlEditorSupport.class);
+            if (editorSupport == null) {
+                return;
+            }
 
-         //Select folder
-         JFileChooser fc = new JFileChooser();
-         fc.setMultiSelectionEnabled(false);
-         fc.setDialogTitle(NbBundle.getMessage(PlsqlSaveCommandAction.class, "CTL_PlsqlSaveAsAction"));
-         fc.setApproveButtonText("Save");
-         fc.setSelectedFile(new File("Command.sql"));
-         File selected = null;
-         int returnVal = fc.showOpenDialog(null);
+            //Select folder
+            JFileChooser fc = new JFileChooser();
+            fc.setMultiSelectionEnabled(false);
+            fc.setDialogTitle(NbBundle.getMessage(PlsqlSaveCommandAction.class, "CTL_PlsqlSaveAsAction"));
+            fc.setApproveButtonText("Save");
+            fc.setSelectedFile(new File("Command.sql"));
+            File selected = null;
+            int returnVal = fc.showOpenDialog(null);
 
-         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            selected = fc.getSelectedFile();
-         } else {
-            return;
-         }
+            if (returnVal == JFileChooser.APPROVE_OPTION) {
+                selected = fc.getSelectedFile();
+            } else {
+                return;
+            }
 
-         //Write the contents to the new file
-         FileObject newFile = FileUtil.createData(selected);
-         Document doc = editorSupport.getDocument();
-         String txt = doc.getText(doc.getStartPosition().getOffset(), doc.getLength());
-         OutputStream output = newFile.getOutputStream();
-         OutputStreamWriter osWriter = new OutputStreamWriter(output);
-         osWriter.write(txt, 0, txt.length());
-         osWriter.flush();
-         osWriter.close();
-         output.close();
-      } catch (BadLocationException ex) {
-         Exceptions.printStackTrace(ex);
-      } catch (IOException ex) {
-         Exceptions.printStackTrace(ex);
-      }
-   }
+            //Write the contents to the new file
+            FileObject newFile = FileUtil.createData(selected);
+            Document doc = editorSupport.getDocument();
+            String txt = doc.getText(doc.getStartPosition().getOffset(), doc.getLength());
+            OutputStream output = newFile.getOutputStream();
+            OutputStreamWriter osWriter = new OutputStreamWriter(output);
+            osWriter.write(txt, 0, txt.length());
+            osWriter.flush();
+            osWriter.close();
+            output.close();
+        } catch (BadLocationException ex) {
+            Exceptions.printStackTrace(ex);
+        } catch (IOException ex) {
+            Exceptions.printStackTrace(ex);
+        }
+    }
 
-   protected int mode() {
-      return CookieAction.MODE_EXACTLY_ONE;
-   }
+    @Override
+    protected int mode() {
+        return CookieAction.MODE_EXACTLY_ONE;
+    }
 
-   public String getName() {
-      return NbBundle.getMessage(PlsqlSaveCommandAction.class, "CTL_PlsqlSaveAsAction");
-   }
+    @Override
+    public String getName() {
+        return NbBundle.getMessage(PlsqlSaveCommandAction.class, "CTL_PlsqlSaveAsAction");
+    }
 
-   protected Class[] cookieClasses() {
-      return new Class[]{DataObject.class};
-   }
+    @Override
+    protected Class[] cookieClasses() {
+        return new Class[]{DataObject.class};
+    }
 
-   @Override
-   protected String iconResource() {
-      return "org/netbeans/modules/plsql/execution/saveAs.png";
-   }
+    @Override
+    protected String iconResource() {
+        return "org/netbeans/modules/plsql/execution/saveAs.png";
+    }
 
-   public HelpCtx getHelpCtx() {
-      return HelpCtx.DEFAULT_HELP;
-   }
+    @Override
+    public HelpCtx getHelpCtx() {
+        return HelpCtx.DEFAULT_HELP;
+    }
 
-   @Override
-   protected boolean asynchronous() {
-      return false;
-   }
+    @Override
+    protected boolean asynchronous() {
+        return false;
+    }
 
-   @Override
-   protected boolean enable(Node[] activatedNodes) {
-      if (!super.enable(activatedNodes)) {
-         return false;
-      }
-      return activatedNodes[0].getLookup().lookup(DataObject.class).getPrimaryFile().getNameExt().endsWith(".tdb");  //Temp database file
-   }
+    @Override
+    protected boolean enable(Node[] activatedNodes) {
+        if (!super.enable(activatedNodes)) {
+            return false;
+        }
+        return activatedNodes[0].getLookup().lookup(DataObject.class).getPrimaryFile().getNameExt().endsWith(".tdb");  //Temp database file
+    }
 }
-

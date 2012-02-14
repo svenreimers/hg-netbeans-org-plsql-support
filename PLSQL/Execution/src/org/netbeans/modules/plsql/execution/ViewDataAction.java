@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011 Oracle and/or its affiliates. All rights reserved.
+ * Copyright 2011-2012 Oracle and/or its affiliates. All rights reserved.
  *
  * Oracle and Java are registered trademarks of Oracle and/or its affiliates.
  * Other names may be trademarks of their respective owners.
@@ -41,13 +41,15 @@
  */
 package org.netbeans.modules.plsql.execution;
 
+
+import javax.swing.JEditorPane;
+import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
 import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
-import javax.swing.JEditorPane;
-import org.netbeans.api.db.explorer.DatabaseConnection;
-import org.netbeans.api.project.FileOwnerQuery;
-import org.netbeans.api.project.Project;
+import org.openide.awt.ActionID;
+import org.openide.awt.ActionReference;
+import org.openide.awt.ActionRegistration;
 import org.openide.cookies.EditorCookie;
 import org.openide.loaders.DataObject;
 import org.openide.nodes.Node;
@@ -55,25 +57,32 @@ import org.openide.util.HelpCtx;
 import org.openide.util.NbBundle;
 import org.openide.util.actions.CookieAction;
 
+@ActionID(id = "org.netbeans.modules.plsql.execution.ViewDataAction", category = "PLSQL")
+@ActionRegistration(displayName = "#CTL_ViewDataAction")
+@ActionReference(path = "Editors/text/x-plsql/Popup", position = 282)
 public final class ViewDataAction extends CookieAction {
 
     /**
      * Create a sql execution window for the selected methoad
      * @param activatedNodes
      */
+    @Override
     protected void performAction(Node[] activatedNodes) {
         String selectStatement = "SELECT ${*} FROM " + getSelectedViewOrTable(activatedNodes) + ";\n${cursor}";
         SQLCommandWindow.createSQLCommandWindow(activatedNodes, selectStatement, null);
     }
 
+    @Override
     protected int mode() {
         return CookieAction.MODE_EXACTLY_ONE;
     }
 
+    @Override
     public String getName() {
         return NbBundle.getMessage(ViewDataAction.class, "CTL_ViewDataAction");
     }
 
+    @Override
     protected Class[] cookieClasses() {
         return new Class[]{DataObject.class, EditorCookie.class};
     }
@@ -85,6 +94,7 @@ public final class ViewDataAction extends CookieAction {
         putValue("noIconInMenu", Boolean.TRUE);
     }
 
+    @Override
     public HelpCtx getHelpCtx() {
         return HelpCtx.DEFAULT_HELP;
     }
@@ -101,7 +111,6 @@ public final class ViewDataAction extends CookieAction {
      */
     @Override
     protected boolean enable(Node[] activatedNodes) {
-        Project project = null;
         if (!super.enable(activatedNodes)) {
             return false;
         }

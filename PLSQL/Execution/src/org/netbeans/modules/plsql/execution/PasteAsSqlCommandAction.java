@@ -45,9 +45,6 @@ import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
-import java.io.IOException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.swing.JEditorPane;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Caret;
@@ -55,6 +52,9 @@ import javax.swing.text.Document;
 import javax.swing.text.JTextComponent;
 import org.netbeans.lib.editor.codetemplates.api.CodeTemplate;
 import org.netbeans.lib.editor.codetemplates.api.CodeTemplateManager;
+import org.openide.awt.ActionID;
+import org.openide.awt.ActionReference;
+import org.openide.awt.ActionRegistration;
 import org.openide.cookies.EditorCookie;
 import org.openide.loaders.DataObject;
 import org.openide.nodes.Node;
@@ -65,6 +65,9 @@ import org.openide.util.NbBundle;
 import org.openide.util.actions.CookieAction;
 import org.openide.util.datatransfer.ExClipboard;
 
+@ActionID(id = "org.netbeans.modules.plsql.execution.PasteAsSqlCommandAction", category = "PLSQL")
+@ActionRegistration(displayName = "#CTL_PasteAsSqlCommandAction")
+@ActionReference(path = "Editors/text/x-plsql/Popup", position = 286)
 public class PasteAsSqlCommandAction extends CookieAction {
 
     @Override

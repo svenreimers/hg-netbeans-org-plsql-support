@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011 Oracle and/or its affiliates. All rights reserved.
+ * Copyright 2011-2012 Oracle and/or its affiliates. All rights reserved.
  *
  * Oracle and Java are registered trademarks of Oracle and/or its affiliates.
  * Other names may be trademarks of their respective owners.
@@ -41,61 +41,65 @@
  */
 package org.netbeans.modules.plsql.execution;
 
-import org.netbeans.modules.plsql.filetype.StatementExecutionHistory;
-import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
 import java.awt.event.ActionEvent;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.StyledDocument;
+import org.netbeans.modules.plsql.filetype.StatementExecutionHistory;
+import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
+import org.openide.awt.ActionID;
+import org.openide.awt.ActionReference;
+import org.openide.awt.ActionRegistration;
 import org.openide.cookies.EditorCookie;
 import org.openide.loaders.DataObject;
-import org.openide.util.ContextAwareAction;
-import org.openide.util.Exceptions;
-import org.openide.util.HelpCtx;
-import org.openide.util.Lookup;
-import org.openide.util.NbBundle;
-import org.openide.util.Utilities;
+import org.openide.util.*;
 
+@ActionID(id = "org.netbeans.modules.plsql.execution.PlsqlExecutionHistoryPreviousAction", category = "PLSQL")
+@ActionRegistration(displayName = "#CTL_PlsqlExecutionHistoryPreviousAction")
+@ActionReference(path = "Shortcuts", name = "AS-P")
 public final class PlsqlExecutionHistoryPreviousAction extends AbstractAction implements ContextAwareAction {
-   private DataObject dataObject;
 
-   public PlsqlExecutionHistoryPreviousAction() {
-      this(Utilities.actionsGlobalContext());
-   }
+    private DataObject dataObject;
 
-   public PlsqlExecutionHistoryPreviousAction(Lookup context) {
-      putValue(NAME, getName());
-      putValue(SHORT_DESCRIPTION, getName());
-      dataObject = context.lookup(DataObject.class);
-      setEnabled(dataObject != null && dataObject.getPrimaryFile().getNameExt().startsWith(SQLCommandWindow.SQL_EXECUTION_FILE_PREFIX));
-   }
+    public PlsqlExecutionHistoryPreviousAction() {
+        this(Utilities.actionsGlobalContext());
+    }
 
-   public Action createContextAwareInstance(Lookup context) {
-      return new PlsqlExecutionHistoryPreviousAction(context);
-   }
+    public PlsqlExecutionHistoryPreviousAction(Lookup context) {
+        putValue(NAME, getName());
+        putValue(SHORT_DESCRIPTION, getName());
+        dataObject = context.lookup(DataObject.class);
+        setEnabled(dataObject != null && dataObject.getPrimaryFile().getNameExt().startsWith(SQLCommandWindow.SQL_EXECUTION_FILE_PREFIX));
+    }
 
-   private String getName() {
-      return NbBundle.getMessage(PlsqlExecutionHistoryPreviousAction.class, "CTL_PlsqlExecutionHistoryPreviousAction");
-   }
+    @Override
+    public Action createContextAwareInstance(Lookup context) {
+        return new PlsqlExecutionHistoryPreviousAction(context);
+    }
 
-   public HelpCtx getHelpCtx() {
-      return HelpCtx.DEFAULT_HELP;
-   }
+    private String getName() {
+        return NbBundle.getMessage(PlsqlExecutionHistoryPreviousAction.class, "CTL_PlsqlExecutionHistoryPreviousAction");
+    }
 
-   public void actionPerformed(ActionEvent e) {
-      StatementExecutionHistory history = dataObject.getLookup().lookup(StatementExecutionHistory.class);
-      if(history!=null && history.getSize() > 0) {
-         boolean moveOk = history.movePrevious();
-         StyledDocument document = dataObject.getLookup().lookup(EditorCookie.class).getDocument();
-         try {
-            if(moveOk) {
-               document.remove(0, document.getLength());
-               document.insertString(0, history.getSelectedEntry(), null);
+    public HelpCtx getHelpCtx() {
+        return HelpCtx.DEFAULT_HELP;
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        StatementExecutionHistory history = dataObject.getLookup().lookup(StatementExecutionHistory.class);
+        if (history != null && history.getSize() > 0) {
+            boolean moveOk = history.movePrevious();
+            StyledDocument document = dataObject.getLookup().lookup(EditorCookie.class).getDocument();
+            try {
+                if (moveOk) {
+                    document.remove(0, document.getLength());
+                    document.insertString(0, history.getSelectedEntry(), null);
+                }
+            } catch (BadLocationException ex) {
+                Exceptions.printStackTrace(ex);
             }
-         } catch (BadLocationException ex) {
-            Exceptions.printStackTrace(ex);
-         }
-      }
-   }
+        }
+    }
 }

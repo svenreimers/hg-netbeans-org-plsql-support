@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright 2011 Oracle and/or its affiliates. All rights reserved.
+ * Copyright 2011-2012 Oracle and/or its affiliates. All rights reserved.
  *
  * Oracle and Java are registered trademarks of Oracle and/or its affiliates.
  * Other names may be trademarks of their respective owners.
@@ -41,32 +41,12 @@
  */
 package org.netbeans.modules.plsql.execution;
 
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
-import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
-import org.netbeans.modules.plsql.filetype.PlsqlEditor;
-import org.netbeans.modules.plsql.filetype.StatementExecutionHistory;
-import org.netbeans.modules.plsql.lexer.PlsqlTokenId;
-import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
 import java.awt.Component;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.SQLWarning;
-import java.sql.Savepoint;
-import java.sql.Statement;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.sql.*;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.StringTokenizer;
+import java.util.*;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.text.BadLocationException;
@@ -85,6 +65,13 @@ import org.netbeans.modules.db.sql.execute.SQLExecutionResults;
 import org.netbeans.modules.db.sql.execute.StatementInfo;
 import org.netbeans.modules.db.sql.history.SQLHistory;
 import org.netbeans.modules.db.sql.history.SQLHistoryManager;
+import org.netbeans.modules.plsql.filetype.PlsqlEditor;
+import org.netbeans.modules.plsql.filetype.StatementExecutionHistory;
+import org.netbeans.modules.plsql.lexer.PlsqlTokenId;
+import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
+import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
+import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
 import org.openide.DialogDisplayer;
 import org.openide.NotifyDescriptor;
 import org.openide.filesystems.FileObject;
@@ -407,7 +394,7 @@ public class PlsqlFileExecutor {
 
         //Defines and define
         HashMap<String, String> definesMap = new HashMap<String, String>();
-        char define = '&';
+        List<Character> define = Arrays.asList('&',':');
         DataObject dataObj = FileExecutionUtil.getDataObject(doc);
         plsqlEditor = getPlsqlEditor(dataObj);
         String endMsg = "Done deploying " + FileExecutionUtil.getActivatedFileName(dataObj);
@@ -418,7 +405,7 @@ public class PlsqlFileExecutor {
         if (fileName.endsWith(".tdb")) {
             endMsg = "Finished executing command ";
         }
-        Connection con = null;
+        Connection con;
         Statement stm = null;
         String firstWord = null;
         boolean commit = false;
@@ -430,8 +417,6 @@ public class PlsqlFileExecutor {
             if (executionObject.getType() == PlsqlExecutableObjectType.STATEMENT || executionObject.getType() == PlsqlExecutableObjectType.UNKNOWN) {
                 String plsqlText = executionObject.getPlsqlString();
                 try {
-                    // String firstWord;
-                    firstWord = null;
                     StringTokenizer tokenizer = new StringTokenizer(plsqlText, " \t\n");
                     if (tokenizer.hasMoreTokens()) {
                         firstWord = tokenizer.nextToken();
@@ -446,7 +431,7 @@ public class PlsqlFileExecutor {
                         if (!ignoreDefines) {
                             plsqlText = replaceAliases(plsqlText, definesMap, define, io);
                         }
-                        moreRowsToBeFetched = executeSelect(plsqlText, connection, doc, null);
+                        executeSelect(plsqlText, connection, doc, null);
                         return null;
                     } else if (firstWord.equalsIgnoreCase("DESC") || firstWord.equalsIgnoreCase("DESCRIBE")) {
                         describeObject(connection, doc, tokenizer, io);
@@ -488,20 +473,6 @@ public class PlsqlFileExecutor {
 
             stm = con.createStatement();
             stm.setEscapeProcessing(false);
-            if (connectionProvider.isUsagesEnabled() && validator.isValidPackage(dataObj)) {
-                String plsqlText = "ALTER SYSTEM SET PLSCOPE_SETTINGS = 'IDENTIFIERS:ALL' \t\n";
-                try {
-                    //io.getOut().println((new StringBuilder()).append("> Enabling Usages for ").append(fileName));
-                    stm.execute(plsqlText);
-                } catch (SQLException sqlEx) {
-                    int errLine = getLineNumberFromMsg(sqlEx.getMessage());
-                    int outLine = errLine - 1;
-                    String msg = getmodifiedErorrMsg(sqlEx.getMessage(), outLine);
-                    // io.getErr().println((new StringBuilder()).append("!!!Error Creating View ").append(exeObjName).toString());
-                    io.getOut().println(plsqlText);
-                    deploymentOk = false;
-                }
-            }
             boolean firstSelectStatement = true;
             for (int i = 0; i < executableObjs.size(); i++) {
                 if (cancel) {
@@ -545,8 +516,6 @@ public class PlsqlFileExecutor {
                 }
                 if (exeObj.getType() == PlsqlExecutableObjectType.STATEMENT) {
                     try {
-                        // String firstWord;
-                        firstWord = null;
                         StringTokenizer tokenizer = new StringTokenizer(plsqlText, " \t\n;");
                         if (tokenizer.hasMoreTokens()) {
                             firstWord = tokenizer.nextToken();
@@ -745,7 +714,8 @@ public class PlsqlFileExecutor {
                                             String token = tokenizer.nextToken();
                                             ignoreDefines = "OFF".equalsIgnoreCase(token);
                                             if (!ignoreDefines && token.length() == 1) {
-                                                define = token.charAt(0);
+                                                 define.clear();
+		         define.add(token.charAt(0));
                                             }
                                         }
                                     }
@@ -1118,7 +1088,7 @@ public class PlsqlFileExecutor {
      * @param io
      * @return
      */
-    private char getAliases(HashMap<String, String> definesMap, Document doc, int start, int end, char define, InputOutput io) {
+    private List<Character> getAliases(HashMap<String, String> definesMap, Document doc, int start, int end, List<Character> define, InputOutput io) {
         TokenHierarchy tokenHierarchy = TokenHierarchy.get(doc);
         @SuppressWarnings("unchecked")
         TokenSequence<PlsqlTokenId> ts = tokenHierarchy.tokenSequence(PlsqlTokenId.language());
@@ -1179,9 +1149,14 @@ public class PlsqlFileExecutor {
                             value = value.substring(1, value.length() - 1);
                         }
                         
-                        if (value.indexOf(define) >= 0) {
-                            value = replaceAliases(value, definesMap, define, io);
-                        }
+	    Iterator<Character> itre = define.iterator();
+	    while (itre.hasNext()) {
+	        if (value.indexOf(itre.next()) >= 0) {
+	            value = replaceAliases(value, definesMap, define, io);
+	            break;
+	        }
+	    }
+
                         definesMap.put(alias.toUpperCase(Locale.ENGLISH), value);
                     }
                 } else if (tokenTxt.toUpperCase(Locale.ENGLISH).startsWith("SET ")) {
@@ -1199,7 +1174,8 @@ public class PlsqlFileExecutor {
                     }
                     
                     if (alias.length() == 1) {
-                        define = alias.charAt(0); //If define changed we catch it here
+	    define.clear();
+	    define.add(alias.charAt(0));//If define changed we catch it here
                     }
                 }
             }
@@ -1218,50 +1194,88 @@ public class PlsqlFileExecutor {
      * @param io
      * @return
      */
-    public String replaceAliases(String plsqlString, HashMap<String, String> definesMap, char define, InputOutput io) {
-        if (plsqlString.indexOf(define) < 0) {
+    public String replaceAliases(String plsqlString, HashMap<String, String> definesMap, Collection<Character> define, InputOutput io) {
+        boolean exists=false;
+        Iterator<Character> iter = define.iterator();
+        while(iter.hasNext()){
+            if (plsqlString.indexOf(iter.next()) >= 0) {
+                exists= true;
+                break;               
+            }         
+        }
+        if(!exists){
             return plsqlString;
         }
+        
+        boolean insideString = false;
+        boolean insideComment = false;
         
         StringBuilder newString = new StringBuilder();
         for (int i = 0; i < plsqlString.length(); i++) {
             char c = plsqlString.charAt(i);
-            if (c == define) {
-                for (int j = i + 1; j < plsqlString.length(); j++) {
-                    char nextChar = plsqlString.charAt(j);
-                    if (Character.isJavaIdentifierPart(nextChar) && j == plsqlString.length() - 1) { //we have reached the end of the text
+            char defineValue = 0;
+            
+            //check for - inside strings
+            if (Character.toString(c).equals("'") || Character.toString(c).equals("\"")) {
+                if (!insideString && !Character.toString(plsqlString.charAt(i + 1)).equals("'")) {
+	insideString = !insideString;
+                }
+            }
+          
+            //Check for - Comments           
+            if (!insideComment && Character.toString(c).equals("-") && Character.toString(plsqlString.charAt(i + 1)).equals("-")) {
+                insideComment = true;
+            } else if (insideComment && Character.toString(c).equals("\n")) {
+                insideComment = false;
+            }
+           
+              iter = define.iterator();
+             while (iter.hasNext()) {
+                if (c == iter.next()) {
+	defineValue = c;
+	break;
+                }
+            }                     
+             if (defineValue != 0 && !insideComment) {
+                if (insideString && !Character.toString(defineValue).equals("&")) {
+	newString.append(c);
+                } else {
+	for (int j = i + 1; j < plsqlString.length(); j++) {
+	    char nextChar = plsqlString.charAt(j);
+	    if (Character.isJavaIdentifierPart(nextChar) && j == plsqlString.length() - 1) { //we have reached the end of the text
 
-                        nextChar = '.'; //this will make sure that the correct sustitution is made below by emulating an additional character
+	        nextChar = '.'; //this will make sure that the correct sustitution is made below by emulating an additional character
 
-                        j = j + 1;
-                    }
-                    if (!Character.isJavaIdentifierPart(nextChar)) { //potential end of substitutionvariable
+	        j = j + 1;
+	    }
+	    if (!Character.isJavaIdentifierPart(nextChar)) { //potential end of substitutionvariable
 
-                        if (j > i + 1) { //substituion variable found
+	        if (j > i + 1) { //substituion variable found
 
-                            String name = plsqlString.substring(i + 1, j);
-                            String value = definesMap.get(name.toUpperCase(Locale.ENGLISH));
-                            if (value == null || value.startsWith(Character.toString(define))) {
-                                PromptDialog prompt = new PromptDialog(null, name, true);
-                                prompt.setVisible(true);
-                                value = prompt.getValue();
-                                definesMap.put(name.toUpperCase(Locale.ENGLISH), value);
-                                if (io != null) {
-                                    io.getOut().println((new StringBuilder()).append("> Variable ").append(name).append(" = \"").append(value).append("\"").toString());
-                                }
-                            }
-                            value = replaceAliases(value, definesMap, define, io);
-                            newString.append(value);
-                            if (nextChar == '.') {
-                                i = j;
-                            } else {
-                                i = j - 1;
-                            }
-                        } else {
-                            newString.append(c);
-                        }
-                        break;
-                    }
+	            String name = plsqlString.substring(i + 1, j);
+	            String value = definesMap.get(name.toUpperCase(Locale.ENGLISH));
+	            if (value == null || value.startsWith(Character.toString(defineValue))) {
+	                PromptDialog prompt = new PromptDialog(null, name, true);
+	                prompt.setVisible(true);
+	                value = prompt.getValue();
+	                definesMap.put(name.toUpperCase(Locale.ENGLISH), value);
+	                if (io != null) {
+		io.getOut().println((new StringBuilder()).append("> Variable ").append(name).append(" = \"").append(value).append("\"").toString());
+	                }
+	            }
+	            value = replaceAliases(value, definesMap, define, io);
+	            newString.append(value);
+	            if (nextChar == '.') {
+	                i = j;
+	            } else {
+	                i = j - 1;
+	            }
+	        } else {
+	            newString.append(c);
+	        }
+	        break;
+	    }
+	}
                 }
             } else {
                 newString.append(c);

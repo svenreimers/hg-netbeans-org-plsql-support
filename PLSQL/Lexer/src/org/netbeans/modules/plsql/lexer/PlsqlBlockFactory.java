@@ -2907,6 +2907,9 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
       if (packageName.indexOf('&') != -1) {
          alias = packageName;
       }
+      else if(hasDefineKey(packageName)){
+         alias =  '&'+getDefineKey(packageName);
+      }
 
       packageName = getDefine(packageName);
       Token<PlsqlTokenId> customStartToken = null;
@@ -4016,7 +4019,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
    }
 
    /**
-    * Get the name defined by &Name
+    * Check &Name is in map as a key
     * @param inputName
     * @return
     */
@@ -4028,6 +4031,29 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
       }
 
       return false;
+   }
+   
+   /**
+    * Check &Name is in map as a value
+    * @param inputName
+    * @return
+    */
+   public boolean hasDefineKey(String inputName) {
+      String name = inputName;
+      return definesMap.containsValue(name.toUpperCase(Locale.ENGLISH));
+   }
+   
+   /**
+    * Get the key of &Name
+    * @param inputName
+    * @return
+    */
+    public String getDefineKey(String inputName) {       
+        for(Object o:definesMap.keySet()){
+            if(definesMap.get(o).equals(inputName))
+                return o.toString();                
+        }       
+        return null;
    }
 
    public Map<String, String> getDefines() {

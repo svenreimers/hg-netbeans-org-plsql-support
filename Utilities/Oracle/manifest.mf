@@ -2,8 +2,9 @@ Manifest-Version: 1.0
 Ant-Version: Apache Ant 1.7.1
 Created-By: 14.3-b01 (Sun Microsystems Inc.)
 OpenIDE-Module: org.netbeans.modules.plsqlsupport.db
-OpenIDE-Module-Localizing-Bundle: org/netbeans/modules/plsqlsupport/db/Bundle.properties
+OpenIDE-Module-Localizing-Bundle: org/netbeans/modules/plsqlsupport/db
+ /Bundle.properties
 OpenIDE-Module-Layer: org/netbeans/modules/plsqlsupport/db/layer.xml
-OpenIDE-Module-Specification-Version: 1.8.14
+OpenIDE-Module-Specification-Version: 1.8.18
 AutoUpdate-Show-In-Client: false
 

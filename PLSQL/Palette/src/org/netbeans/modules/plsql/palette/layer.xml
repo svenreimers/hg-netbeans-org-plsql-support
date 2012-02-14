@@ -54,9 +54,7 @@
       </folder>
       <folder name="Error Handling">
          <file name="ExceptionBlock.xml" url="item/errorhandling/resource/ExceptionBlock.xml"/>
-         <file name="ExceptionInit.xml" url="item/errorhandling/resource/ExceptionInit.xml"/>
-         <file name="IFSItemGeneral.xml" url="item/errorhandling/resource/IFSItemGeneral.xml"/>
-         <file name="IFSRecordGeneral.xml" url="item/errorhandling/resource/IFSRecordGeneral.xml"/>
+         <file name="ExceptionInit.xml" url="item/errorhandling/resource/ExceptionInit.xml"/>         
       </folder>
       <folder name="Package elements">
          <file name="FunctionDeclaration.xml" url="item/packageelements/resource/FunctionDeclaration.xml"/>
@@ -182,9 +180,7 @@
          <file name="CompileInvalidObjects.xml" url="item/reports/resource/CompileInvalidObjects.xml"/>
          <file name="DebugCompilePackages.xml" url="item/reports/resource/DebugCompilePackages.xml"/>
          <file name="ListDebugCompiledPkgs.xml" url="item/reports/resource/ListDebugCompiledPkgs.xml"/>      
-         <file name="RemoveDebugInfo.xml" url="item/reports/resource/RemoveDebugInfo.xml"/>
-         <file name="RefreshDictionary.xml" url="item/reports/resource/RefreshDictionary.xml"/>
-         <file name="GrantIfssys.xml" url="item/reports/resource/GrantIfssys.xml"/>
+         <file name="RemoveDebugInfo.xml" url="item/reports/resource/RemoveDebugInfo.xml"/>         
       </folder>
    </folder>
 </filesystem>

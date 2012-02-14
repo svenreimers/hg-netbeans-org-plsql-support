@@ -72,6 +72,9 @@ import org.netbeans.api.lexer.TokenHierarchy;
 import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
+import org.netbeans.editor.JumpList;
+import org.netbeans.modules.plsql.hyperlink.target.PlsqlGotoTarget;
+import org.netbeans.modules.plsql.hyperlink.target.PlsqlGotoTargetFactory;
 import org.openide.cookies.EditorCookie;
 import org.openide.cookies.OpenCookie;
 import org.openide.filesystems.FileObject;
@@ -238,7 +241,7 @@ public class PlsqlHyperlinkProvider implements HyperlinkProvider {
          target.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
          boolean isBody = true;
          if (object instanceof DataObject) {
-            isBody = !globalFileValidator.isValidPackageSpec((DataObject) object);
+            isBody = globalFileValidator.isValidPackageBody((DataObject) object);
          }
          String child = tokenImage;
          //Can be a define
@@ -1116,7 +1119,23 @@ public class PlsqlHyperlinkProvider implements HyperlinkProvider {
             return true;
          }
       }
+      
+       if (packageName.equals("")) {
+           Object obj = doc.getProperty(Document.StreamDescriptionProperty);
+           Lookup lookup = null;
+           if (obj instanceof Lookup.Provider) {
+               lookup = ((Lookup.Provider) obj).getLookup();
+           }
+           final PlsqlGotoTarget target = PlsqlGotoTargetFactory.instance.getTargetForDb(lookup);
 
+           //Add to jump list
+           final EditorCookie editorCookie = ((Lookup.Provider) obj).getLookup().lookup(EditorCookie.class);
+           JumpList.addEntry(Utilities.getFocusedComponent(), PlsqlHyperlinkUtil.getCaretPosition(editorCookie));
+           //if(target instanceof PlsqlPackageBodyTarget || target instanceof PlsqlTableTarget || target instanceof PlsqlViewTarget){
+              target.gotoDbBody();
+           //}
+           return true;
+       }
       return false;
    }
 
