@@ -721,8 +721,6 @@ public class PlsqlFormatter extends ExtFormatter {
 
                 if ((imageTmp.equalsIgnoreCase("IF")
                         && (!imageTmpPre.equalsIgnoreCase(";")))
-                        || (imageTmp.equalsIgnoreCase("EXCEPTION")
-                        && (!imageTmpPre.equalsIgnoreCase(";")))
 	    || (imageTmp.equalsIgnoreCase("$IF")
                         && (!imageTmpPre.equalsIgnoreCase(";")))
 	    || (imageTmp.equalsIgnoreCase("$ERROR")
@@ -731,8 +729,7 @@ public class PlsqlFormatter extends ExtFormatter {
                         && (!imageTmpPre.equalsIgnoreCase(";")))
 	    || (imageTmp.equalsIgnoreCase("CASE")
                         && (!imageTmpPre.equalsIgnoreCase(";")))
-	    || (imageTmp.equalsIgnoreCase("BEGIN"))
-                        || (imageTmp.equalsIgnoreCase("PACKAGE"))) {
+	    || (imageTmp.equalsIgnoreCase("BEGIN"))) {
                     isParent = true;
                 }
 
