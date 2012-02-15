@@ -112,6 +112,7 @@ public class PlsqlWrongFunctionParamAnnotation extends PlsqlBlockAnnotation {
                   if (!isIgnoreAlowed() || -1 == ignoreMarkerOffset) {
                      PlsqlAnnotationUtil.addAnnotation(annotation, annotationsToAdd);
                   }
+                  checkIgnoreAnnotation(annotationsToAdd, getIgnoreKey(), ignoreMarkerOffset, exists);
                   break;
                }
             }
@@ -124,9 +125,7 @@ public class PlsqlWrongFunctionParamAnnotation extends PlsqlBlockAnnotation {
                param = param + " " + token.text().toString().toUpperCase(Locale.ENGLISH);
             }
          }
-      }
-
-      checkIgnoreAnnotation(annotationsToAdd, getIgnoreKey(), ignoreMarkerOffset, exists);
+      }      
    }
 
    @Override

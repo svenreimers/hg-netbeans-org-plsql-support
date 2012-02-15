@@ -85,22 +85,24 @@ public class PlsqlFunctionReturnAnnotation extends PlsqlBlockAnnotation {
       return NbBundle.getMessage(this.getClass(), "function_return_annotation");
    }
 
-   @Override
-   public void evaluateAnnotation(Map<Integer, List<PlsqlAnnotation>> annotationsToAdd, Document doc, PlsqlBlock block, Document specDoc, PlsqlBlockFactory specBlockFac) {
-      boolean isMissing = true;
-      isMissing = !PlsqlMethodAnnotationUtil.isReturn(doc, block);
-      int ignoreMarkerOffset = isIgnoreSpecified(doc, block.getStartOffset(), getIgnoreKey(), true);
-      boolean exists = false;
+    @Override
+    public void evaluateAnnotation(Map<Integer, List<PlsqlAnnotation>> annotationsToAdd, Document doc, PlsqlBlock block, Document specDoc, PlsqlBlockFactory specBlockFac) {
+        boolean isMissing = true;
+        isMissing = !PlsqlMethodAnnotationUtil.isReturn(doc, block);
+        int ignoreMarkerOffset = isIgnoreSpecified(doc, block.getStartOffset(), getIgnoreKey(), true);
+        boolean exists = false;
 
-      if (isMissing) {
-         exists = true;
-         PlsqlFunctionReturnAnnotation annotation = new PlsqlFunctionReturnAnnotation(block.getStartOffset(), block.getStartOffset());
-         if (!isIgnoreAlowed() || -1 == ignoreMarkerOffset)
-            PlsqlAnnotationUtil.addAnnotation(annotation, annotationsToAdd);
-      }
-
-      checkIgnoreAnnotation(annotationsToAdd, getIgnoreKey(), ignoreMarkerOffset, exists);
-   }
+        if (isMissing) {
+            exists = true;
+            PlsqlFunctionReturnAnnotation annotation = new PlsqlFunctionReturnAnnotation(block.getStartOffset(), block.getStartOffset());
+            if (annotation != null) {
+                if (!isIgnoreAlowed() || -1 == ignoreMarkerOffset) {
+	PlsqlAnnotationUtil.addAnnotation(annotation, annotationsToAdd);
+                }
+                checkIgnoreAnnotation(annotationsToAdd, getIgnoreKey(), ignoreMarkerOffset, exists);
+            }
+        }
+    }
 
    @Override
    public Action[] getActions() {

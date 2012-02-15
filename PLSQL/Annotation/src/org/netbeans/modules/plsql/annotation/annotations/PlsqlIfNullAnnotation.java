@@ -119,6 +119,7 @@ public class PlsqlIfNullAnnotation extends PlsqlBlockAnnotation {
                      if (!isIgnoreAlowed() || -1 == ignoreMarkerOffset) {
                         PlsqlAnnotationUtil.addAnnotation(endNameAnnotation, annotationsToAdd);
                      }
+	 checkIgnoreAnnotation(annotationsToAdd, getIgnoreKey(), ignoreMarkerOffset, exists);
                   }
                }
                break;
@@ -126,9 +127,7 @@ public class PlsqlIfNullAnnotation extends PlsqlBlockAnnotation {
                break;
             }
          }
-      }
-
-      checkIgnoreAnnotation(annotationsToAdd, getIgnoreKey(), ignoreMarkerOffset, exists);
+      }      
    }
 
    @Override

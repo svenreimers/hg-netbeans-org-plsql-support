@@ -121,6 +121,7 @@ public class PlsqlCursorWhereAnnotation extends PlsqlBlockAnnotation {
                   if (!isIgnoreAlowed() || -1 == ignoreMarkerOffset) {
                      PlsqlAnnotationUtil.addAnnotation(annotation, annotationsToAdd);
                   }
+                  checkIgnoreAnnotation(annotationsToAdd, getIgnoreKey(), ignoreMarkerOffset, exists);
                }
                param1 = "";
                param2 = "";
@@ -129,9 +130,7 @@ public class PlsqlCursorWhereAnnotation extends PlsqlBlockAnnotation {
                isCheck = true;
             }
          }
-      }
-
-      checkIgnoreAnnotation(annotationsToAdd, getIgnoreKey(), ignoreMarkerOffset, exists);
+      }     
    }
 
    @Override

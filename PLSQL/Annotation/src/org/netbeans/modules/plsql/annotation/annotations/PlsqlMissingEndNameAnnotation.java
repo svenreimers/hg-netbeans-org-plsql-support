@@ -122,15 +122,14 @@ public class PlsqlMissingEndNameAnnotation extends PlsqlBlockAnnotation {
                   if (!isIgnoreAlowed() || -1 == ignoreMarkerOffset) {
                      PlsqlAnnotationUtil.addAnnotation(endNameAnnotation, annotationsToAdd);
                   }
+                  checkIgnoreAnnotation(annotationsToAdd, getIgnoreKey(), ignoreMarkerOffset, exists);
                }
                break;
             } else if (token.id() == PlsqlTokenId.IDENTIFIER || token.id() == PlsqlTokenId.KEYWORD) { //because there are some functions with keyword names (close,cancel etc)
                isName = true;
             }
          }
-      }
-
-      checkIgnoreAnnotation(annotationsToAdd, getIgnoreKey(), ignoreMarkerOffset, exists);
+      }      
    }
 
    @Override
