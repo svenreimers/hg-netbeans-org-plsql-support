@@ -67,88 +67,88 @@ import org.openide.util.actions.CookieAction;
 @ActionReference(path = "Editors/text/x-plsql/Popup", position = 283)
 public class DescribeAction extends CookieAction {
 
-   private String viewName = null;
+    private static final RequestProcessor RP = new RequestProcessor(DescribeAction.class);
+    private String viewName = null;
 
-   @Override
-   protected int mode() {
-      return CookieAction.MODE_EXACTLY_ONE;
-   }
+    @Override
+    protected int mode() {
+        return CookieAction.MODE_EXACTLY_ONE;
+    }
 
-   @Override
-   protected Class<?>[] cookieClasses() {
-      return new Class[]{DataObject.class, EditorCookie.class};
-   }
+    @Override
+    protected Class<?>[] cookieClasses() {
+        return new Class[]{DataObject.class, EditorCookie.class};
+    }
 
-   @Override
-   protected void performAction(Node[] activatedNodes) {
-      DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
-      EditorCookie ec = dataObject.getCookie(EditorCookie.class);
-      final Document doc = ec.getDocument();
-      final DatabaseConnectionManager connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
-      final DatabaseConnection connection = connectionProvider.getPooledDatabaseConnection(true);
-      if (connection == null) {
-         return;
-      }
+    @Override
+    protected void performAction(Node[] activatedNodes) {
+        DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
+        EditorCookie ec = dataObject.getCookie(EditorCookie.class);
+        final Document doc = ec.getDocument();
+        final DatabaseConnectionManager connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
+        final DatabaseConnection connection = connectionProvider.getPooledDatabaseConnection(true);
+        if (connection == null) {
+            return;
+        }
 
-      RequestProcessor processor = RequestProcessor.getDefault();
-      processor.post(new Runnable() {
+        RP.post(new Runnable() {
 
-         @Override
-         public void run() {
-            try {
-               String selectStatement = "DESC " + viewName;
-               PlsqlFileExecutor executor = new PlsqlFileExecutor(connectionProvider, connection);
-               List<PlsqlExecutableObject> exeBlocks = new ArrayList<PlsqlExecutableObject>();
-               exeBlocks.add(new PlsqlExecutableObject(0, selectStatement, "DESC", PlsqlExecutableObjectType.STATEMENT, 0, selectStatement.length() - 1));
-               executor.executePLSQL(exeBlocks, doc, true, true);
-            } finally {
-               if (connection != null) {
-                  connectionProvider.releaseDatabaseConnection(connection);
-               }
+            @Override
+            public void run() {
+                try {
+                    String selectStatement = "DESC " + viewName;
+                    PlsqlFileExecutor executor = new PlsqlFileExecutor(connectionProvider, connection);
+                    List<PlsqlExecutableObject> exeBlocks = new ArrayList<PlsqlExecutableObject>();
+                    exeBlocks.add(new PlsqlExecutableObject(0, selectStatement, "DESC", PlsqlExecutableObjectType.STATEMENT, 0, selectStatement.length() - 1));
+                    executor.executePLSQL(exeBlocks, doc, true, true);
+                } finally {
+                    if (connection != null) {
+                        connectionProvider.releaseDatabaseConnection(connection);
+                    }
+                }
             }
-         }
-      });
-   }
+        });
+    }
 
-   @Override
-   public String getName() {
-      return NbBundle.getMessage(ViewDataAction.class, "CTL_DescribeAction");
-   }
+    @Override
+    public String getName() {
+        return NbBundle.getMessage(ViewDataAction.class, "CTL_DescribeAction");
+    }
 
-   @Override
-   public HelpCtx getHelpCtx() {
-      return HelpCtx.DEFAULT_HELP;
-   }
+    @Override
+    public HelpCtx getHelpCtx() {
+        return HelpCtx.DEFAULT_HELP;
+    }
 
-   @Override
-   protected boolean enable(Node[] activatedNodes) {
-      viewName = null;
+    @Override
+    protected boolean enable(Node[] activatedNodes) {
+        viewName = null;
 
-      if (!super.enable(activatedNodes)) {
-         return false;
-      }
+        if (!super.enable(activatedNodes)) {
+            return false;
+        }
 
-      DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
-      if (dataObject == null) {
-         return false;
-      }
+        DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
+        if (dataObject == null) {
+            return false;
+        }
 
-      DatabaseConnectionManager connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
-      if (connectionProvider == null) {
-         return false;
-      }
+        DatabaseConnectionManager connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
+        if (connectionProvider == null) {
+            return false;
+        }
 
-      DatabaseConnection connection = connectionProvider.getDatabaseConnection(false);
-      if (connection == null) {
-         return false;
-      }
+        DatabaseConnection connection = connectionProvider.getDatabaseConnection(false);
+        if (connection == null) {
+            return false;
+        }
 
-      viewName = ViewDataAction.getSelectedViewOrTable(activatedNodes);
-      if (viewName == null) {
-         return false;
-      }
+        viewName = ViewDataAction.getSelectedViewOrTable(activatedNodes);
+        if (viewName == null) {
+            return false;
+        }
 
-      DatabaseContentManager dbCache = DatabaseContentManager.getInstance(connection);
-      return dbCache.isView(viewName, connection) || dbCache.isTable(viewName, connection);
-   }
+        DatabaseContentManager dbCache = DatabaseContentManager.getInstance(connection);
+        return dbCache.isView(viewName, connection) || dbCache.isTable(viewName, connection);
+    }
 }

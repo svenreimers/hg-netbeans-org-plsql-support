@@ -229,9 +229,9 @@ public class PlsqlToggleBreakpointActionProvider extends ActionsProviderSupport
                }
             });
          } catch (InvocationTargetException ex) {
-            ex.printStackTrace();
+            Exceptions.printStackTrace(ex);
          } catch (InterruptedException ex) {
-            ex.printStackTrace();
+            Exceptions.printStackTrace(ex);
          }
          return paneArray[0];
       }

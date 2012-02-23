@@ -76,6 +76,7 @@ import org.netbeans.modules.editor.NbEditorUtilities;
 import org.openide.ErrorManager;
 import org.openide.cookies.EditorCookie;
 import org.openide.loaders.DataObject;
+import org.openide.util.Exceptions;
 import org.openide.util.RequestProcessor;
 import org.openide.windows.TopComponent;
 
@@ -84,6 +85,8 @@ import org.openide.windows.TopComponent;
  * @author malolk
  */
 public class PlsqlNavigatorComponent extends NavigatorTopComponent {
+
+    private static final RequestProcessor RP = new RequestProcessor(PlsqlNavigatorComponent.class);
 
     /**
      * Setting up a MouseListner for the navigator. This activates when the
@@ -105,8 +108,9 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
 
         if (getDocument() == null) {
             JTextComponent component = Utilities.getFocusedComponent();
-            if (component != null)
+            if (component != null) {
                 setDocument(Utilities.getDocument(component));
+            }
         }
 
         customizeIcon();
@@ -123,7 +127,6 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
             System.err.println("icon missing; using default.");
         }
     }
-
 
     public void navigatorButtonListner() {
         ActionListener al = new ActionListener() {
@@ -175,7 +178,7 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
                                 openAndFocusElement();
                             }
                         } catch (Exception ex) {
-                            ex.printStackTrace();
+                            Exceptions.printStackTrace(ex);
                         }
                     }
                 }
@@ -189,10 +192,10 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
      * @param blockFactory
      */
     public void update(PlsqlBlockFactory blockFactory) {
-       final List<PlsqlBlock> newBlocks = new ArrayList<PlsqlBlock>(blockFactory.getNewBlocks());
-       final List<PlsqlBlock> changedBlocks = new ArrayList<PlsqlBlock>(blockFactory.getChangedBlocks());
-       final List<PlsqlBlock> removedBlocks = new ArrayList<PlsqlBlock>(blockFactory.getRemovedBlocks());
-       loadAndExpandTree(root, treeModel, newBlocks, changedBlocks, removedBlocks);
+        final List<PlsqlBlock> newBlocks = new ArrayList<PlsqlBlock>(blockFactory.getNewBlocks());
+        final List<PlsqlBlock> changedBlocks = new ArrayList<PlsqlBlock>(blockFactory.getChangedBlocks());
+        final List<PlsqlBlock> removedBlocks = new ArrayList<PlsqlBlock>(blockFactory.getRemovedBlocks());
+        loadAndExpandTree(root, treeModel, newBlocks, changedBlocks, removedBlocks);
     }
 
     /**
@@ -206,7 +209,7 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
             setDocument(doc);
             loadAndExpandInitialTree(root, treeModel, data, blocks);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            Exceptions.printStackTrace(ex);
         }
     }
 
@@ -233,7 +236,7 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
      */
     private void addChildNode(DefaultMutableTreeNode parent, PlsqlBlock child, PlsqlBlockType parentType) {
         PlsqlBlockType type = child.getType();
-         int index = 0;
+        int index = 0;
         //We are looking for child blocks and adding now
         if (type == PlsqlBlockType.FUNCTION_IMPL) { //Leaf node
 
@@ -262,20 +265,19 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
         }
     }
 
-
-    private void sortTreeModel(){
-         int count = root.getChildCount();
+    private void sortTreeModel() {
+        int count = root.getChildCount();
         if (count > 0) {
             int i = 0;
             ArrayList parent = Collections.list(root.children());
             Collections.sort(parent, new CompareNodes(sortBySource));
             // for main nodes
-            while(i < count){
-                treeModel.removeNodeFromParent((DefaultMutableTreeNode)root.getChildAt(0));
+            while (i < count) {
+                treeModel.removeNodeFromParent((DefaultMutableTreeNode) root.getChildAt(0));
                 i++;
             }
             // for child nodes
-            i =0;
+            i = 0;
             while (i < count) {
                 DefaultMutableTreeNode child = (DefaultMutableTreeNode) parent.get(i);
                 if (child.getChildCount() > 1) {
@@ -296,11 +298,10 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
                 i++;
             }
         }
-         expandAll(jTree1, new TreePath(root), true);
+        expandAll(jTree1, new TreePath(root), true);
         jTree1.updateUI();
     }
 
-  
     /**
      * Get the parent node for the given block
      * @param root
@@ -315,8 +316,8 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
             if (node.getUserObject() instanceof NodeInfo) {
                 NodeInfo nodeInfo = (NodeInfo) node.getUserObject();
 
-                if ((nodeInfo.startOffset < block.getStartOffset()) &&
-                        (nodeInfo.endOffset > block.getEndOffset())) {
+                if ((nodeInfo.startOffset < block.getStartOffset())
+                        && (nodeInfo.endOffset > block.getEndOffset())) {
                     parentNode = node;
                     break;
                 }
@@ -336,7 +337,7 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
      */
     private synchronized void loadAndExpandInitialTree(DefaultMutableTreeNode root, DefaultTreeModel treeModel, DataObject dataObject, List<PlsqlBlock> blockhierarchy) {
         List<PlsqlBlock> blocks = new ArrayList<PlsqlBlock>(blockhierarchy);
-       Collections.sort(blocks, new CompareBlocks(sortBySource));
+        Collections.sort(blocks, new CompareBlocks(sortBySource));
         //Remove all the previous nodes
         if (root.getChildCount() > 0) {
             while (root.getChildCount() > 0) {
@@ -344,8 +345,9 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
             }
         }
 
-        if (!dataObject.isValid())
-           return;
+        if (!dataObject.isValid()) {
+            return;
+        }
 
         //Set root name
         String rootName = "Navigator Tree";
@@ -466,60 +468,62 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
     }
 
     private boolean isBlockShownInNavigator(PlsqlBlock block, DefaultMutableTreeNode parentNode) {
-       PlsqlBlockType parentType = null;
-       if (parentNode!=null && parentNode.getUserObject() instanceof NodeInfo)
-           parentType = ((NodeInfo)parentNode.getUserObject()).type;
-       return (block.getType() == PlsqlBlockType.PACKAGE ||
-          block.getType() == PlsqlBlockType.PACKAGE_BODY ||
-          block.getType() == PlsqlBlockType.VIEW ||
-          ((parentType==null || parentType == PlsqlBlockType.PACKAGE) &&
-             (block.getType() == PlsqlBlockType.FUNCTION_DEF ||
-              block.getType() == PlsqlBlockType.PROCEDURE_DEF)) ||
-          ((parentType==null || parentType == PlsqlBlockType.PACKAGE_BODY) &&
-             (block.getType() == PlsqlBlockType.FUNCTION_IMPL ||
-              block.getType() == PlsqlBlockType.PROCEDURE_IMPL)));
+        PlsqlBlockType parentType = null;
+        if (parentNode != null && parentNode.getUserObject() instanceof NodeInfo) {
+            parentType = ((NodeInfo) parentNode.getUserObject()).type;
+        }
+        return (block.getType() == PlsqlBlockType.PACKAGE
+                || block.getType() == PlsqlBlockType.PACKAGE_BODY
+                || block.getType() == PlsqlBlockType.VIEW
+                || ((parentType == null || parentType == PlsqlBlockType.PACKAGE)
+                && (block.getType() == PlsqlBlockType.FUNCTION_DEF
+                || block.getType() == PlsqlBlockType.PROCEDURE_DEF))
+                || ((parentType == null || parentType == PlsqlBlockType.PACKAGE_BODY)
+                && (block.getType() == PlsqlBlockType.FUNCTION_IMPL
+                || block.getType() == PlsqlBlockType.PROCEDURE_IMPL)));
     }
 
+    private static class CompareBlocks implements Comparator<PlsqlBlock> {
 
-   private static class CompareBlocks implements Comparator<PlsqlBlock> {
-      private boolean byPosition;
-      public CompareBlocks(boolean byPosition) {
-         this.byPosition = byPosition;
-      }
+        private boolean byPosition;
 
-      public int compare(PlsqlBlock o1, PlsqlBlock o2) {
-         //first sort by type
-         int result = o1.getType().compareTo(o2.getType());
-         if(result!=0 && !((o1.getType()==PlsqlBlockType.FUNCTION_DEF  || o1.getType()==PlsqlBlockType.PROCEDURE_DEF ||
-                            o1.getType()==PlsqlBlockType.FUNCTION_IMPL || o1.getType()==PlsqlBlockType.PROCEDURE_IMPL) &&
-                           (o2.getType()==PlsqlBlockType.PROCEDURE_DEF || o2.getType()==PlsqlBlockType.FUNCTION_DEF ||
-                            o2.getType()==PlsqlBlockType.PROCEDURE_IMPL || o2.getType()==PlsqlBlockType.FUNCTION_IMPL)))
-            return result;
+        public CompareBlocks(boolean byPosition) {
+            this.byPosition = byPosition;
+        }
 
-         if(byPosition) {
-            Integer o1pos, o2pos;
-            if(o1.getPreviousStart()>-1 && o2.getPreviousStart()>-1) {
-               o1pos = new Integer(o1.getPreviousStart());
-               o2pos = new Integer(o2.getPreviousStart());
-            } else if(o1.getPreviousEnd()>-1 && o2.getPreviousEnd()>-1) {
-               o1pos = new Integer(o1.getPreviousEnd());
-               o2pos = new Integer(o2.getPreviousEnd());
-            } else if(o1.getStartOffset()>-1 && o2.getStartOffset()>-1){
-               o1pos = new Integer(o1.getStartOffset());
-               o2pos = new Integer(o2.getStartOffset());
-            } else {
-               o1pos = new Integer(o1.getEndOffset());
-               o2pos = new Integer(o2.getEndOffset());
+        @Override
+        public int compare(PlsqlBlock o1, PlsqlBlock o2) {
+            //first sort by type
+            int result = o1.getType().compareTo(o2.getType());
+            if (result != 0 && !((o1.getType() == PlsqlBlockType.FUNCTION_DEF || o1.getType() == PlsqlBlockType.PROCEDURE_DEF
+                    || o1.getType() == PlsqlBlockType.FUNCTION_IMPL || o1.getType() == PlsqlBlockType.PROCEDURE_IMPL)
+                    && (o2.getType() == PlsqlBlockType.PROCEDURE_DEF || o2.getType() == PlsqlBlockType.FUNCTION_DEF
+                    || o2.getType() == PlsqlBlockType.PROCEDURE_IMPL || o2.getType() == PlsqlBlockType.FUNCTION_IMPL))) {
+                return result;
             }
-            return o1pos.compareTo(o2pos);
-         } else { //sort by name
-            return o1.getName().compareToIgnoreCase(o2.getName());
-         }
-      }
 
-   }
+            if (byPosition) {
+                Integer o1pos, o2pos;
+                if (o1.getPreviousStart() > -1 && o2.getPreviousStart() > -1) {
+                    o1pos = new Integer(o1.getPreviousStart());
+                    o2pos = new Integer(o2.getPreviousStart());
+                } else if (o1.getPreviousEnd() > -1 && o2.getPreviousEnd() > -1) {
+                    o1pos = new Integer(o1.getPreviousEnd());
+                    o2pos = new Integer(o2.getPreviousEnd());
+                } else if (o1.getStartOffset() > -1 && o2.getStartOffset() > -1) {
+                    o1pos = new Integer(o1.getStartOffset());
+                    o2pos = new Integer(o2.getStartOffset());
+                } else {
+                    o1pos = new Integer(o1.getEndOffset());
+                    o2pos = new Integer(o2.getEndOffset());
+                }
+                return o1pos.compareTo(o2pos);
+            } else { //sort by name
+                return o1.getName().compareToIgnoreCase(o2.getName());
+            }
+        }
+    }
 
-   
     private static class CompareNodes implements Comparator<DefaultMutableTreeNode> {
 
         private boolean byPosition;
@@ -528,6 +532,7 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
             this.byPosition = byPosition;
         }
 
+        @Override
         public int compare(DefaultMutableTreeNode o1, DefaultMutableTreeNode o2) {
 
             NodeInfo ni1;
@@ -575,229 +580,230 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
             }
         }
     }
-  
+
     /**
      * Method that will be called to update the tree structure on document events
      * @param root
      * @param treeModel
      * @param blockFactory
      */
-   private synchronized void loadAndExpandTree(DefaultMutableTreeNode root, DefaultTreeModel treeModel, List<PlsqlBlock> newBlocks, List<PlsqlBlock> changedBlocks, List<PlsqlBlock> removedBlocks) {
-  
-      Collections.sort(newBlocks, new CompareBlocks(sortBySource));
-      Collections.sort(changedBlocks, new CompareBlocks(sortBySource));
-      Collections.sort(removedBlocks, new CompareBlocks(sortBySource));
-      //Update offsets of the changed blocksparentNodeparentNode
+    private synchronized void loadAndExpandTree(DefaultMutableTreeNode root, DefaultTreeModel treeModel, List<PlsqlBlock> newBlocks, List<PlsqlBlock> changedBlocks, List<PlsqlBlock> removedBlocks) {
 
-      Enumeration topLevelNodes = root.children();
-      if (topLevelNodes.hasMoreElements()) {
-         DefaultMutableTreeNode node = (DefaultMutableTreeNode)topLevelNodes.nextElement();
-         Enumeration currentNodeList = topLevelNodes;
-         DefaultMutableTreeNode parentNode = null;
-         for (int i = 0; i < changedBlocks.size(); i++) {
-            PlsqlBlock block = changedBlocks.get(i);
-            if (isBlockShownInNavigator(block, parentNode)) {
-               boolean childBlock = (block.getType() != PlsqlBlockType.PACKAGE) && (block.getType() != PlsqlBlockType.PACKAGE_BODY);
-               boolean matchFound = false;
-               boolean fromTheTop = false;
-               while(node!=null && !matchFound) {
-                  if (node.getUserObject() instanceof NodeInfo) {
-                     NodeInfo nodeInfo = (NodeInfo) node.getUserObject();
-                     if ((nodeInfo.type == block.getType()) &&
-                           ((nodeInfo.type==PlsqlBlockType.PACKAGE_BODY && nodeInfo.name.equals(block.getName())) || //workaround for issue with packages... Should really be fixed in a different way...
-                             (((nodeInfo.startOffset != block.getStartOffset()) &&
-                             (nodeInfo.startOffset == block.getPreviousStart())) ||
-                             ((nodeInfo.endOffset != block.getEndOffset()) &&
-                             (nodeInfo.endOffset == block.getPreviousEnd()))))) {
-                        //we found the match
-                        nodeInfo.startOffset = block.getStartOffset();
-                        nodeInfo.endOffset = block.getEndOffset();
-                        nodeInfo.name = block.getName();
-                        nodeInfo.alias = block.getAlias();
-                        node.setUserObject(nodeInfo);
-                        matchFound = true;
-                     }
-                  }
-                  if (currentNodeList==topLevelNodes) {
-                     currentNodeList = node.children();
-                     parentNode = node;
-                  }
-                  if(!currentNodeList.hasMoreElements() || (!childBlock && !matchFound)) {
-                     currentNodeList=topLevelNodes;
-                     parentNode = null;
-                  }
-                  if(currentNodeList.hasMoreElements())
-                     node = (DefaultMutableTreeNode)currentNodeList.nextElement();
-                  else if(matchFound || fromTheTop)
-                     node = null;
-                  else {
-                     //this shouldn't happen if there are any remaining "changed" blocks. However, it could happen in some strange scenario so we'll try from the start again
-                     topLevelNodes = root.children();
-                     node = (DefaultMutableTreeNode)topLevelNodes.nextElement();
-                     currentNodeList = topLevelNodes;
-                     parentNode = null;
-                     fromTheTop=true;
-                  }
-               }
-            }
-         }
-      }
+        Collections.sort(newBlocks, new CompareBlocks(sortBySource));
+        Collections.sort(changedBlocks, new CompareBlocks(sortBySource));
+        Collections.sort(removedBlocks, new CompareBlocks(sortBySource));
+        //Update offsets of the changed blocksparentNodeparentNode
 
-      //find nodes to remove (but don't actually remove them...)
-      topLevelNodes = root.children();
-      List<DefaultMutableTreeNode> nodesToRemove = new ArrayList<DefaultMutableTreeNode>();
-      if (topLevelNodes.hasMoreElements()) {
-         DefaultMutableTreeNode node = (DefaultMutableTreeNode)topLevelNodes.nextElement();
-         DefaultMutableTreeNode parentNode = null;
-         Enumeration currentNodeList = topLevelNodes;
-         for (int i = 0; i < removedBlocks.size(); i++) {
-            PlsqlBlock block = removedBlocks.get(i);
-            if (isBlockShownInNavigator(block, parentNode)) {
-               boolean childBlock = (block.getType() != PlsqlBlockType.PACKAGE) && (block.getType() != PlsqlBlockType.PACKAGE_BODY);
-               boolean matchFound = false;
-               boolean fromTheTop = false;
-               while(node!=null && !matchFound) {
-                  if (node.getUserObject() instanceof NodeInfo) {
-                     NodeInfo nodeInfo = (NodeInfo) node.getUserObject();
-                     if ((nodeInfo.type == block.getType()) &&
-                           (nodeInfo.name.equals(block.getName())) &&
-                           (nodeInfo.type==PlsqlBlockType.PACKAGE_BODY || //workaround for issue with packages... Should really be fixed in a different way...
-                           ((nodeInfo.startOffset == block.getStartOffset()) ||
-                           (nodeInfo.endOffset == block.getEndOffset()) ||
-                           (nodeInfo.startOffset == block.getPreviousStart()) || 
-                           (nodeInfo.endOffset == block.getPreviousEnd())))) {
-                        nodesToRemove.add(node);
-                        matchFound = true;
-                     }
-                  }
-                  //go to next candidate node
-                  if (currentNodeList==topLevelNodes) {
-                     currentNodeList = node.children();
-                     parentNode = node;
-                  }
-                  if(!currentNodeList.hasMoreElements() || (!childBlock && !matchFound)) {
-                     currentNodeList=topLevelNodes;
-                     parentNode = null;
-                  }
-                  if(currentNodeList.hasMoreElements())
-                     node = (DefaultMutableTreeNode)currentNodeList.nextElement();
-                  else if(matchFound || fromTheTop)
-                     node = null;
-                  else {
-                     //this shouldn't happen if there are any remaining "removed" blocks. However, it could happen in some strange scenario so we'll try from the start again
-                     topLevelNodes = root.children();
-                     node = (DefaultMutableTreeNode)topLevelNodes.nextElement();
-                     currentNodeList = topLevelNodes;
-                     parentNode = null;
-                     fromTheTop=true;
-                  }
-               }
-            }
-         }
-      }
-      //actually remove the nodes
-      for(DefaultMutableTreeNode node : nodesToRemove)
-         treeModel.removeNodeFromParent(node);
-
-      //Now we can add new blocks with their children
-      for (int i = 0; i < newBlocks.size(); i++) {
-         PlsqlBlock temp = newBlocks.get(i);
-         int lastInsertionIndex = 0;
-         if (isBlockShownInNavigator(temp, null)) {
-            DefaultMutableTreeNode parentNode = getParentNode(root, temp);
-            if (parentNode != null) {
-               //if this is a child of a leaf ignore
-               DefaultMutableTreeNode leafParent = getParentNode(parentNode, temp);
-               if (leafParent == null) {
-                  //add to parent
-                  boolean expand = parentNode.isLeaf();
-                  addChildNode(parentNode, temp, ((NodeInfo) parentNode.getUserObject()).type);
-                  if (expand) {
-                     expandAll(jTree1, new TreePath(treeModel.getPathToRoot(parentNode)), true);
-                  }
-               }
-            } else {
-               //If a view add to views
-               PlsqlBlockType type = temp.getType();
-               if (type == PlsqlBlockType.VIEW) {
-                  boolean expand = false;
-                  DefaultMutableTreeNode viewsNode = null;
-                  int count = root.getChildCount();
-                  for (int x = 0; x < count; x++) {
-                     DefaultMutableTreeNode node = (DefaultMutableTreeNode) root.getChildAt(x);
-                     if (node.toString().equals("Views")) {
-                        viewsNode = node;
-
-                        //Check whether a leaf node
-                        if (viewsNode.isLeaf()) {
-                           expand = true;
+        Enumeration topLevelNodes = root.children();
+        if (topLevelNodes.hasMoreElements()) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) topLevelNodes.nextElement();
+            Enumeration currentNodeList = topLevelNodes;
+            DefaultMutableTreeNode parentNode = null;
+            for (int i = 0; i < changedBlocks.size(); i++) {
+                PlsqlBlock block = changedBlocks.get(i);
+                if (isBlockShownInNavigator(block, parentNode)) {
+                    boolean childBlock = (block.getType() != PlsqlBlockType.PACKAGE) && (block.getType() != PlsqlBlockType.PACKAGE_BODY);
+                    boolean matchFound = false;
+                    boolean fromTheTop = false;
+                    while (node != null && !matchFound) {
+                        if (node.getUserObject() instanceof NodeInfo) {
+                            NodeInfo nodeInfo = (NodeInfo) node.getUserObject();
+                            if ((nodeInfo.type == block.getType())
+                                    && ((nodeInfo.type == PlsqlBlockType.PACKAGE_BODY && nodeInfo.name.equals(block.getName())) || //workaround for issue with packages... Should really be fixed in a different way...
+                                    (((nodeInfo.startOffset != block.getStartOffset())
+                                    && (nodeInfo.startOffset == block.getPreviousStart()))
+                                    || ((nodeInfo.endOffset != block.getEndOffset())
+                                    && (nodeInfo.endOffset == block.getPreviousEnd()))))) {
+                                //we found the match
+                                nodeInfo.startOffset = block.getStartOffset();
+                                nodeInfo.endOffset = block.getEndOffset();
+                                nodeInfo.name = block.getName();
+                                nodeInfo.alias = block.getAlias();
+                                node.setUserObject(nodeInfo);
+                                matchFound = true;
+                            }
                         }
-                        break;
-                     }
-                  }
-
-                  if (viewsNode == null) {
-                     viewsNode = new DefaultMutableTreeNode("Views");
-                     treeModel.insertNodeInto(viewsNode, root, 0);
-                     expand = true;
-                  }
-
-                  NodeInfo nodeInfo = new NodeInfo(temp.getStartOffset(), temp.getEndOffset(),
-                          temp.getName(), temp.getAlias(), temp.getType());
-                  DefaultMutableTreeNode node = new DefaultMutableTreeNode(nodeInfo);
-                  treeModel.insertNodeInto(node, viewsNode, getChildIndex(viewsNode, node));
-
-                  //If the 'Views' node is newly added expand that
-                  if (expand) {
-                     expandAll(jTree1, new TreePath(treeModel.getPathToRoot(viewsNode)), true);
-                  }
-               } else if (type == PlsqlBlockType.PACKAGE) { //Parent node
-
-                  NodeInfo nodeInfo = new NodeInfo(temp.getStartOffset(), temp.getEndOffset(),
-                          temp.getName(), temp.getAlias(), temp.getType());
-                  DefaultMutableTreeNode node = new DefaultMutableTreeNode(nodeInfo);
-                  lastInsertionIndex = getRootIndex(root, node, lastInsertionIndex);
-                  treeModel.insertNodeInto(node, root, lastInsertionIndex);
-
-                  //Remove child nodes if there are in the parent level first
-//                  removeChildNodes(root, temp.getChildBlocks());
-                  //Add child nodes and expand the node
-                  addChildNodes(node, temp.getChildBlocks(), temp.getType());
-                  expandAll(jTree1, new TreePath(treeModel.getPathToRoot(node)), true);
-               } else if (type == PlsqlBlockType.PACKAGE_BODY) { //Parent node
-
-                  NodeInfo nodeInfo = new NodeInfo(temp.getStartOffset(), temp.getEndOffset(),
-                          temp.getName(), temp.getAlias(), temp.getType());
-                  DefaultMutableTreeNode node = new DefaultMutableTreeNode(nodeInfo);
-                  lastInsertionIndex = getRootIndex(root, node, lastInsertionIndex);
-                  treeModel.insertNodeInto(node, root, lastInsertionIndex);
-
-                  //Remove child nodes if there are in the parent level first
-//                  removeChildNodes(root, temp.getChildBlocks());
-                  //Add child nodes and expand the node
-                  addChildNodes(node, temp.getChildBlocks(), temp.getType());
-                  expandAll(jTree1, new TreePath(treeModel.getPathToRoot(node)), true);
-               } else if (type == PlsqlBlockType.FUNCTION_IMPL) { //Leaf node
-
-                  NodeInfo nodeInfo = new NodeInfo(temp.getStartOffset(), temp.getEndOffset(),
-                          temp.getName(), temp.getAlias(), temp.getType());
-                  DefaultMutableTreeNode node = new DefaultMutableTreeNode(nodeInfo);
-                  lastInsertionIndex = getRootIndex(root, node, lastInsertionIndex);
-                  treeModel.insertNodeInto(node, root, lastInsertionIndex);
-               } else if (type == PlsqlBlockType.PROCEDURE_IMPL) { //Leaf node
-
-                  NodeInfo nodeInfo = new NodeInfo(temp.getStartOffset(), temp.getEndOffset(),
-                          temp.getName(), temp.getAlias(), temp.getType());
-                  DefaultMutableTreeNode node = new DefaultMutableTreeNode(nodeInfo);
-                  lastInsertionIndex = getRootIndex(root, node, lastInsertionIndex);
-                  treeModel.insertNodeInto(node, root, lastInsertionIndex);
-               }
+                        if (currentNodeList == topLevelNodes) {
+                            currentNodeList = node.children();
+                            parentNode = node;
+                        }
+                        if (!currentNodeList.hasMoreElements() || (!childBlock && !matchFound)) {
+                            currentNodeList = topLevelNodes;
+                            parentNode = null;
+                        }
+                        if (currentNodeList.hasMoreElements()) {
+                            node = (DefaultMutableTreeNode) currentNodeList.nextElement();
+                        } else if (matchFound || fromTheTop) {
+                            node = null;
+                        } else {
+                            //this shouldn't happen if there are any remaining "changed" blocks. However, it could happen in some strange scenario so we'll try from the start again
+                            topLevelNodes = root.children();
+                            node = (DefaultMutableTreeNode) topLevelNodes.nextElement();
+                            currentNodeList = topLevelNodes;
+                            parentNode = null;
+                            fromTheTop = true;
+                        }
+                    }
+                }
             }
-         }
-      }
+        }
+
+        //find nodes to remove (but don't actually remove them...)
+        topLevelNodes = root.children();
+        List<DefaultMutableTreeNode> nodesToRemove = new ArrayList<DefaultMutableTreeNode>();
+        if (topLevelNodes.hasMoreElements()) {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) topLevelNodes.nextElement();
+            DefaultMutableTreeNode parentNode = null;
+            Enumeration currentNodeList = topLevelNodes;
+            for (int i = 0; i < removedBlocks.size(); i++) {
+                PlsqlBlock block = removedBlocks.get(i);
+                if (isBlockShownInNavigator(block, parentNode)) {
+                    boolean childBlock = (block.getType() != PlsqlBlockType.PACKAGE) && (block.getType() != PlsqlBlockType.PACKAGE_BODY);
+                    boolean matchFound = false;
+                    boolean fromTheTop = false;
+                    while (node != null && !matchFound) {
+                        if (node.getUserObject() instanceof NodeInfo) {
+                            NodeInfo nodeInfo = (NodeInfo) node.getUserObject();
+                            if ((nodeInfo.type == block.getType())
+                                    && (nodeInfo.name.equals(block.getName()))
+                                    && (nodeInfo.type == PlsqlBlockType.PACKAGE_BODY || //workaround for issue with packages... Should really be fixed in a different way...
+                                    ((nodeInfo.startOffset == block.getStartOffset())
+                                    || (nodeInfo.endOffset == block.getEndOffset())
+                                    || (nodeInfo.startOffset == block.getPreviousStart())
+                                    || (nodeInfo.endOffset == block.getPreviousEnd())))) {
+                                nodesToRemove.add(node);
+                                matchFound = true;
+                            }
+                        }
+                        //go to next candidate node
+                        if (currentNodeList == topLevelNodes) {
+                            currentNodeList = node.children();
+                            parentNode = node;
+                        }
+                        if (!currentNodeList.hasMoreElements() || (!childBlock && !matchFound)) {
+                            currentNodeList = topLevelNodes;
+                            parentNode = null;
+                        }
+                        if (currentNodeList.hasMoreElements()) {
+                            node = (DefaultMutableTreeNode) currentNodeList.nextElement();
+                        } else if (matchFound || fromTheTop) {
+                            node = null;
+                        } else {
+                            //this shouldn't happen if there are any remaining "removed" blocks. However, it could happen in some strange scenario so we'll try from the start again
+                            topLevelNodes = root.children();
+                            node = (DefaultMutableTreeNode) topLevelNodes.nextElement();
+                            currentNodeList = topLevelNodes;
+                            parentNode = null;
+                            fromTheTop = true;
+                        }
+                    }
+                }
+            }
+        }
+        //actually remove the nodes
+        for (DefaultMutableTreeNode node : nodesToRemove) {
+            treeModel.removeNodeFromParent(node);
+        }
+
+        //Now we can add new blocks with their children
+        for (int i = 0; i < newBlocks.size(); i++) {
+            PlsqlBlock temp = newBlocks.get(i);
+            int lastInsertionIndex = 0;
+            if (isBlockShownInNavigator(temp, null)) {
+                DefaultMutableTreeNode parentNode = getParentNode(root, temp);
+                if (parentNode != null) {
+                    //if this is a child of a leaf ignore
+                    DefaultMutableTreeNode leafParent = getParentNode(parentNode, temp);
+                    if (leafParent == null) {
+                        //add to parent
+                        boolean expand = parentNode.isLeaf();
+                        addChildNode(parentNode, temp, ((NodeInfo) parentNode.getUserObject()).type);
+                        if (expand) {
+                            expandAll(jTree1, new TreePath(treeModel.getPathToRoot(parentNode)), true);
+                        }
+                    }
+                } else {
+                    //If a view add to views
+                    PlsqlBlockType type = temp.getType();
+                    if (type == PlsqlBlockType.VIEW) {
+                        boolean expand = false;
+                        DefaultMutableTreeNode viewsNode = null;
+                        int count = root.getChildCount();
+                        for (int x = 0; x < count; x++) {
+                            DefaultMutableTreeNode node = (DefaultMutableTreeNode) root.getChildAt(x);
+                            if (node.toString().equals("Views")) {
+                                viewsNode = node;
+
+                                //Check whether a leaf node
+                                if (viewsNode.isLeaf()) {
+                                    expand = true;
+                                }
+                                break;
+                            }
+                        }
+
+                        if (viewsNode == null) {
+                            viewsNode = new DefaultMutableTreeNode("Views");
+                            treeModel.insertNodeInto(viewsNode, root, 0);
+                            expand = true;
+                        }
+
+                        NodeInfo nodeInfo = new NodeInfo(temp.getStartOffset(), temp.getEndOffset(),
+                                temp.getName(), temp.getAlias(), temp.getType());
+                        DefaultMutableTreeNode node = new DefaultMutableTreeNode(nodeInfo);
+                        treeModel.insertNodeInto(node, viewsNode, getChildIndex(viewsNode, node));
+
+                        //If the 'Views' node is newly added expand that
+                        if (expand) {
+                            expandAll(jTree1, new TreePath(treeModel.getPathToRoot(viewsNode)), true);
+                        }
+                    } else if (type == PlsqlBlockType.PACKAGE) { //Parent node
+
+                        NodeInfo nodeInfo = new NodeInfo(temp.getStartOffset(), temp.getEndOffset(),
+                                temp.getName(), temp.getAlias(), temp.getType());
+                        DefaultMutableTreeNode node = new DefaultMutableTreeNode(nodeInfo);
+                        lastInsertionIndex = getRootIndex(root, node, lastInsertionIndex);
+                        treeModel.insertNodeInto(node, root, lastInsertionIndex);
+
+                        //Remove child nodes if there are in the parent level first
+//                  removeChildNodes(root, temp.getChildBlocks());
+                        //Add child nodes and expand the node
+                        addChildNodes(node, temp.getChildBlocks(), temp.getType());
+                        expandAll(jTree1, new TreePath(treeModel.getPathToRoot(node)), true);
+                    } else if (type == PlsqlBlockType.PACKAGE_BODY) { //Parent node
+
+                        NodeInfo nodeInfo = new NodeInfo(temp.getStartOffset(), temp.getEndOffset(),
+                                temp.getName(), temp.getAlias(), temp.getType());
+                        DefaultMutableTreeNode node = new DefaultMutableTreeNode(nodeInfo);
+                        lastInsertionIndex = getRootIndex(root, node, lastInsertionIndex);
+                        treeModel.insertNodeInto(node, root, lastInsertionIndex);
+
+                        //Remove child nodes if there are in the parent level first
+//                  removeChildNodes(root, temp.getChildBlocks());
+                        //Add child nodes and expand the node
+                        addChildNodes(node, temp.getChildBlocks(), temp.getType());
+                        expandAll(jTree1, new TreePath(treeModel.getPathToRoot(node)), true);
+                    } else if (type == PlsqlBlockType.FUNCTION_IMPL) { //Leaf node
+
+                        NodeInfo nodeInfo = new NodeInfo(temp.getStartOffset(), temp.getEndOffset(),
+                                temp.getName(), temp.getAlias(), temp.getType());
+                        DefaultMutableTreeNode node = new DefaultMutableTreeNode(nodeInfo);
+                        lastInsertionIndex = getRootIndex(root, node, lastInsertionIndex);
+                        treeModel.insertNodeInto(node, root, lastInsertionIndex);
+                    } else if (type == PlsqlBlockType.PROCEDURE_IMPL) { //Leaf node
+
+                        NodeInfo nodeInfo = new NodeInfo(temp.getStartOffset(), temp.getEndOffset(),
+                                temp.getName(), temp.getAlias(), temp.getType());
+                        DefaultMutableTreeNode node = new DefaultMutableTreeNode(nodeInfo);
+                        lastInsertionIndex = getRootIndex(root, node, lastInsertionIndex);
+                        treeModel.insertNodeInto(node, root, lastInsertionIndex);
+                    }
+                }
+            }
+        }
 
 //      jTree1.updateUI();
-   }
+    }
 
     /**
      * Opens and focusses on the appropriate location of the document when the
@@ -820,6 +826,7 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
         }
         SwingUtilities.invokeLater(new Runnable() {
 
+            @Override
             public void run() {
                 JEditorPane[] panes = ec.getOpenedPanes();
                 if (panes != null && panes.length > 0) {
@@ -857,9 +864,9 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) parentNode.getChildAt(i);
             if (node.getUserObject() instanceof NodeInfo) {
                 NodeInfo nodeInfo = (NodeInfo) node.getUserObject();
-                if ((nodeInfo.name.equals(block.getName())) &&
-                        (nodeInfo.startOffset == block.getStartOffset()) &&
-                        (nodeInfo.endOffset == block.getEndOffset())) {
+                if ((nodeInfo.name.equals(block.getName()))
+                        && (nodeInfo.startOffset == block.getStartOffset())
+                        && (nodeInfo.endOffset == block.getEndOffset())) {
                     //we found the match
                     treeModel.removeNodeFromParent(node);
                     return true;
@@ -896,14 +903,15 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
      * @param pane The the editor pane which the document exists.
      */
     private void selectElementInPane(final JEditorPane pane) {
-        RequestProcessor.getDefault().post(new Runnable() {
+        RP.post(new Runnable() {
 
+            @Override
             public void run() {
                 BaseDocument bdoc = (BaseDocument) getDocument();
                 try {
                     pane.setCaretPosition(Utilities.getRowStart(bdoc, startOffset));
                 } catch (BadLocationException ex) {
-                    ex.printStackTrace();
+                    Exceptions.printStackTrace(ex);
                 }
             }
         });
@@ -961,10 +969,10 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
             }
 
             if ((userObj instanceof NodeInfo) && (childUserObj instanceof NodeInfo)) {
-                if ((((NodeInfo) userObj).type == PlsqlBlockType.PACKAGE) ||
-                        (((NodeInfo) userObj).type == PlsqlBlockType.PACKAGE_BODY)) {
-                    if ((((NodeInfo) childUserObj).type != PlsqlBlockType.PACKAGE) &&
-                            (((NodeInfo) childUserObj).type != PlsqlBlockType.PACKAGE_BODY)) {
+                if ((((NodeInfo) userObj).type == PlsqlBlockType.PACKAGE)
+                        || (((NodeInfo) userObj).type == PlsqlBlockType.PACKAGE_BODY)) {
+                    if ((((NodeInfo) childUserObj).type != PlsqlBlockType.PACKAGE)
+                            && (((NodeInfo) childUserObj).type != PlsqlBlockType.PACKAGE_BODY)) {
                         continue;
                     }
                 }
@@ -1010,10 +1018,10 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
                 NodeInfo block = (NodeInfo) (node.getUserObject());
                 if (PlsqlBlockType.VIEW == block.type) {
                     return viewIcon;
-                } else if ((PlsqlBlockType.PROCEDURE_IMPL == block.type) ||
-                        (PlsqlBlockType.FUNCTION_IMPL == block.type) ||
-                        (PlsqlBlockType.FUNCTION_DEF == block.type) ||
-                        (PlsqlBlockType.PROCEDURE_DEF == block.type)) {
+                } else if ((PlsqlBlockType.PROCEDURE_IMPL == block.type)
+                        || (PlsqlBlockType.FUNCTION_IMPL == block.type)
+                        || (PlsqlBlockType.FUNCTION_DEF == block.type)
+                        || (PlsqlBlockType.PROCEDURE_DEF == block.type)) {
                     if (block.name.endsWith("___")) {
                         return implementationMethodIcon;
                     } else if (block.name.endsWith("___")) {
@@ -1025,8 +1033,8 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
                     } else {
                         return publicMethodIcon;
                     }
-                } else if (PlsqlBlockType.PACKAGE == block.type ||
-                        PlsqlBlockType.PACKAGE_BODY == block.type) {
+                } else if (PlsqlBlockType.PACKAGE == block.type
+                        || PlsqlBlockType.PACKAGE_BODY == block.type) {
                     return pkgIcon;
                 }
             }

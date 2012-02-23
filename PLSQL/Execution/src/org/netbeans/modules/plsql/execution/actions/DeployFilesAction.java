@@ -79,6 +79,7 @@ import org.openide.windows.OutputListener;
 public class DeployFilesAction extends CookieAction {
 
    private static final PlsqlExecutorService executorService = Lookup.getDefault().lookup(PlsqlExecutorService.class);
+    private static final RequestProcessor RP = new RequestProcessor(DeployFilesAction.class);
    private Project project;
    //private DatabaseConnection connection;
    private Node[] activatedNodes;
@@ -144,8 +145,7 @@ public class DeployFilesAction extends CookieAction {
       if (connection == null || connection.getJDBCConnection() == null) {
          return;
       }
-      RequestProcessor processor = RequestProcessor.getDefault();
-      processor.post(new MultipleDbFileExecutionHandler(connection, connectionProvider, files, isTemporyFile));
+      RP.post(new MultipleDbFileExecutionHandler(connection, connectionProvider, files, isTemporyFile));
    }
 
    private void execute(File[] files) throws IOException {
@@ -153,8 +153,7 @@ public class DeployFilesAction extends CookieAction {
       project = activatedNodes[0].getLookup().lookup(Project.class);
 
       connectionProvider = DatabaseConnectionManager.getInstance(project);
-      RequestProcessor processor = RequestProcessor.getDefault();
-      processor.post(new MultipleDbFileExecutionHandler(connectionProvider, files));
+      RP.post(new MultipleDbFileExecutionHandler(connectionProvider, files));
    }
 
    private static class DeploymentError implements OutputListener {

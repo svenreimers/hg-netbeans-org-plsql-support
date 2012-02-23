@@ -42,7 +42,6 @@
 package org.netbeans.modules.plsql.annotation;
 
 import org.netbeans.modules.plsql.annotation.annotations.PlsqlAnnotation;
-import org.netbeans.modules.plsql.utilities.PlsqlFileUtil;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -78,6 +77,7 @@ public class PlsqlValidateFilesSummary extends CookieAction {
    protected void performAction(final Node[] activatedNodes) {
       RequestProcessor.getDefault().post(new Runnable() {
 
+         @Override
          public void run() {
             ProgressHandle handle = ProgressHandleFactory.createHandle("Validating files of the component...");
             handle.start();

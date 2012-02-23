@@ -92,6 +92,7 @@ public class DatabaseConnectionManager {
     private PropertyChangeSupport changeSupport = new PropertyChangeSupport(this);
     private static FileObject tempFolder = null;
     private static final Logger logger = Logger.getLogger(DatabaseConnectionManager.class.getName());
+    private static final RequestProcessor RP = new RequestProcessor(DatabaseConnectionManager.class);
 
     static {
         String tempDir = System.getProperty("java.io.tmpdir");
@@ -480,7 +481,7 @@ public class DatabaseConnectionManager {
                }
                if ((connection.getJDBCConnection() == null || connection.getJDBCConnection().isClosed())) {
                  if (SwingUtilities.isEventDispatchThread()) {
-                    Task request = RequestProcessor.getDefault().post(new Runnable() {
+                    Task request = RP.post(new Runnable() {
 
                        @Override
                        public void run() {

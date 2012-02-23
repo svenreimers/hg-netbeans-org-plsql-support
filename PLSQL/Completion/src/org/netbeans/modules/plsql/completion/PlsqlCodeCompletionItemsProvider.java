@@ -60,6 +60,7 @@ import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.lexer.Token;
 import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.editor.BaseDocument;
+import org.openide.util.Exceptions;
 
 /**
  *
@@ -802,7 +803,7 @@ public class PlsqlCodeCompletionItemsProvider {
       try {
          sql = doc.getText(start, end - start);
       } catch (BadLocationException ex) {
-         ex.printStackTrace();
+         Exceptions.printStackTrace(ex);
       }
 
       if (!sql.equals("")) {

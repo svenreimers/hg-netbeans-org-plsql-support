@@ -175,7 +175,7 @@ public class PlsqlNavigatorImpl implements NavigatorPanel, Observer {
             editorDocument = ec.openDocument();
             blockFactory.initHierarchy(editorDocument);
          } catch (IOException ex) {
-            ex.printStackTrace();
+            Exceptions.printStackTrace(ex);
          }
                   
          if (oldObserver != null) {
