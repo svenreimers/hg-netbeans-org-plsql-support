@@ -19,7 +19,7 @@
                     <build-prerequisite/>
                     <compile-dependency/>
                     <run-dependency>
-                        <specification-version>1.8.13</specification-version>
+                        <specification-version>1.8.14</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
@@ -27,13 +27,13 @@
                     <build-prerequisite/>
                     <compile-dependency/>
                     <run-dependency>
-                        <specification-version>1.8.5</specification-version>
+                        <specification-version>1.8.6</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
                     <code-name-base>org.netbeans.modules.plsql.debug</code-name-base>
                     <run-dependency>
-                        <specification-version>1.7.19</specification-version>
+                        <specification-version>1.7.20</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
@@ -41,7 +41,7 @@
                     <build-prerequisite/>
                     <compile-dependency/>
                     <run-dependency>
-                        <specification-version>1.8.20</specification-version>
+                        <specification-version>1.8.21</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
@@ -83,19 +83,19 @@
                     <build-prerequisite/>
                     <compile-dependency/>
                     <run-dependency>
-                        <specification-version>1.8.8</specification-version>
+                        <specification-version>1.8.9</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
                     <code-name-base>org.netbeans.modules.plsql.navigator</code-name-base>
                     <run-dependency>
-                        <specification-version>1.8.1</specification-version>
+                        <specification-version>1.8.2</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
                     <code-name-base>org.netbeans.modules.plsql.palette</code-name-base>
                     <run-dependency>
-                        <specification-version>1.8.9</specification-version>
+                        <specification-version>1.8.10</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
@@ -117,7 +117,7 @@
                     <build-prerequisite/>
                     <compile-dependency/>
                     <run-dependency>
-                        <specification-version>1.8.19</specification-version>
+                        <specification-version>1.8.20</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
