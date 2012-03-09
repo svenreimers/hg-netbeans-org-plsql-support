@@ -67,67 +67,18 @@
             <attr name="SystemFileSystem.localizingBundle" stringvalue="org.netbeans.modules.plsql.filetype.Bundle"/>
          </file>
         </folder>
-   </folder>
+   </folder>  
    <folder name="Templates">
         <folder name="PLSQL">
          <attr name="position" intvalue="2"/>
-         <attr name="SystemFileSystem.localizingBundle" stringvalue="org.netbeans.modules.plsql.filetype.Bundle"/>
-         <file name="LogicalUnit.api" url="resources/template.api">
-            <attr name="SystemFileSystem.localizingBundle" stringvalue="org.netbeans.modules.plsql.filetype.Bundle"/>
-            <attr name="template" boolvalue="true"/>
-            <attr name="templateCategory" stringvalue="pl-sql"/>
-            <attr name="templateWizardURL" urlvalue="nbresloc:/org/netbeans/modules/plsql/filetype/resources/api.html"/>
-            <attr name="position" intvalue="1"/>
-         </file>
-         <file name="LogicalUnit.apy" url="resources/template.apy">
-            <attr name="SystemFileSystem.localizingBundle" stringvalue="org.netbeans.modules.plsql.filetype.Bundle"/>
-            <attr name="template" boolvalue="true"/>
-            <attr name="templateCategory" stringvalue="pl-sql"/>
-            <attr name="templateWizardURL" urlvalue="nbresloc:/org/netbeans/modules/plsql/filetype/resources/apy.html"/>
-            <attr name="position" intvalue="2"/>
-         </file>
-         <file name="Report.rdf" url="resources/template.rdf">
-            <attr name="SystemFileSystem.localizingBundle" stringvalue="org.netbeans.modules.plsql.filetype.Bundle"/>
-            <attr name="template" boolvalue="true"/>
-            <attr name="templateCategory" stringvalue="pl-sql"/>
-            <attr name="templateWizardURL" urlvalue="nbresloc:/org/netbeans/modules/plsql/filetype/resources/rdf.html"/>
-            <attr name="position" intvalue="3"/>
-         </file>
-         <file name="Module.cre" url="resources/template.cre">
-            <attr name="SystemFileSystem.localizingBundle" stringvalue="org.netbeans.modules.plsql.filetype.Bundle"/>
-            <attr name="template" boolvalue="true"/>
-            <attr name="templateCategory" stringvalue="pl-sql"/>
-            <attr name="templateWizardURL" urlvalue="nbresloc:/org/netbeans/modules/plsql/filetype/resources/cre.html"/>
-            <attr name="position" intvalue="4"/>
-         </file>
-         <file name="Script.cdb" url="resources/template.cdb">
-            <attr name="SystemFileSystem.localizingBundle" stringvalue="org.netbeans.modules.plsql.filetype.Bundle"/>
-            <attr name="template" boolvalue="true"/>
-            <attr name="templateCategory" stringvalue="pl-sql"/>
-            <attr name="templateWizardURL" urlvalue="nbresloc:/org/netbeans/modules/plsql/filetype/resources/cdb.html"/>
-            <attr name="position" intvalue="5"/>
-         </file>
-         <file name="Script.upg" url="resources/template.upg">
-            <attr name="SystemFileSystem.localizingBundle" stringvalue="org.netbeans.modules.plsql.filetype.Bundle"/>
-            <attr name="template" boolvalue="true"/>
-            <attr name="templateCategory" stringvalue="pl-sql"/>
-            <attr name="templateWizardURL" urlvalue="nbresloc:/org/netbeans/modules/plsql/filetype/resources/upg.html"/>
-            <attr name="position" intvalue="6"/>
-         </file>
+         <attr name="SystemFileSystem.localizingBundle" stringvalue="org.netbeans.modules.plsql.filetype.Bundle"/>        
          <file name="Empty.sql">
             <attr name="SystemFileSystem.localizingBundle" stringvalue="org.netbeans.modules.plsql.filetype.Bundle"/>
-            <attr name="template" boolvalue="true"/>
+                <attr name="template" boolvalue="true"/>
             <attr name="templateCategory" stringvalue="pl-sql"/>
             <attr name="templateWizardURL" urlvalue="nbresloc:/org/netbeans/modules/plsql/filetype/resources/empty.html"/>
             <attr name="position" intvalue="7"/>
-         </file>
-         <file name="InsertScript.ins" url="resources/template.ins">
-            <attr name="SystemFileSystem.localizingBundle" stringvalue="org.netbeans.modules.plsql.filetype.Bundle"/>
-            <attr name="template" boolvalue="true"/>
-            <attr name="templateCategory" stringvalue="pl-sql"/>
-            <attr name="templateWizardURL" urlvalue="nbresloc:/org/netbeans/modules/plsql/filetype/resources/ins.html"/>
-            <attr name="position" intvalue="8"/>
-         </file>
+         </file>        
       </folder>
    </folder>   
    <folder name="Actions">
