@@ -4,5 +4,5 @@ Created-By: 1.6.0_22-b22 (Sun Microsystems Inc.)
 OpenIDE-Module: org.netbeans.modules.plsql.kit
 OpenIDE-Module-Localizing-Bundle: org/netbeans/modules/plsql/kit/Bundl
  e.properties
-OpenIDE-Module-Specification-Version: 1.0.79
+OpenIDE-Module-Specification-Version: 1.0.80
 
