@@ -533,10 +533,6 @@ public class DatabaseConnectionManager {
         return templateConnection != null;
     }
 
-    public boolean hasReverseConnection() {
-        return reverseConnection != null;
-    }
-
     public boolean isOnline() {
         return online;
     }
@@ -602,14 +598,43 @@ public class DatabaseConnectionManager {
         }
     }
 
+    /**
+     * Set Reverse Engineering DatabaseConnection
+     * @param newConnection
+     */
     public void setReverseConnection(DatabaseConnection newConnection) {
         DatabaseConnection oldConnection = this.reverseConnection;
         this.reverseConnection = newConnection;
         changeSupport.firePropertyChange(REVERSE_DATABASE_KEY, oldConnection, newConnection);
     }
 
+    /**
+     * Returns Reverse Engineering DatabaseConnection
+     * @return
+     */
     public DatabaseConnection getReverseConnection() {
         return reverseConnection;
+    }
+
+    /**
+     * Returns true is Reverse Engineering DatabaseConnection has been set.
+     * @return
+     */
+    public boolean hasReverseConnection() {
+        return reverseConnection != null;
+    }
+
+    /**
+     * Returns true is Reverse Engineering DatabaseConnection is online.
+     * @return
+     */
+    public boolean isReverseOnline() {
+        try {
+            return hasReverseConnection() && reverseConnection.getJDBCConnection() != null && reverseConnection.getJDBCConnection().isValid(1000);
+        } catch (SQLException ex) {
+            Exceptions.printStackTrace(ex);
+        }
+        return false;
     }
 
     private class ConnectionErrorListener implements ExceptionListener {
