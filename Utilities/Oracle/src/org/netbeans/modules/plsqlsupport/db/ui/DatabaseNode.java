@@ -63,102 +63,109 @@ import org.openide.util.lookup.Lookups;
 
 public class DatabaseNode extends AbstractNode {
 
-   private static final Image ONLINE_ICON = ImageUtilities.loadImage("org/netbeans/modules/plsqlsupport/db/ui/resources/database_online.gif");
-   private static final Image OFFLINE_ICON = ImageUtilities.loadImage("org/netbeans/modules/plsqlsupport/db/ui/resources/database_offline.gif");
-   private static final Image NO_CONNECTION_ICON = ImageUtilities.loadImage("org/netbeans/modules/plsqlsupport/db/ui/resources/database_notconnected.gif");
-   private Project project;   
+    private static final Image ONLINE_ICON = ImageUtilities.loadImage("org/netbeans/modules/plsqlsupport/db/ui/resources/database_online.gif");
+    private static final Image OFFLINE_ICON = ImageUtilities.loadImage("org/netbeans/modules/plsqlsupport/db/ui/resources/database_offline.gif");
+    private static final Image NO_CONNECTION_ICON = ImageUtilities.loadImage("org/netbeans/modules/plsqlsupport/db/ui/resources/database_notconnected.gif");
+    private Project project;
 
-   public DatabaseNode(Project project) {
-      super(Children.LEAF, Lookups.fixed(project));
-      this.project = project;
-      setName("Database");
-      DatabaseConnectionManager dbConnectionProvider = project.getLookup().lookup(DatabaseConnectionManager.class);
-      if (dbConnectionProvider != null)
-         dbConnectionProvider.addPropertyChangeListener(new ConnectionChangeListener());
-   }
+    public DatabaseNode(Project project) {
+        super(Children.LEAF, Lookups.fixed(project));
+        this.project = project;
+        setName("Database");
+        DatabaseConnectionManager dbConnectionProvider = project.getLookup().lookup(DatabaseConnectionManager.class);
+        if (dbConnectionProvider != null) {
+            dbConnectionProvider.addPropertyChangeListener(new ConnectionChangeListener());
+        }
+    }
 
-   public static NodeFactory createFactory() {
-      return new Factory();
-   }
+    public static NodeFactory createFactory() {
+        return new Factory();
+    }
 
-   @Override
-   public Image getIcon(int type) {
-      DatabaseConnectionManager dbConnectionProvider = project.getLookup().lookup(DatabaseConnectionManager.class);
-      if (!dbConnectionProvider.hasConnection())
-         return NO_CONNECTION_ICON;
-      return dbConnectionProvider.isOnline() ? ONLINE_ICON : OFFLINE_ICON;
-   }
+    @Override
+    public Image getIcon(int type) {
+        DatabaseConnectionManager dbConnectionProvider = project.getLookup().lookup(DatabaseConnectionManager.class);
+        if (!dbConnectionProvider.hasConnection()) {
+            return NO_CONNECTION_ICON;
+        }
+        return dbConnectionProvider.isOnline() ? ONLINE_ICON : OFFLINE_ICON;
+    }
 
-   @Override
-   public Image getOpenedIcon(int type) {
-      return getIcon(type);
-   }
+    @Override
+    public Image getOpenedIcon(int type) {
+        return getIcon(type);
+    }
 
-   @Override
-   public Action[] getActions(boolean context) {
-      List<? extends Action> actions = Utilities.actionsForPath("Databases/Nodes/Oracle");
-      return actions.toArray(new Action[actions.size()]);
-   }
+    @Override
+    public Action[] getActions(boolean context) {
+        List<? extends Action> actions = Utilities.actionsForPath("Databases/Nodes/Oracle");
+        return actions.toArray(new Action[actions.size()]);
+    }
 
-   @Override
-   public String getHtmlDisplayName() {
-      return getDisplayName(true);
-   }
+    @Override
+    public String getHtmlDisplayName() {
+        return getDisplayName(true);
+    }
 
-   @Override
-   public String getDisplayName() {
-      return getDisplayName(false);
-   }
+    @Override
+    public String getDisplayName() {
+        return getDisplayName(false);
+    }
 
-   private String getDisplayName(boolean addHTML) {
-      String name = NbBundle.getMessage(getClass(), "LBL_DatabaseNodeName"); // NOI18N
-      DatabaseConnectionManager connectionProvider = project.getLookup().lookup(DatabaseConnectionManager.class);
-      DatabaseConnection[] connections = connectionProvider.getDatabaseConnections();
-      if (connections.length > 0) {
-         String url = connections[0].getDatabaseURL();
-         String alias = connections[0].getDisplayName();
-         if(alias !=null && !alias.equals(connections[0].getName()))
-             name = name + " " + alias;
-         url = connections[0].getUser() + "@" + url.substring(url.lastIndexOf("@") + 1);
-         if (connectionProvider.isOnline())
-            name = name + " [" + url + "]";
-         else if (addHTML)
-            name = name + " [<s>" + url + "</s>]";
-      } else if (addHTML)
-         name = "<font color='AAAAAA'>" + name + "</font>";
-      return name;
-   }
-
-   private void updateCache() {
-      DatabaseConnectionManager connectionProvider = project.getLookup().lookup(DatabaseConnectionManager.class);
-      DatabaseConnection[] connections = connectionProvider.getDatabaseConnections();
-      if (connections.length > 0) {
-         DatabaseContentManager dbCache = DatabaseContentManager.getInstance(connections[0]);
-         if(dbCache!=null)
-            dbCache.updateCache(connectionProvider);
-      }
-   }
-   private static class Factory implements NodeFactory {
-
-      public Factory() {}
-
-      public NodeList createNodes(Project project) {
-         return NodeFactorySupport.fixedNodeList(new DatabaseNode(project));
-      }
-   }
-
-   private class ConnectionChangeListener implements PropertyChangeListener {
-
-      public ConnectionChangeListener() {}
-
-      public void propertyChange(PropertyChangeEvent event) {
-         SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-               fireIconChange();
-               setDisplayName(getHtmlDisplayName());
-               updateCache();
+    private String getDisplayName(boolean addHTML) {
+        String name = NbBundle.getMessage(getClass(), "LBL_DatabaseNodeName"); // NOI18N
+        DatabaseConnectionManager connectionProvider = project.getLookup().lookup(DatabaseConnectionManager.class);
+        List<DatabaseConnection> connections = connectionProvider.getDatabaseConnections();
+        if (!connections.isEmpty()) {
+            String url = connections.get(0).getDatabaseURL();
+            String alias = connections.get(0).getDisplayName();
+            if (alias != null && !alias.equals(connections.get(0).getName())) {
+                name = name + " " + alias;
             }
-         });
-      }
-   }
+            url = connections.get(0).getUser() + "@" + url.substring(url.lastIndexOf("@") + 1);
+            if (connectionProvider.isOnline()) {
+                name = name + " [" + url + "]";
+            } else if (addHTML) {
+                name = name + " [<s>" + url + "</s>]";
+            }
+        } else if (addHTML) {
+            name = "<font color='AAAAAA'>" + name + "</font>";
+        }
+        return name;
+    }
+
+    private void updateCache() {
+        DatabaseConnectionManager connectionProvider = project.getLookup().lookup(DatabaseConnectionManager.class);
+        List<DatabaseConnection> connections = connectionProvider.getDatabaseConnections();
+        if (!connections.isEmpty()) {
+            DatabaseContentManager dbCache = DatabaseContentManager.getInstance(connections.get(0));
+            if (dbCache != null) {
+                dbCache.updateCache(connectionProvider);
+            }
+        }
+    }
+
+    private static class Factory implements NodeFactory {
+
+        @Override
+        public NodeList createNodes(Project project) {
+            return NodeFactorySupport.fixedNodeList(new DatabaseNode(project));
+        }
+    }
+
+    private class ConnectionChangeListener implements PropertyChangeListener {
+
+        @Override
+        public void propertyChange(PropertyChangeEvent event) {
+            SwingUtilities.invokeLater(new Runnable() {
+
+                @Override
+                public void run() {
+                    fireIconChange();
+                    setDisplayName(getHtmlDisplayName());
+                    updateCache();
+                }
+            });
+        }
+    }
 }

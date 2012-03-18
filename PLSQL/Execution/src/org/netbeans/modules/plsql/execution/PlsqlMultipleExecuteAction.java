@@ -198,13 +198,13 @@ public final class PlsqlMultipleExecuteAction extends CookieAction {
 
         JMenu menu = new JMenu(getName());
         ActionListener buttonListener = new ButtonListener();
-        DatabaseConnection[] databaseConnections = connectionProvider.getDatabaseConnections();
-        for (int i = 0; i < databaseConnections.length; i++) {
-            JMenuItem item = new JMenuItem(formatDbConnectionName(databaseConnections[i]));
-            item.putClientProperty(DATABASE_CONNECTION_KEY, databaseConnections[i]);
+        List<DatabaseConnection> databaseConnections = connectionProvider.getDatabaseConnections();
+        for (int i = 0; i < databaseConnections.size(); i++) {
+            JMenuItem item = new JMenuItem(formatDbConnectionName(databaseConnections.get(i)));
+            item.putClientProperty(DATABASE_CONNECTION_KEY, databaseConnections.get(i));
             item.addActionListener(buttonListener);
             menu.add(item);
-            if (i == 0 && databaseConnections.length > 1) {
+            if (i == 0 && databaseConnections.size() > 1) {
                 menu.add(new JSeparator());
             }
         }
