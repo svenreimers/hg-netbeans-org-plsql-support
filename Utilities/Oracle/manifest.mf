@@ -5,6 +5,6 @@ OpenIDE-Module: org.netbeans.modules.plsqlsupport.db
 OpenIDE-Module-Localizing-Bundle: org/netbeans/modules/plsqlsupport/db
  /Bundle.properties
 OpenIDE-Module-Layer: org/netbeans/modules/plsqlsupport/db/layer.xml
-OpenIDE-Module-Specification-Version: 1.8.21
+OpenIDE-Module-Specification-Version: 1.8.22
 AutoUpdate-Show-In-Client: false
 

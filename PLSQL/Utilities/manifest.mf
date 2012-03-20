@@ -5,5 +5,5 @@ AutoUpdate-Show-In-Client: false
 OpenIDE-Module: org.netbeans.modules.plsql.utilities
 OpenIDE-Module-Localizing-Bundle: org/netbeans/modules/plsql/utilities
  /Bundle.properties
-OpenIDE-Module-Specification-Version: 1.7.20
+OpenIDE-Module-Specification-Version: 1.7.21
 
