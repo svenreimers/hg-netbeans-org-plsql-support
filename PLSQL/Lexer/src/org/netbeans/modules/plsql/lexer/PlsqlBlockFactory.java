@@ -2186,13 +2186,15 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
                 } else if ((tokenID == PlsqlTokenId.OPERATOR) && (image.equals(";"))) {
                     PlsqlBlock block = checkEnd(tempToken, ts);
                     //check whether this is the parent can happen in a remove
-                    if (!isEqual(parent, block)) {
-                        if ((block != null) && (checkExisting(block, immediateBlockHier) == false)) {
-                            addImmediateChildren(block, immediateBlockHier);
-                            immediateBlockHier.add(block);
-                            newBlocks.add(block);
-                            if (parent != null) {
-                                block.setParent(parent);
+                    if (block != null && (block.getType() != PlsqlBlockType.FUNCTION_IMPL && block.getType() != PlsqlBlockType.PROCEDURE_IMPL)) {
+                        if (!isEqual(parent, block)) {
+                            if ((block != null) && (checkExisting(block, immediateBlockHier) == false)) {
+                                addImmediateChildren(block, immediateBlockHier);
+                                immediateBlockHier.add(block);
+                                newBlocks.add(block);
+                                if (parent != null) {
+                                    block.setParent(parent);
+                                }
                             }
                         }
                     }
