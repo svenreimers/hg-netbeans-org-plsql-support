@@ -69,7 +69,7 @@ public final class ViewDataAction extends CookieAction {
      */
     @Override
     protected void performAction(Node[] activatedNodes) {
-        String selectStatement = "SELECT ${*} FROM " + getSelectedViewOrTable(activatedNodes) + ";\n${cursor}";
+        String selectStatement = "SELECT * FROM " + getSelectedViewOrTable(activatedNodes) + ";\n";
         SQLCommandWindow.createSQLCommandWindow(activatedNodes, selectStatement, null);
     }
 

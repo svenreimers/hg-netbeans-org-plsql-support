@@ -106,7 +106,7 @@ public final class CreateTestBlockAction extends CookieAction {
             return;
         }
 
-        String tempTemplate = "";
+        String tempTemplate = "-- Enter values for your parameters. Use enter to move to the next parameter\n";
 
         Project project = FileOwnerQuery.getOwner(dataObject.getPrimaryFile());
         if (project == null) {
@@ -119,10 +119,10 @@ public final class CreateTestBlockAction extends CookieAction {
         DatabaseConnection databaseConnection = dbConnectionProvider != null ? dbConnectionProvider.getPooledDatabaseConnection(false) : null;
         try {
             if (selectedBlock != null && selectedBlock.getType() == VIEW) {
-                tempTemplate = "SELECT ${*} FROM " + selectedName + ";\n${cursor}";
+                tempTemplate = tempTemplate + "SELECT ${*} FROM " + selectedName + ";\n${cursor}";
             } else if (selectedBlock != null && selectedBlock.getType() == CURSOR) {
                 try {
-                    tempTemplate = doc.getText(selectedBlock.getStartOffset(), selectedBlock.getEndOffset() - selectedBlock.getStartOffset());
+                    tempTemplate = tempTemplate + doc.getText(selectedBlock.getStartOffset(), selectedBlock.getEndOffset() - selectedBlock.getStartOffset());
                 } catch (BadLocationException ex) {
                     //Failed to extract statement from cursor. This shouldn't happen, but if it does - do nothing;
                     return;
@@ -183,7 +183,7 @@ public final class CreateTestBlockAction extends CookieAction {
                     if (selectedBlock.getParent() != null) {
                         selectedName = selectedBlock.getParent().getName() + "." + selectedBlock.getName();
                     }
-                    tempTemplate = createMethodTemplate(doc);
+                    tempTemplate = tempTemplate + createMethodTemplate(doc);
                 } catch (NotConnectedToDbException e) {
                     Exceptions.printStackTrace(e);
                 }
@@ -357,7 +357,7 @@ public final class CreateTestBlockAction extends CookieAction {
             }
 
             //Now we have got the parameters and types
-            tempTemplate = "DECLARE\n";
+            tempTemplate = tempTemplate +  "DECLARE\n";
             for (int i = 0; i < keys.size(); i++) {
                 boolean out = false;
                 boolean in = false;
