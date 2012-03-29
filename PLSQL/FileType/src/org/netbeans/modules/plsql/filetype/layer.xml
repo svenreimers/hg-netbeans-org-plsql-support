@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE filesystem PUBLIC "-//NetBeans//DTD Filesystem 1.2//EN" "http://www.netbeans.org/dtds/filesystem-1_2.dtd">
-<filesystem>   
+<filesystem>
    <folder name="Loaders">
       <folder name="text">
             <folder name="x-plsql">
@@ -56,31 +56,31 @@
       </folder>
    </folder>
    <folder name="Services">
-      <folder name="JavaHelp">
+<!--      <folder name="JavaHelp">
          <file name="org-netbeans-modules-plsql-helpset.xml" url="plsql-helpset.xml">
             <attr name="position" intvalue="4230"/>
          </file>
-      </folder>
+      </folder>-->
       <folder name="MIMEResolver">
          <file name="PlsqlResolver.xml" url="PlsqlResolver.xml">
             <attr name="position" intvalue="2"/>
             <attr name="SystemFileSystem.localizingBundle" stringvalue="org.netbeans.modules.plsql.filetype.Bundle"/>
          </file>
         </folder>
-   </folder>  
+   </folder>
    <folder name="Templates">
         <folder name="PLSQL">
          <attr name="position" intvalue="2"/>
-         <attr name="SystemFileSystem.localizingBundle" stringvalue="org.netbeans.modules.plsql.filetype.Bundle"/>        
+         <attr name="SystemFileSystem.localizingBundle" stringvalue="org.netbeans.modules.plsql.filetype.Bundle"/>
          <file name="Empty.sql">
             <attr name="SystemFileSystem.localizingBundle" stringvalue="org.netbeans.modules.plsql.filetype.Bundle"/>
                 <attr name="template" boolvalue="true"/>
             <attr name="templateCategory" stringvalue="pl-sql"/>
             <attr name="templateWizardURL" urlvalue="nbresloc:/org/netbeans/modules/plsql/filetype/resources/empty.html"/>
             <attr name="position" intvalue="7"/>
-         </file>        
+         </file>
       </folder>
-   </folder>   
+   </folder>
    <folder name="Actions">
       <folder name="PLSQL">
          <attr name="SystemFileSystem.localizingBundle" stringvalue="org.netbeans.modules.plsql.filetype.Bundle"/>
