@@ -212,7 +212,7 @@ public class PlsqlFileExecutor {
                 nonCommentQuery.append(line).append("\n");
             }
         }
-        nonCommentQuery.deleteCharAt(nonCommentQuery.length() - 1);
+            nonCommentQuery.deleteCharAt(nonCommentQuery.length() - 1);
         
         String newQuery = "";
         String token;
@@ -733,7 +733,7 @@ public class PlsqlFileExecutor {
                                             ignoreDefines = "OFF".equalsIgnoreCase(token);
                                             if (!ignoreDefines && token.length() == 1) {
                                                  define.clear();
-		         define.add(token.charAt(0));
+                                                 define.add(token.charAt(0));
                                             }
                                         }
                                     }
@@ -1178,7 +1178,7 @@ public class PlsqlFileExecutor {
                         definesMap.put(alias.toUpperCase(Locale.ENGLISH), value);
                     }
                 } else if (tokenTxt.toUpperCase(Locale.ENGLISH).startsWith("SET ")) {
-                    StringTokenizer tokenizer = new StringTokenizer(tokenTxt);
+                    StringTokenizer tokenizer = new StringTokenizer(tokenTxt);                   
                     tokenizer.nextToken();
                     String alias;
                     boolean isNext = tokenizer.hasMoreTokens();
@@ -1189,11 +1189,6 @@ public class PlsqlFileExecutor {
                         alias = tokenizer.nextToken();
                     } else {
                         break;
-                    }
-                    
-                    if (alias.length() == 1) {
-	    define.clear();
-	    define.add(alias.charAt(0));//If define changed we catch it here
                     }
                 }
             }
