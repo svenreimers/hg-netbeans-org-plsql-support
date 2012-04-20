@@ -115,6 +115,9 @@ public class PlsqlAnnotationManager implements Observer {
    public void update(final Observable obj1, final Object obj2) {
       if ((obj1 instanceof PlsqlBlockFactory) && (obj2 instanceof Document)) {
          final PlsqlBlockFactory blockFactory = (PlsqlBlockFactory) obj1;
+         if(doc !=null){
+            clearAllAnnotations();
+         }
          doc = (Document) obj2;
 
          //Update start offsets of the changed annotations
@@ -143,6 +146,7 @@ public class PlsqlAnnotationManager implements Observer {
             detachAnnotation(temp);
          }
       }
+      plsqlAnnotations.clear();
       errorSysCalls.clear();
       allowedTablesOrViews.clear();
    }
