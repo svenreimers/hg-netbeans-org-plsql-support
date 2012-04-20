@@ -43,7 +43,7 @@ package org.netbeans.modules.plsqlsupport.options;
 
 import java.awt.Component;
 import java.awt.event.ItemEvent;
-import java.awt.event.MouseAdapter;
+import java.awt.event.MouseListener;
 import java.awt.event.MouseEvent;
 import java.util.Enumeration;
 import javax.swing.JCheckBox;
@@ -72,33 +72,57 @@ public final class PLSQLAnnotationsPanel extends javax.swing.JPanel implements T
       treeAnnotations.setRootVisible(false);
       treeAnnotations.setShowsRootHandles(true);
       treeAnnotations.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-      treeAnnotations.addMouseListener(new MouseAdapter() {
+      treeAnnotations.addMouseListener(new MouseListener() {
 
-         @Override
-         public void mouseClicked(MouseEvent e) {
-            valueChanged(e);
-         }
+            @Override
+            public void mouseClicked(MouseEvent e) {
+              //  throw new UnsupportedOperationException("Not supported yet.");
+            }
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+              valueChanged(e);
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+              //  throw new UnsupportedOperationException("Not supported yet.");
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent e) {
+             //   throw new UnsupportedOperationException("Not supported yet.");
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+            //    throw new UnsupportedOperationException("Not supported yet.");
+            }
       });
    }
 
-   private void valueChanged(MouseEvent e) {
-      Object obj = e.getSource();
-      if (obj != null && obj instanceof JTree) {
-         JTree tree = (JTree) obj;
-         DefaultMutableTreeNode node = getSelectedNode(root, tree.getSelectionPath());
-         if (node != null) {
-            Object tmp = node.getUserObject();
-            if (tmp != null && tmp instanceof PrefNode) {
-               if (((PrefNode) tmp).enabled) {
-                  ((PrefNode) tmp).selected = !((PrefNode) tmp).selected;
-                  setChildrenEnabled(node, false, ((PrefNode) tmp).selected);
-                  setChildrenEnabled(node, true, ((PrefNode) tmp).selected);
-                  updateUI();
-               }
+    private void valueChanged(MouseEvent e) {
+        Object obj = e.getSource();
+        if (obj != null && obj instanceof JTree) {
+            JTree tree = (JTree) obj;
+            int row = tree.getRowForLocation(e.getX(), e.getY());
+            TreePath path = tree.getPathForRow(row);
+            if (path != null) {
+                DefaultMutableTreeNode node = getSelectedNode(root, path);
+                if (node != null) {
+                    Object tmp = node.getUserObject();
+                    if (tmp != null && tmp instanceof PrefNode) {
+                        if (((PrefNode) tmp).enabled) {
+                            ((PrefNode) tmp).selected = !((PrefNode) tmp).selected;
+                            setChildrenEnabled(node, false, ((PrefNode) tmp).selected);
+                            setChildrenEnabled(node, true, ((PrefNode) tmp).selected);
+                            updateUI();
+                        }
+                    }
+                }
             }
-         }
-      }
-   }
+        }
+    }
 
    /** This method is called from within the constructor to
     * initialize the form.
