@@ -421,9 +421,9 @@ public class PlsqlFileExecutor {
         }
         Connection con = null;
         Statement stm = null;
-        String firstWord = null;
-        boolean commit = false;
-
+        String firstWord = null;             
+        PlsqlCommit commit = PlsqlCommit.getInstance();
+        
         //quick & dirty fix to avoid having output tabs for the SQL Execution window (unless there's an exception)
         //first check to see if this is a simple select statement and if so treat it separately.
         if (executableObjs.size() == 1) {
@@ -542,7 +542,7 @@ public class PlsqlFileExecutor {
                         }
                         
                         if (plsqlText.toUpperCase().contains("INSERT") || plsqlText.toUpperCase().contains("UPDATE") || plsqlText.toUpperCase().contains("DELETE")) {
-                            commit = true;
+                            commit.setCommit(true);
                         }
                         
                         if (firstWord.equalsIgnoreCase("SELECT")) {
@@ -666,7 +666,7 @@ public class PlsqlFileExecutor {
                 }
                 if (exeObj.getType() == PlsqlExecutableObjectType.BEGINEND) {
                     if (plsqlText.toUpperCase().contains("INSERT") || plsqlText.toUpperCase().contains("UPDATE") || plsqlText.toUpperCase().contains("DELETE")) {
-                        commit = true;
+                        commit.setCommit(true);
                     }
                     try {
                         stm.executeUpdate(plsqlText);
@@ -687,7 +687,7 @@ public class PlsqlFileExecutor {
                 }
                 if (exeObj.getType() == PlsqlExecutableObjectType.UNKNOWN) {
                     if (plsqlText.toUpperCase().contains("INSERT") || plsqlText.toUpperCase().contains("UPDATE") || plsqlText.toUpperCase().contains("DELETE")) {
-                        commit = true;
+                            commit.setCommit(true);
                     }
                     //Parse aliases
                     define = getAliases(definesMap, doc, exeObj.getStartOffset(), exeObj.getEndOffset(), define, io);
@@ -991,7 +991,7 @@ public class PlsqlFileExecutor {
             }
             
             if (fileName.endsWith(".tdb") && !autoCommit) {
-                if (!deploymentOk && !commit && !(firstWord != null
+                if (!deploymentOk && !commit.getCommit() && !(firstWord != null
                         && (firstWord.equalsIgnoreCase("INSERT") || firstWord.equalsIgnoreCase("UPDATE") || firstWord.equalsIgnoreCase("DELETE")))) {
                     con.commit();
                 }
