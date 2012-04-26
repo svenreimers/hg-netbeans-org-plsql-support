@@ -172,11 +172,11 @@ public class PlsqlFormatter extends ExtFormatter {
                     || (lineText.startsWith("IF"))
                     || (lineText.startsWith("ELSIF"))
                     || (lineText.startsWith("ELSE"))
-	|| (lineText.startsWith("$IF"))
+                    || (lineText.startsWith("$IF"))
                     || (lineText.startsWith("$ELSIF"))
                     || (lineText.startsWith("$ELSE"))
-	|| (lineText.startsWith("$THEN"))
-	|| (lineText.startsWith("$END"))
+                    || (lineText.startsWith("$THEN"))
+                    || (lineText.startsWith("$END"))
                     || (lineText.startsWith("$ERROR"))
                     || (lineText.startsWith("CASE"))
                     || (lineText.startsWith("WHEN"))
@@ -241,7 +241,7 @@ public class PlsqlFormatter extends ExtFormatter {
             DataObject dataObj = null;
             Object obj = doc.getProperty(Document.StreamDescriptionProperty);
             if (obj instanceof DataObject) {
-                dataObj = (DataObject) obj;
+               dataObj = (DataObject) obj;
             }
 
             if (dataObj == null) {
@@ -283,31 +283,21 @@ public class PlsqlFormatter extends ExtFormatter {
                                     pane.setCaretPosition(startOffset);  // set the correct caret position                           
                                 }
                             }
-
-//                         FormatTokenPosition firstNWS = plsqlFormatSup.findLineFirstNonWhitespace(pos);
-//                         if (firstNWS != null && firstNWS.getToken().getImage().equalsIgnoreCase("END")) {
-//                             plsqlFormatSup.indentLine(pos);
-//                         }
                         }
                         isTyping = false;
                         return;
                     }
-//                      
-                    //pos = formatPreviousLine(pos,plsqlFormatSup);
-
+                    if (!isIndentOnly) {
+                        if (startOffset == -1) {
+                            plsqlFormatSup.formatLine(plsqlFormatSup, pos, blockFactory);
+                        } else {
+                            plsqlFormatSup.formatKeyWords(plsqlFormatSup, pos, blockFactory, startOffset - colStart);
+                        }
+                    }
                     while (pos != null) {
                         // Indent the current line
 
                         plsqlFormatSup.indentLine(pos);
-
-                        //If not indent only format also
-                        if (!isIndentOnly) {
-                            if (startOffset == -1) {
-                                plsqlFormatSup.formatLine(plsqlFormatSup, pos, blockFactory);
-                            } else {
-                                plsqlFormatSup.formatKeyWords(plsqlFormatSup, pos, blockFactory, startOffset - colStart);
-                            }
-                        }
 
                         // Goto next line
                         FormatTokenPosition pos2 = plsqlFormatSup.findLineEnd(pos);
@@ -340,7 +330,7 @@ public class PlsqlFormatter extends ExtFormatter {
                     isTyping = false;
                 }
             } finally {
-//            blockFactory.afterSave(doc);
+               
             }
         }
     }
@@ -596,8 +586,8 @@ public class PlsqlFormatter extends ExtFormatter {
                     //Get forward indentation difference
                     parentIndent = getIndentDiffOnPrevious(previousNWS, token/*pos.getToken()*/);
                 }
-                if(!previousNWS.getImage().equals("/")){
-	indent = getLineIndent(getPosition(previousNWS, 0), true);
+                if (!previousNWS.getImage().equals("/")) {
+                    indent = getLineIndent(getPosition(previousNWS, 0), true);
                 }
                 indent = indent + parentIndent;
             }
@@ -638,7 +628,7 @@ public class PlsqlFormatter extends ExtFormatter {
                     tokenParent = tokenTemp;
                     break;
                 } else if (imageTmp.equalsIgnoreCase("IS")) {
-	 //Check whether this is CURSOR
+                    //Check whether this is CURSOR
                     TokenItem tmp = getIsParent(tokenTemp.getPrevious());
                     if ((tmp.getImage().trim().equalsIgnoreCase("CURSOR"))
                             || (tmp.getImage().trim().equalsIgnoreCase("TYPE"))) {
@@ -653,9 +643,9 @@ public class PlsqlFormatter extends ExtFormatter {
                                 tokenTemp = getPreviousToken(tokenTemp);
                             } else { // still it's not the 'CURSOR', and it's 'IS' or "PROCEDURE" or "FUNCTION", it's the parent
                                 if (tmp.getImage().trim().equalsIgnoreCase("IS")) {
-	                tokenParent = tokenTemp;
+                                    tokenParent = tokenTemp;
                                     break;
-	            }else if(tmp.getImage().trim().equalsIgnoreCase("PROCEDURE") || tmp.getImage().trim().equalsIgnoreCase("FUNCTION")) {
+                                } else if (tmp.getImage().trim().equalsIgnoreCase("PROCEDURE") || tmp.getImage().trim().equalsIgnoreCase("FUNCTION")) {
                                     tokenParent = tmp;
                                     break;
                                 } else {
@@ -721,15 +711,15 @@ public class PlsqlFormatter extends ExtFormatter {
 
                 if ((imageTmp.equalsIgnoreCase("IF")
                         && (!imageTmpPre.equalsIgnoreCase(";")))
-	    || (imageTmp.equalsIgnoreCase("$IF")
+                        || (imageTmp.equalsIgnoreCase("$IF")
                         && (!imageTmpPre.equalsIgnoreCase(";")))
-	    || (imageTmp.equalsIgnoreCase("$ERROR")
+                        || (imageTmp.equalsIgnoreCase("$ERROR")
                         && (!imageTmpPre.equalsIgnoreCase(";")))
                         || (imageTmp.equalsIgnoreCase("LOOP")
                         && (!imageTmpPre.equalsIgnoreCase(";")))
-	    || (imageTmp.equalsIgnoreCase("CASE")
+                        || (imageTmp.equalsIgnoreCase("CASE")
                         && (!imageTmpPre.equalsIgnoreCase(";")))
-	    || (imageTmp.equalsIgnoreCase("BEGIN"))) {
+                        || (imageTmp.equalsIgnoreCase("BEGIN"))) {
                     isParent = true;
                 }
 
@@ -744,7 +734,7 @@ public class PlsqlFormatter extends ExtFormatter {
                         --endNo;
                     }
                     //If we have reached another end note that
-                    if (imageTmp.equalsIgnoreCase("END")  || imageTmp.equalsIgnoreCase("$END")) {
+                    if (imageTmp.equalsIgnoreCase("END") || imageTmp.equalsIgnoreCase("$END")) {
                         ++endNo;
                     }
 
@@ -755,7 +745,7 @@ public class PlsqlFormatter extends ExtFormatter {
 
             return tokenParent;
         }
-        
+
         /**
          * Get the backward indentation for the current token
          * based on the previous token and the current token.
@@ -781,7 +771,7 @@ public class PlsqlFormatter extends ExtFormatter {
                     //END can be ending BEGIN, EXCEPTION, LOOP, IF
                     //need the corresponding one
                     TokenItem endParent = getEndParent(previousNWS);
-	
+
                     if (endParent != null) {
                         indent = getIndentationDiff(endParent, previousNWS);
                     }
@@ -973,11 +963,11 @@ public class PlsqlFormatter extends ExtFormatter {
                         || (tokenImage.equalsIgnoreCase("IF"))
                         || (tokenImage.equalsIgnoreCase("ELSIF"))
                         || (tokenImage.equalsIgnoreCase("ELSE"))
-	    || (tokenImage.startsWith("$IF"))
-	    || (tokenImage.startsWith("$THEN"))
-	    || (tokenImage.startsWith("$ELSIF"))
-	    || (tokenImage.startsWith("$ELSE"))
-	    || (tokenImage.startsWith("$ERROR"))
+                        || (tokenImage.startsWith("$IF"))
+                        || (tokenImage.startsWith("$THEN"))
+                        || (tokenImage.startsWith("$ELSIF"))
+                        || (tokenImage.startsWith("$ELSE"))
+                        || (tokenImage.startsWith("$ERROR"))
                         || (tokenImage.equalsIgnoreCase("CASE"))
                         || (tokenImage.equalsIgnoreCase("WHEN"))
                         || (tokenImage.equalsIgnoreCase("MATCHED"))
@@ -987,16 +977,16 @@ public class PlsqlFormatter extends ExtFormatter {
                     return getTabSize();
                 } else {
                     if (tokenImage.equalsIgnoreCase("IS")) {
-	    /*for select statements in side cursors*/
-	    if(token.getImage().equalsIgnoreCase("SELECT")){
-	             return getTabSize();	    
-	    }
+                        /*for select statements in side cursors*/
+                        if (token.getImage().equalsIgnoreCase("SELECT")) {
+                            return getTabSize();
+                        }
                         TokenItem preKey = getPreviousKeyword(previousNWS.getPrevious());
                         if (preKey != null) {
-	         TokenItem firstToken = findLineFirstNonWhitespace(getPosition(previousNWS, 0)).getToken();
-	         if(token.getTokenID() != PlsqlTokenContext.KEYWORD && firstToken != previousNWS){
-	             return 0;
-	         }
+                            TokenItem firstToken = findLineFirstNonWhitespace(getPosition(previousNWS, 0)).getToken();
+                            if (token.getTokenID() != PlsqlTokenContext.KEYWORD && firstToken != previousNWS) {
+                                return 0;
+                            }
                             String image = preKey.getImage().trim();
                             if ((!token.getImage().trim().equalsIgnoreCase("BEGIN"))
                                     && (!((image.equalsIgnoreCase("PACKAGE")) || (image.equalsIgnoreCase("BODY"))))) {
@@ -1006,7 +996,7 @@ public class PlsqlFormatter extends ExtFormatter {
                     }
                 }
                 if (tokenImage.equalsIgnoreCase("DISTINCT")) {
-	return getIndentForSelect(previousNWS);
+                    return getIndentForSelect(previousNWS);
                 }
             } else if (tokenID == PlsqlTokenContext.LPAREN_ID) {
                 //keep tab after '(' e.x in procedure and function declarations
@@ -1086,21 +1076,21 @@ public class PlsqlFormatter extends ExtFormatter {
                     //This will be useful for SELECT , UPDATE , INTO variables
                     TokenItem first = findLineFirstNonWhitespace(getPosition(previousNWS, 0)).getToken();
                     String previousKeyword = first.getImage().trim();
-	TokenItem findStatementStart = findStatementStart(first);
-	if (findStatementStart != null) {
-	    previousKeyword = findStatementStart.getImage().trim();
-	}
+                    TokenItem findStatementStart = findStatementStart(first);
+                    if (findStatementStart != null) {
+                        previousKeyword = findStatementStart.getImage().trim();
+                    }
 
-	if (previousKeyword.equalsIgnoreCase("SELECT") || (previousKeyword.equalsIgnoreCase("FROM"))) {
-	    return getIndentForSelect(previousNWS);
-	}
+                    if (previousKeyword.equalsIgnoreCase("SELECT") || (previousKeyword.equalsIgnoreCase("FROM"))) {
+                        return getIndentForSelect(previousNWS);
+                    }
 
-	if ((previousKeyword.equalsIgnoreCase("INTO"))
-	        || (previousKeyword.equalsIgnoreCase("SET"))
-	        || (previousKeyword.equalsIgnoreCase("CURSOR"))
-	        || (previousKeyword.equalsIgnoreCase("IS"))) {
-	    return getTabSize();
-	}
+                    if ((previousKeyword.equalsIgnoreCase("INTO"))
+                            || (previousKeyword.equalsIgnoreCase("SET"))
+                            || (previousKeyword.equalsIgnoreCase("CURSOR"))
+                            || (previousKeyword.equalsIgnoreCase("IS"))) {
+                        return getTabSize();
+                    }
                 } else if (previousNWS.getImage().trim().equalsIgnoreCase("*")) {
                     //Used for a case like 'Select *'
                     if (getPreviousKeyword(previousNWS).getImage().trim().equalsIgnoreCase("SELECT")) {
@@ -1207,9 +1197,9 @@ public class PlsqlFormatter extends ExtFormatter {
                         || (image.equalsIgnoreCase("BEGIN"))
                         || (image.equalsIgnoreCase("LOOP"))
                         || (image.equalsIgnoreCase("ELSE"))
-	    || (image.equalsIgnoreCase("$ELSE"))
+                        || (image.equalsIgnoreCase("$ELSE"))
                         || (image.equalsIgnoreCase("THEN"))
-	    || (image.equalsIgnoreCase("$THEN"))
+                        || (image.equalsIgnoreCase("$THEN"))
                         || (image.equalsIgnoreCase("CURSOR"))) {
                     //METHOD declarations inside a
                     break;
@@ -1362,9 +1352,9 @@ public class PlsqlFormatter extends ExtFormatter {
                         || (image.equalsIgnoreCase("BEGIN"))
                         || (image.equalsIgnoreCase("LOOP"))
                         || (image.equalsIgnoreCase("ELSE"))
-	    || (image.equalsIgnoreCase("$ELSE"))
+                        || (image.equalsIgnoreCase("$ELSE"))
                         || (image.equalsIgnoreCase("THEN"))
-	    || (image.equalsIgnoreCase("$THEN"))
+                        || (image.equalsIgnoreCase("$THEN"))
                         || (image.equalsIgnoreCase("CURSOR"))) {
                     if (image.equalsIgnoreCase("CURSOR")) {
                         tokenTempPre = tokenTemp;
@@ -1439,8 +1429,8 @@ public class PlsqlFormatter extends ExtFormatter {
 
             return tokenRes;
         }
-        
-         /**
+
+        /**
          * Get the correct indent for Select statements 
          * @param previousNWS
          * @return token item, null if not found
@@ -1449,19 +1439,19 @@ public class PlsqlFormatter extends ExtFormatter {
 
             int indent = getTabSize();
             TokenItem first = findLineFirstNonWhitespace(getPosition(previousNWS, 0)).getToken();
-           
+
             int parent = getLineIndent(getPosition(previousNWS, 0), true);
             TokenItem findStatementStart = findStatementStart(first);
 
             if (findStatementStart != null) {
                 first = findStatementStart;
             }
-            
+
             do {
                 first = first.getNext();
                 if ((first != null) && (first.getTokenID() != PlsqlTokenContext.WHITESPACE) && (first.getTokenID() != PlsqlTokenContext.BLOCK_COMMENT)
-	    && (first.getTokenID() != PlsqlTokenContext.LINE_COMMENT)) {
-	return getVisualColumnOffset(getPosition(first, 0)) - parent;
+                        && (first.getTokenID() != PlsqlTokenContext.LINE_COMMENT)) {
+                    return getVisualColumnOffset(getPosition(first, 0)) - parent;
                 }
             } while (first != null);
             return indent;
@@ -1501,7 +1491,7 @@ public class PlsqlFormatter extends ExtFormatter {
                 String imageTmp = tokenTemp.getImage().trim();
 
                 //If we have reached the beginning of a block stop
-                if ( (imageTmp.equalsIgnoreCase("$ERROR"))
+                if ((imageTmp.equalsIgnoreCase("$ERROR"))
                         || (imageTmp.equalsIgnoreCase("BEGIN"))
                         || (imageTmp.equalsIgnoreCase("EXCEPTION"))
                         || (imageTmp.equalsIgnoreCase("LOOP"))) {
