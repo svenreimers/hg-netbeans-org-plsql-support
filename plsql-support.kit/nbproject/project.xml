@@ -41,7 +41,7 @@
                     <build-prerequisite/>
                     <compile-dependency/>
                     <run-dependency>
-                        <specification-version>1.8.23</specification-version>
+                        <specification-version>1.8.24</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
@@ -61,7 +61,7 @@
                 <dependency>
                     <code-name-base>org.netbeans.modules.plsql.format</code-name-base>
                     <run-dependency>
-                        <specification-version>1.9.15</specification-version>
+                        <specification-version>1.9.16</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
@@ -83,7 +83,7 @@
                     <build-prerequisite/>
                     <compile-dependency/>
                     <run-dependency>
-                        <specification-version>1.8.9</specification-version>
+                        <specification-version>1.8.10</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
@@ -117,7 +117,7 @@
                     <build-prerequisite/>
                     <compile-dependency/>
                     <run-dependency>
-                        <specification-version>1.8.22</specification-version>
+                        <specification-version>1.8.23</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
