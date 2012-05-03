@@ -422,7 +422,7 @@ public class PlsqlFileExecutor {
         Connection con = null;
         Statement stm = null;
         String firstWord = null;             
-        PlsqlCommit commit = PlsqlCommit.getInstance();
+        PlsqlCommit commit = PlsqlCommit.getInstance((DataObject)object);
         
         //quick & dirty fix to avoid having output tabs for the SQL Execution window (unless there's an exception)
         //first check to see if this is a simple select statement and if so treat it separately.
@@ -540,11 +540,7 @@ public class PlsqlFileExecutor {
                         } else {
                             firstWord = plsqlText;
                         }
-                        
-                        if (plsqlText.toUpperCase().contains("INSERT") || plsqlText.toUpperCase().contains("UPDATE") || plsqlText.toUpperCase().contains("DELETE")) {
-                            commit.setCommit(true);
-                        }
-                        
+                                           
                         if (firstWord.equalsIgnoreCase("SELECT")) {
                             //this should really never happen... Unless there are multiple parts of a file and some sections are select statements
                             if (plsqlEditor != null && firstSelectStatement) {
@@ -665,9 +661,6 @@ public class PlsqlFileExecutor {
                     }
                 }
                 if (exeObj.getType() == PlsqlExecutableObjectType.BEGINEND) {
-                    if (plsqlText.toUpperCase().contains("INSERT") || plsqlText.toUpperCase().contains("UPDATE") || plsqlText.toUpperCase().contains("DELETE")) {
-                        commit.setCommit(true);
-                    }
                     try {
                         stm.executeUpdate(plsqlText);
                         processDbmsOutputMessages(con, io.getOut());
@@ -686,9 +679,6 @@ public class PlsqlFileExecutor {
                     }
                 }
                 if (exeObj.getType() == PlsqlExecutableObjectType.UNKNOWN) {
-                    if (plsqlText.toUpperCase().contains("INSERT") || plsqlText.toUpperCase().contains("UPDATE") || plsqlText.toUpperCase().contains("DELETE")) {
-                            commit.setCommit(true);
-                    }
                     //Parse aliases
                     define = getAliases(definesMap, doc, exeObj.getStartOffset(), exeObj.getEndOffset(), define, io);
                     //Replace aliases
@@ -991,10 +981,15 @@ public class PlsqlFileExecutor {
             }
             
             if (fileName.endsWith(".tdb") && !autoCommit) {
-                if (!deploymentOk && !commit.getCommit() && !(firstWord != null
+                if (!deploymentOk && !(firstWord != null
                         && (firstWord.equalsIgnoreCase("INSERT") || firstWord.equalsIgnoreCase("UPDATE") || firstWord.equalsIgnoreCase("DELETE")))) {
                     con.commit();
+                }else{
+                    if(deploymentOk){
+                    commit.setCommit(true);
+                    }
                 }
+                
             } else {
                 con.commit();
             }

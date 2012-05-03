@@ -111,7 +111,8 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
     private JButton button;
     private ActionListener buttonListener = new ButtonListener();
     private boolean autoCommit = true;
-
+    PlsqlCommit commit;
+    
     public PlsqlExecuteAction() {
         this(Utilities.actionsGlobalContext());
     }
@@ -138,6 +139,9 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
         setEnabled(dataObject != null);
         if (validator.isValidTDB(dataObject)) {
             autoCommit = OptionsUtilities.isCommandWindowAutoCommitEnabled();
+        }
+        if(dataObject != null){
+            commit = PlsqlCommit.getInstance(dataObject);
         }
     }
 
@@ -169,7 +173,7 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
 
         // If autocommit OFF - take the connection from data object.
         if (!autoCommit) {
-            connection = dataObject.getLookup().lookup(DatabaseConnection.class);
+            setConnection(connectionProvider.getTemplateConnection());
         }
 
         if (connection == null) {
@@ -232,23 +236,75 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
 
     private void populatePopupMenu() {
         popup.removeAll();
-        if (autoCommit) {
-            for (DatabaseConnection c : connectionProvider.getDatabaseConnections()) {
-                String url = c.getDatabaseURL();
-                String schema = c.getUser();
-                int pos = url.indexOf("@") + 1;
-                if (pos > 0) {
-                    url = url.substring(pos);
+        for (DatabaseConnection c : connectionProvider.getDatabaseConnections()) {
+            String url = c.getDatabaseURL();
+            String schema = c.getUser();
+            int pos = url.indexOf("@") + 1;
+            if (pos > 0) {
+                url = url.substring(pos);
+            }
+            url = schema + "@" + url;
+            String alias = c.getDisplayName();
+            if (alias != null && !alias.equals(c.getName())) {
+                url = alias + " [" + url + "]";
+            }
+            JMenuItem item = new JMenuItem(url);
+            item.putClientProperty(DATABASE_CONNECTION_KEY, c);
+            item.addActionListener(buttonListener);
+            popup.add(item);
+        }
+    }
+    
+    private void setConnection(DatabaseConnection newConnection) {
+        if (connection != null && connection.getName().equals(newConnection.getName())) {
+            connection = dataObject.getLookup().lookup(DatabaseConnection.class);
+        } else {
+            if (connection != null) {
+                connection = dataObject.getLookup().lookup(DatabaseConnection.class);
+                if (commit.getCommit()) {
+                    if (!OptionsUtilities.isDeployNoPromptEnabled()) {
+                       
+                        String msg = "Commit transactions for " + connection.getDisplayName() + " ?";
+                        String title = "Confirm!";
+                        int showOptionDialog = JOptionPane.showOptionDialog(null,
+                                msg,
+                                title,
+                                JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE,
+                                null, null, null);
+
+                        if (showOptionDialog == JOptionPane.YES_OPTION) {                           
+                            commit.commitTransaction(dataObject, connection, connectionProvider);
+                        } else if (showOptionDialog == JOptionPane.NO_OPTION) {
+                            commit.rollbackTransaction(dataObject, connection, connectionProvider);
+                        } else {
+                            return;
+                        }
+                    }
                 }
-                url = schema + "@" + url;
-                String alias = c.getDisplayName();
-                if (alias != null && !alias.equals(c.getName())) {
-                    url = alias + " [" + url + "]";
+            }
+            if (!connectionProvider.isDefaultDatabase(newConnection)) {
+                if (!OptionsUtilities.isDeployNoPromptEnabled()) {
+                    String msg = "You are now connecting to a secondary database.";
+                    String title = "Connecting to a Secondary Database!";
+                    if (JOptionPane.showOptionDialog(null,
+                            msg,
+                            title,
+                            JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE,
+                            null, null, null) == JOptionPane.NO_OPTION) {
+                        return;
+                    }
+                    connection = newConnection;
+                    try {
+                        Connection jdbcConnection = connection.getJDBCConnection();
+                        if (jdbcConnection == null || !jdbcConnection.isValid(1000)) {
+                            return;
+                        }
+                    } catch (SQLException ex) {
+                        return;
+                    }
                 }
-                JMenuItem item = new JMenuItem(url);
-                item.putClientProperty(DATABASE_CONNECTION_KEY, c);
-                item.addActionListener(buttonListener);
-                popup.add(item);
+            } else {
+                connection = newConnection;
             }
         }
     }
@@ -268,33 +324,9 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
         if (file == null) {
             return;
         }
-
-        if (autoCommit && !connectionProvider.isDefaultDatabase(connection)) {
-            if (!OptionsUtilities.isDeployNoPromptEnabled()) {
-                String msg = "You are now connecting to a secondary database.";
-                String title = "Connecting to a Secondary Database!";
-                if (JOptionPane.showOptionDialog(null,
-                        msg,
-                        title,
-                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE,
-                        null, null, null) == JOptionPane.NO_OPTION) {
-                    return;
-                }
-                connectionProvider.connect(connection);
-                try {
-                    Connection jdbcConnection = connection.getJDBCConnection();
-                    if (jdbcConnection == null || !jdbcConnection.isValid(1000)) {
-                        return;
-                    }
-                } catch (SQLException ex) {
-                    return;
-                }
-            }
-        } else {
-            //to reconnect if the connection is gone. 
-            if (connection.getJDBCConnection() == null) {
-                connectionProvider.connect(connection);
-            }
+        //to reconnect if the connection is gone. 
+        if (connection.getJDBCConnection() == null) {
+            connectionProvider.connect(connection);
         }
 
         //if the user has selected any text in the window, create exec block using selected text only
@@ -342,7 +374,7 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
         private List<PlsqlExecutableObject> blocks;
         private Document document;
         private PlsqlFileExecutor executor;
-
+        
         public ExecutionHandler(DatabaseConnectionManager connectionProvider, DatabaseConnection connection,
                 List<PlsqlExecutableObject> blocks, Document doc) {
             this.connectionProvider = connectionProvider;
@@ -409,7 +441,8 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
         public void actionPerformed(ActionEvent e) {
 
             JMenuItem item = (JMenuItem) e.getSource();
-            connection = (DatabaseConnection) item.getClientProperty(DATABASE_CONNECTION_KEY);
+            DatabaseConnection newConnection = (DatabaseConnection) item.getClientProperty(DATABASE_CONNECTION_KEY);
+            setConnection(newConnection);
             saveAndExecute();
 
         }

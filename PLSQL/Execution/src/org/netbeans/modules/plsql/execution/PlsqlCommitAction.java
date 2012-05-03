@@ -87,7 +87,7 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
     private DatabaseConnectionManager connectionProvider;
     private DatabaseConnection connection;
     private JButton button;
-    PlsqlCommit commit = PlsqlCommit.getInstance();
+    PlsqlCommit commit; 
     private PropertyChangeListener EnableCommit;
 
     public PlsqlCommitAction() {
@@ -117,6 +117,7 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
 
         if (dataObject != null) {
             setEnabled(true);
+           commit = PlsqlCommit.getInstance(dataObject);
         } else {
             setEnabled(false);
         }
@@ -148,32 +149,8 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
             return;
         }
 
-        EditorCookie edCookie = dataObject.getLookup().lookup(EditorCookie.class);
-        Document document = edCookie.getDocument();
         saveIfModified(dataObject);
-
-        InputOutput io = null;
-        DataObject obj = FileExecutionUtil.getDataObject(document);
-        ProgressHandle handle = ProgressHandleFactory.createHandle("Commit database file...", this);
-        handle.start();
-
-        try {
-            io = IOProvider.getDefault().getIO(obj.getPrimaryFile().getNameExt(), false);
-            if (!io.isClosed()) {
-                io.getOut().println((new StringBuilder()).append("> Commit Statement successfully"));
-            }
-
-            if (connection.getJDBCConnection() != null) {
-                connectionProvider.commitRollbackTransactions(connection, true);
-                commit.setCommit(false);
-            }
-
-        } catch (Exception ex) {
-            io.getOut().println((new StringBuilder()).append(">!!! Error Commit Statement"));
-            Exceptions.printStackTrace(ex);
-        } finally {
-            handle.finish();
-        }
+        commit.commitTransaction(dataObject, connection, connectionProvider);
     }
     
     @Override
@@ -215,6 +192,7 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
           else
               button.setEnabled(false);
         }
+
     }
 }
 

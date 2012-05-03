@@ -87,7 +87,7 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
     private DatabaseConnectionManager connectionProvider;
     private JButton button;
     private DatabaseConnection connection;
-    PlsqlCommit commit = PlsqlCommit.getInstance();
+    PlsqlCommit commit;
     private PropertyChangeListener EnableRollback;
 
     public PlsqlRollbackAction() {
@@ -117,7 +117,8 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
         }
 
         if (dataObject != null) {
-            setEnabled(true);           
+            setEnabled(true); 
+            commit = PlsqlCommit.getInstance(dataObject);
         } else {
             setEnabled(false);
         }
@@ -148,32 +149,9 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
             return;
         }
 
-        EditorCookie edCookie = dataObject.getLookup().lookup(EditorCookie.class);
-        Document document = edCookie.getDocument();
         saveIfModified(dataObject);
-
-        InputOutput io = null;
-        DataObject obj = FileExecutionUtil.getDataObject(document);
-        ProgressHandle handle = ProgressHandleFactory.createHandle("Commit database file...", this);
-        handle.start();
-
-        try {
-            io = IOProvider.getDefault().getIO(obj.getPrimaryFile().getNameExt(), false);
-            if (!io.isClosed()) {
-                io.getOut().println((new StringBuilder()).append("> Rollback Statement successfully"));
-            }
-
-            if (connection.getJDBCConnection() != null) {
-                connectionProvider.commitRollbackTransactions(connection, false);
-                commit.setCommit(false);
-            }
-
-        } catch (Exception ex) {
-            io.getOut().println((new StringBuilder()).append(">!!! Error Rollback Statement "));
-            Exceptions.printStackTrace(ex);
-        } finally {
-            handle.finish();
-        }
+        commit.rollbackTransaction(dataObject, connection, connectionProvider);
+        commit.setCommit(false);
     }
 
     @Override

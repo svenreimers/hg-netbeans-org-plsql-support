@@ -41,29 +41,56 @@
  */
 package org.netbeans.modules.plsql.execution;
 
+import java.awt.event.ActionEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.util.ArrayList;
+import java.util.List;
+import javax.swing.AbstractAction;
+import javax.swing.text.Document;
+import org.netbeans.api.db.explorer.DatabaseConnection;
+import org.openide.loaders.DataObject;
+import org.openide.windows.InputOutput;
+import org.netbeans.api.progress.ProgressHandle;
+import org.netbeans.api.progress.ProgressHandleFactory;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
+import org.openide.cookies.EditorCookie;
+import org.openide.util.Exceptions;
+import org.openide.windows.IOProvider;
 
 /**
  *
  * @author SubSLK
  */
-public class PlsqlCommit {
+public class PlsqlCommit extends AbstractAction {
 
     private boolean commit;
-    private static PlsqlCommit instance;
+    private DataObject dataObject;
+    private static List<PlsqlCommit> instance = new ArrayList<PlsqlCommit>();
     public static final String PROP_commit = "PlsqlCommit";
     private PropertyChangeSupport changeSupport = new PropertyChangeSupport(this);
 
-    private PlsqlCommit() {
-        commit = false;
+    private PlsqlCommit(DataObject obj) {
+        commit = false; 
+        dataObject = obj;
     }
 
-    public static PlsqlCommit getInstance() {
-        if (instance == null) {
-            instance = new PlsqlCommit();
+    public static PlsqlCommit getInstance(DataObject obj) {
+        if (instance.isEmpty()) {
+            instance.add(new PlsqlCommit(obj));
+            return instance.get(0);
+        } else {
+            for (int i = 0; i < instance.size(); i++) {
+                PlsqlCommit plsqlCommit = instance.get(i);
+                if (plsqlCommit.dataObject.equals(obj)) {
+                    return plsqlCommit;
+                }
+            }
+            PlsqlCommit plsqlCommit = new PlsqlCommit(obj);
+            instance.add(plsqlCommit);
+            return plsqlCommit;
+
         }
-        return instance;
     }
 
     public void setCommit(boolean commit_) {
@@ -75,7 +102,60 @@ public class PlsqlCommit {
     public boolean getCommit() {
         return commit;
     }
+    
+    public void commitTransaction(DataObject fileObj, DatabaseConnection connection, DatabaseConnectionManager connectionProvider){
+        EditorCookie edCookie = fileObj.getLookup().lookup(EditorCookie.class);
+        Document document = edCookie.getDocument();        
+        InputOutput io = null;
+        DataObject obj = FileExecutionUtil.getDataObject(document);        
+        
+        ProgressHandle handle = ProgressHandleFactory.createHandle("Commit database file...", this);
+        handle.start();
 
+        try {
+            io = IOProvider.getDefault().getIO(obj.getPrimaryFile().getNameExt(), false);
+            if (!io.isClosed()) {
+                io.getOut().println((new StringBuilder()).append("> Commit Statement successfully"));
+            }
+
+            if (connection.getJDBCConnection() != null) {
+                connectionProvider.commitRollbackTransactions(connection, true);
+                setCommit(false);
+            }
+
+        } catch (Exception ex) {
+            io.getOut().println((new StringBuilder()).append(">!!! Error Commit Statement"));
+            Exceptions.printStackTrace(ex);
+        } finally {
+            handle.finish();
+        }
+    }
+    
+    public void rollbackTransaction(DataObject obj, DatabaseConnection connection, DatabaseConnectionManager connectionProvider){
+        InputOutput io = null;
+        ProgressHandle handle = ProgressHandleFactory.createHandle("Commit database file...", this);
+        handle.start();
+
+        try {
+            io = IOProvider.getDefault().getIO(obj.getPrimaryFile().getNameExt(), false);
+            if (!io.isClosed()) {
+                io.getOut().println((new StringBuilder()).append("> Rollback Statement successfully"));
+            }
+
+            if (connection.getJDBCConnection() != null) {
+                connectionProvider.commitRollbackTransactions(connection, false);  
+                setCommit(false);
+            }
+
+        } catch (Exception ex) {
+            io.getOut().println((new StringBuilder()).append(">!!! Error Rollback Statement"));
+            Exceptions.printStackTrace(ex);
+        } finally {
+            handle.finish();
+        }
+    }
+    
+    @Override
     public void addPropertyChangeListener(PropertyChangeListener listener) {
         PropertyChangeListener[] listeners = changeSupport.getPropertyChangeListeners();
         for (int i = 0; i < listeners.length; i++) {
@@ -95,4 +175,9 @@ public class PlsqlCommit {
         }
         changeSupport.addPropertyChangeListener(propertyName, listener);
     }
-}
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+       // throw new UnsupportedOperationException("Not supported yet.");
+    }
+    }
