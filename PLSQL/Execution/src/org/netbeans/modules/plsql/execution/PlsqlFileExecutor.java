@@ -985,7 +985,8 @@ public class PlsqlFileExecutor {
                         && (firstWord.equalsIgnoreCase("INSERT") || firstWord.equalsIgnoreCase("UPDATE") || firstWord.equalsIgnoreCase("DELETE")))) {
                     con.commit();
                 }else{
-                    if(deploymentOk){
+                    if(deploymentOk && (firstWord != null
+                        && (firstWord.equalsIgnoreCase("INSERT") || firstWord.equalsIgnoreCase("UPDATE") || firstWord.equalsIgnoreCase("DELETE")))){
                     commit.setCommit(true);
                     }
                 }
