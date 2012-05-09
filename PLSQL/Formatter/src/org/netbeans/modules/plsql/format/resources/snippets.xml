@@ -11,10 +11,8 @@
    ${cursor}]]></code>
     </codetemplate>
     <codetemplate abbreviation="for" xml:space="preserve">
-        <code><![CDATA[FOR rec_ IN ${cursor} LOOP
-   BEGIN
-      ${cursor}
-   END;
+        <code><![CDATA[FOR rec_ IN ${cursor} LOOP   
+      ${cursor}   
 END LOOP;]]></code>
     </codetemplate>
     <codetemplate abbreviation="wl" xml:space="preserve">
@@ -60,7 +58,7 @@ ${cursor}]]></code>
    ${cursor} )
 IS
 BEGIN
-   General_SYS.Init_Method(lu_name_, &PKG, '${proc_name}');   
+   General_SYS.Init_Method(lu_name_, '&PKG', '${proc_name}');   
 
 END ${proc_name};]]></code>
     </codetemplate>
