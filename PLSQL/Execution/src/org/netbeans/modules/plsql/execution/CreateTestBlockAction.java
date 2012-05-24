@@ -155,7 +155,15 @@ public final class CreateTestBlockAction extends CookieAction {
                         PlsqlBlock temp = selectedBlock;
                         selectedBlock = null;
                         DataObject dataObj = null;
-                        PlsqlBlock block = PlsqlParserUtil.findMatchingBlock(PlsqlParserUtil.getBlockHierarchy(dataObject), doc, doc, selectedName, parentName, temp.getStartOffset(), false, false, true);
+                        PlsqlBlock block = null;
+                        List<PlsqlBlock> blocks = PlsqlParserUtil.findMatchingBlocks(PlsqlParserUtil.getBlockHierarchy(dataObject), doc, doc, selectedName, parentName, temp.getStartOffset(), false, false, true);
+                        if (blocks != null) {
+                            if (blocks.size() == 1) {
+                               block = blocks.get(0); 
+                            } else {
+                               block = getMethodFromUser(doc, blocks);
+                            }
+                        }
                         if (block == null) {
                             Document specDoc = getSpecDocument(doc);
                             if (specDoc == null) {
@@ -183,7 +191,7 @@ public final class CreateTestBlockAction extends CookieAction {
                     if (selectedBlock.getParent() != null) {
                         selectedName = selectedBlock.getParent().getName() + "." + selectedBlock.getName();
                     }
-                    tempTemplate = tempTemplate + createMethodTemplate(doc);
+                        tempTemplate = tempTemplate + createMethodTemplate(doc);
                 } catch (NotConnectedToDbException e) {
                     Exceptions.printStackTrace(e);
                 }
@@ -663,11 +671,25 @@ public final class CreateTestBlockAction extends CookieAction {
 
     private void selectMatchingBlock(DataObject dataObj, Document specDoc, int offset) {
         List<PlsqlBlock> newBlockHier = PlsqlParserUtil.getBlockHierarchy(dataObj);
-        PlsqlBlock block = PlsqlParserUtil.findMatchingBlock(newBlockHier, doc, specDoc, selectedName, parentName, offset, false, false, true);
+        PlsqlBlock block = null;
+        List<PlsqlBlock> blocks = PlsqlParserUtil.findMatchingBlocks(newBlockHier, doc, specDoc, selectedName, parentName, offset, false, false, true);
+        if (blocks != null) {
+            if (blocks.size() == 1) {
+                block = blocks.get(0);
+            } else {
+                block = getMethodFromUser(specDoc, blocks);
+            }
+        }
         if (block != null && block.getParent() != null) {
             selectedBlock = block;
             doc = specDoc;
             dataObject = dataObj;
         }
+    }
+    
+    private PlsqlBlock getMethodFromUser(Document doc, List<PlsqlBlock> blocks) {
+        SelectMethodDialog dialog = new SelectMethodDialog(null, true, doc, blocks);
+        dialog.setVisible(true);
+        return dialog.getSelectedPlsqlBlock();
     }
 }
