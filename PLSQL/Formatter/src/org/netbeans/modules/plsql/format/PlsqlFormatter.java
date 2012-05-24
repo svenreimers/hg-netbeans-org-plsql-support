@@ -671,15 +671,17 @@ public class PlsqlFormatter extends ExtFormatter {
 
                     if (temp != null) {
                         tokenTemp = getEndParent(temp);
-                        // check whether this is not just BEGIN/END block. i.e it's part of function/procedure BEGIN
-                        if (tokenTemp.getImage().trim().equalsIgnoreCase("BEGIN") && !nextToken.getImage().trim().equals(";")) {
-                            temp = getPreviousToken(tokenTemp);
+                        if (tokenTemp != null && nextToken != null) {
+                            // check whether this is not just BEGIN/END block. i.e it's part of function/procedure BEGIN
+                            if (tokenTemp.getImage().trim().equalsIgnoreCase("BEGIN") && !nextToken.getImage().trim().equals(";")) {
+                                temp = getPreviousToken(tokenTemp);
 
-                            if (temp != null) {
-                                tokenTemp = getBeginParent(temp);
-                                tokenTemp = getPreviousToken(tokenTemp);
-                            } else {
-                                break;
+                                if (temp != null) {
+                                    tokenTemp = getBeginParent(temp);
+                                    tokenTemp = getPreviousToken(tokenTemp);
+                                } else {
+                                    break;
+                                }
                             }
                         }
                     } else {
