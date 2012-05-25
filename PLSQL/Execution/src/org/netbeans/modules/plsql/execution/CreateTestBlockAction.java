@@ -157,7 +157,7 @@ public final class CreateTestBlockAction extends CookieAction {
                         DataObject dataObj = null;
                         PlsqlBlock block = null;
                         List<PlsqlBlock> blocks = PlsqlParserUtil.findMatchingBlocks(PlsqlParserUtil.getBlockHierarchy(dataObject), doc, doc, selectedName, parentName, temp.getStartOffset(), false, false, true);
-                        if (blocks != null) {
+                        if (blocks != null && blocks.size() > 0) {
                             if (blocks.size() == 1) {
                                block = blocks.get(0); 
                             } else {
@@ -673,7 +673,7 @@ public final class CreateTestBlockAction extends CookieAction {
         List<PlsqlBlock> newBlockHier = PlsqlParserUtil.getBlockHierarchy(dataObj);
         PlsqlBlock block = null;
         List<PlsqlBlock> blocks = PlsqlParserUtil.findMatchingBlocks(newBlockHier, doc, specDoc, selectedName, parentName, offset, false, false, true);
-        if (blocks != null) {
+        if (blocks != null && blocks.size() > 0) {
             if (blocks.size() == 1) {
                 block = blocks.get(0);
             } else {
