@@ -168,16 +168,21 @@ public class PlsqlContext {
    }
    
    private int findNextFrom(TokenSequence<PlsqlTokenId> ts) {
+      int parenCount = 0; 
       while (ts.moveNext()) {
          Token<PlsqlTokenId> token = ts.token();
          PlsqlTokenId tokenID = token.id();
          String value = token.toString();
          if(tokenID == PlsqlTokenId.OPERATOR && ";".equals(value)) {
             return -1;
+         }else if(tokenID == PlsqlTokenId.LPAREN) {
+            parenCount++;
+         } else if(tokenID == PlsqlTokenId.RPAREN) {
+            parenCount--;
          } else if (tokenID == PlsqlTokenId.KEYWORD) {
             if("NULL".equalsIgnoreCase(value)) {
                //ignore NULL since this is a valid SQL keyword
-            } else if("FROM".equalsIgnoreCase(value)) {
+            } else if(parenCount==0 && "FROM".equalsIgnoreCase(value)) {
                return ts.offset()+5;
             } 
          }
@@ -191,6 +196,7 @@ public class PlsqlContext {
    private int findTableAndViewListStartPosition(TokenSequence<PlsqlTokenId> ts) {
       boolean whereFound = false;
       boolean setFound = false;
+      boolean asFound = false;
       int rParenCount=0;
       int lParenCount=0;
       PlsqlTokenId previousKeyWordTokenId = null;
@@ -230,9 +236,12 @@ public class PlsqlContext {
                  else 
                     return -1; //found update before where or set...
                } else if(lParenCount==1 && "INTO".equalsIgnoreCase(value)) { //find "INSERT INTO xxx (" type of statements
-                  if(previousKeyWordTokenId==null) //no other keywords between INTO and the parenthesis 
+                  if(previousKeyWordTokenId==null || asFound) //no other keywords between INTO and the parenthesis 
                      return ts.offset()+5;
+               } else if("AS".equalsIgnoreCase(value)){
+                 asFound = true;
                }
+               
             }
             previousKeyWordTokenId = tokenId;
          }
@@ -270,7 +279,10 @@ public class PlsqlContext {
          } else if (parenCount==0 && tokenID == PlsqlTokenId.KEYWORD) {
             if(keyWord.equalsIgnoreCase(value)) {
                return ts.offset();
-            } 
+            }
+            else if(value.equalsIgnoreCase("SELECT") || value.equalsIgnoreCase("UPDATE") || value.equalsIgnoreCase("INSERT") || value.equalsIgnoreCase("DELETE")){
+                return -1;
+            }
          }
       }
       return -1;
@@ -283,7 +295,8 @@ public class PlsqlContext {
       String alias = null;
       final String SELECT_STATEMENT="select...";
         if(isUpdateStmt(ts.offset())){
-            ts.moveIndex(1);            
+            ts.move(findStmtStart(ts, "UPDATE")); 
+            ts.moveIndex(ts.index()+1);
         }
       while (ts.moveNext()) {
          Token<PlsqlTokenId> token = ts.token();
@@ -322,6 +335,7 @@ public class PlsqlContext {
                   selectViewsWithoutAlias.add(viewName);
                viewName = alias = null;
             } else if(tokenID==PlsqlTokenId.KEYWORD || "SET".equals(value)) {
+                if(!("AS".equalsIgnoreCase(value)))  
                    break;
             }
          }
