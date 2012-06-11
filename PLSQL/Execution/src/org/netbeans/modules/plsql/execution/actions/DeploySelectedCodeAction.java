@@ -209,15 +209,24 @@ public final class DeploySelectedCodeAction extends CookieAction {
                 Exceptions.printStackTrace(ex);
             }
             File tmpFile = null;
+            FileWriter writer = null;
             try {
                 tmpFile = File.createTempFile(TEMP_SQL_FILE_PREFIX, ".sql",
                         FileUtil.toFile(project.getLookup().lookup(CacheDirectoryProvider.class).getCacheDirectory()));
                 tmpFile.deleteOnExit();
-                FileWriter writer = new FileWriter(tmpFile);
+                writer = new FileWriter(tmpFile);
                 writer.write(output);
-                writer.close();
+                
             } catch (IOException ex) {
                 Exceptions.printStackTrace(ex);
+            }
+            finally{
+               if (writer!=null)  
+                try {
+                    writer.close();
+                } catch (IOException ignore) {
+                   // Exceptions.printStackTrace(ex);
+                } 
             }
             File[] files = {tmpFile};
             try {
