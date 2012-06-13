@@ -82,7 +82,8 @@ public class PlsqlFormatOptions {
     public static final String tabSize = SimpleValueNames.TAB_SIZE;
     public static final String spacesPerTab = SimpleValueNames.SPACES_PER_TAB;
     public static final String indentSize = SimpleValueNames.INDENT_SHIFT_WIDTH;
-    public static final String indentOnly = "indentOnly"; //NOI18N
+    public static final String autoIndent = "autoIndent"; //NOI18N
+    public static final String autoUppercase = "autoUppercase";
 
     private PlsqlFormatOptions() {
     }
@@ -125,7 +126,8 @@ public class PlsqlFormatOptions {
             {tabSize, "3"}, //NOI18N
             {spacesPerTab, "3"}, //NOI18N
             {indentSize, "3"}, //NOI18N
-            {indentOnly, FALSE}, //NOI18N
+            {autoIndent, TRUE}, //NOI18N
+            {autoUppercase, TRUE}, //NOI18N
         };
 
         defaults = new HashMap<String, String>();

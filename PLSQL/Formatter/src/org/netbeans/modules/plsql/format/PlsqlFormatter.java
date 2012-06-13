@@ -78,7 +78,8 @@ import org.openide.util.NbBundle;
  */
 public class PlsqlFormatter extends ExtFormatter {
 
-    private boolean isIndentOnly = false;
+    private boolean isAutoIndent = true;
+    private boolean isAutoUppercase = true;
     private boolean isTyping = false;
 
     public PlsqlFormatter(Class kitClass) {
@@ -211,7 +212,7 @@ public class PlsqlFormatter extends ExtFormatter {
      */
     @Override
     public int[] getReformatBlock(JTextComponent target, String arg1) {
-        if (isIndentOnly || arg1.length() != 1) //We dont need to consider spaces
+        if (!isAutoUppercase || arg1.length() != 1) //We dont need to consider spaces
         {
             return null;
         }
@@ -254,8 +255,9 @@ public class PlsqlFormatter extends ExtFormatter {
 
                 //Get indent only value from the preferences
                 Preferences prefs = MimeLookup.getLookup(PlsqlEditorKit.MIME_TYPE).lookup(Preferences.class);
-                isIndentOnly = prefs.getBoolean("indentOnly", false);
-
+                isAutoIndent = prefs.getBoolean("autoIndent", false); 
+                isAutoUppercase = prefs.getBoolean("autoUppercase", false);
+                
                 try {
                     PlsqlFormatSupport plsqlFormatSup = (PlsqlFormatSupport) createFormatSupport(fw);
                     FormatTokenPosition pos = plsqlFormatSup.getFormatStartPosition();
@@ -277,7 +279,7 @@ public class PlsqlFormatter extends ExtFormatter {
 
                         if (pos != null && pos.getToken() != null) {
                             //if a new line indent
-                            if (!isIndentOnly) {
+                            if (isAutoUppercase) {
                                 plsqlFormatSup.formatKeyWords(plsqlFormatSup, pos, blockFactory, startOffset - colStart);
                                 if (startOffset != -1 && pane != null) {
                                     pane.setCaretPosition(startOffset);  // set the correct caret position                           
@@ -287,13 +289,14 @@ public class PlsqlFormatter extends ExtFormatter {
                         isTyping = false;
                         return;
                     }
-                    if (!isIndentOnly) {
+                    if (isAutoUppercase) {
                         if (startOffset == -1) {
                             plsqlFormatSup.formatLine(plsqlFormatSup, pos, blockFactory);
                         } else {
                             plsqlFormatSup.formatKeyWords(plsqlFormatSup, pos, blockFactory, startOffset - colStart);
                         }
                     }
+                    if(isAutoIndent){
                     while (pos != null) {
                         // Indent the current line
 
@@ -321,6 +324,7 @@ public class PlsqlFormatter extends ExtFormatter {
 
                             pos = plsqlFormatSup.findLineStart(pos);
                         }
+                    }
                     }
                 } catch (IllegalStateException e) {
                 }
