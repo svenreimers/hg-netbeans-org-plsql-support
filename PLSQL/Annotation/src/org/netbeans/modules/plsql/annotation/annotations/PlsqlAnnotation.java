@@ -159,12 +159,7 @@ public abstract class PlsqlAnnotation extends Annotation {
       }
 
       private boolean addApproveMarker(Document doc, int ignoreOffset) {
-         String user = JOptionPane.showInputDialog(WindowManager.getDefault().getMainWindow(), "Please insert the User Id", "Information", JOptionPane.INFORMATION_MESSAGE);
-         if (user == null || user.trim().equals("")) {
-            return false;
-         }
-
-         String key = "--@" + getIgnoreKey() + "(" + user + "," + getDateTime() + ")\n";
+         String key = "--@" + getIgnoreKey() + "(" + System.getProperty("user.name") + "," + getDateTime() + ")\n";
          return addMarker(doc, key, ignoreOffset);
       }
 
