@@ -212,7 +212,7 @@ public class PlsqlFormatter extends ExtFormatter {
      */
     @Override
     public int[] getReformatBlock(JTextComponent target, String arg1) {
-        if (!isAutoUppercase || arg1.length() != 1) //We dont need to consider spaces
+        if (arg1.length() != 1) //We dont need to consider spaces
         {
             return null;
         }
@@ -255,8 +255,8 @@ public class PlsqlFormatter extends ExtFormatter {
 
                 //Get indent only value from the preferences
                 Preferences prefs = MimeLookup.getLookup(PlsqlEditorKit.MIME_TYPE).lookup(Preferences.class);
-                isAutoIndent = prefs.getBoolean("autoIndent", false); 
-                isAutoUppercase = prefs.getBoolean("autoUppercase", false);
+                isAutoIndent = prefs.getBoolean("autoIndent", true); 
+                isAutoUppercase = prefs.getBoolean("autoUppercase", true);
                 
                 try {
                     PlsqlFormatSupport plsqlFormatSup = (PlsqlFormatSupport) createFormatSupport(fw);
