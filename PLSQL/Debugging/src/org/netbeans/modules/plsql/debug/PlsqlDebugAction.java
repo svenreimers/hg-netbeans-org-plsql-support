@@ -99,7 +99,7 @@ import org.openide.windows.OutputWriter;
 @ActionID(id = "org.netbeans.modules.plsql.debug.PlsqlDebugAction", category = "PLSQL")
 @ActionRegistration(displayName = "#CTL_PlsqlDebugAction", iconBase = "org/netbeans/modules/plsql/debug/debug.png")
 @ActionReferences({
-//   @ActionReference(path = "Shortcuts", name = "DS-D"),
+   @ActionReference(path = "Shortcuts", name = "DS-D"),
    @ActionReference(path = "Shortcuts", name = "OS-D"),
    @ActionReference(path = "Editors/text/x-plsql/Popup", name = "org-netbeans-modules-plsql-debug-PlsqlDebugAction",
    position = 1020, separatorAfter = 1050)

@@ -77,7 +77,7 @@ import org.openide.util.actions.Presenter;
 @ActionID(id = "org.netbeans.modules.plsql.execution.PlsqlExecuteAction", category = "PLSQL")
 @ActionRegistration(displayName = "#CTL_Execution", iconBase = "org/netbeans/modules/plsql/execution/execute.png")
 @ActionReferences({
-//    @ActionReference(path = "Shortcuts", name = "DS-E"),
+    @ActionReference(path = "Shortcuts", name = "DS-E"),
     @ActionReference(path = "Shortcuts", name = "OS-E"),
     @ActionReference(path = "Editors/text/x-plsql/Popup", name = "org-netbeans-modules-plsql-execution-PlsqlExecuteAction",
     position = 405, separatorBefore = 404)
