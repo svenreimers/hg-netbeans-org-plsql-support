@@ -61,13 +61,7 @@ import org.openide.cookies.EditorCookie;
 import org.openide.filesystems.FileUtil;
 import org.openide.loaders.DataObject;
 import org.openide.nodes.Node;
-import org.openide.util.Cancellable;
-import org.openide.util.Exceptions;
-import org.openide.util.HelpCtx;
-import org.openide.util.Lookup;
-import org.openide.util.NbBundle;
-import org.openide.util.RequestProcessor;
-import org.openide.util.Task;
+import org.openide.util.*;
 import org.openide.util.actions.CookieAction;
 import org.openide.windows.IOProvider;
 import org.openide.windows.InputOutput;
@@ -142,10 +136,9 @@ public abstract class DeployFilesAction extends CookieAction {
     }
 
     private void execute(File[] files) throws IOException {
-        DatabaseConnectionManager connectionProvider = null;
         project = activatedNodes[0].getLookup().lookup(Project.class);
 
-        connectionProvider = DatabaseConnectionManager.getInstance(project);
+        DatabaseConnectionManager connectionProvider = DatabaseConnectionManager.getInstance(project);
         RP.post(new MultipleDbFileExecutionHandler(connectionProvider, files));
     }
 

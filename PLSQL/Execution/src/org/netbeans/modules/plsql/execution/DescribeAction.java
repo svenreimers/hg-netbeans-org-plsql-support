@@ -64,7 +64,7 @@ import org.openide.util.actions.CookieAction;
  */
 @ActionID(id = "org.netbeans.modules.plsql.execution.DescribeAction", category = "PLSQL")
 @ActionRegistration(displayName = "#CTL_DescribeAction")
-@ActionReference(path = "Editors/text/x-plsql/Popup", position = 283)
+@ActionReference(path = "Editors/text/x-plsql/Popup", position = 430, separatorAfter = 440)
 public class DescribeAction extends CookieAction {
 
     private static final RequestProcessor RP = new RequestProcessor(DescribeAction.class);

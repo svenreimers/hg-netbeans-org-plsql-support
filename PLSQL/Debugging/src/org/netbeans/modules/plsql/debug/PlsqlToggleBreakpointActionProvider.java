@@ -77,16 +77,15 @@ import org.netbeans.api.project.Project;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.ProjectUtils;
 
-public class PlsqlToggleBreakpointActionProvider extends ActionsProviderSupport
-      implements PropertyChangeListener {
+public class PlsqlToggleBreakpointActionProvider extends ActionsProviderSupport implements PropertyChangeListener {
 
    private final static Set<Object> ACTIONS = Collections.singleton(ActionsManager.ACTION_TOGGLE_BREAKPOINT);
-   private static Project project=null;
+   private static Project project = null;
 
    public PlsqlToggleBreakpointActionProvider() {
       setEnabled(ActionsManager.ACTION_TOGGLE_BREAKPOINT, true);
       TopComponent.getRegistry().addPropertyChangeListener(
-            WeakListeners.propertyChange(this, TopComponent.getRegistry()));
+              WeakListeners.propertyChange(this, TopComponent.getRegistry()));
    }
 
    public static Project getProject() {
@@ -98,9 +97,9 @@ public class PlsqlToggleBreakpointActionProvider extends ActionsProviderSupport
       //enable all breakpoints in this project, disable all other breakpoints
       Breakpoint[] breakpoints = DebuggerManager.getDebuggerManager().getBreakpoints();
       String projectName = ProjectUtils.getInformation(project).getName();
-      for(int i=0; i<breakpoints.length; i++) {
+      for (int i = 0; i < breakpoints.length; i++) {
          Breakpoint breakpoint = breakpoints[i];
-         if(breakpoint.getGroupName()!=null && breakpoint.getGroupName().equals(projectName)) {
+         if (breakpoint.getGroupName() != null && breakpoint.getGroupName().equals(projectName)) {
             breakpoint.enable();
          } else {
             breakpoint.disable();
@@ -110,26 +109,32 @@ public class PlsqlToggleBreakpointActionProvider extends ActionsProviderSupport
 
    public void doAction(Object action) {
       Node node = getActivatedPlsqlNode();
-      if (node == null)
+      if (node == null) {
          return;
+      }
 
       DataObject dataObject = node.getLookup().lookup(DataObject.class);
       EditorCookie editorCookie = node.getLookup().lookup(EditorCookie.class);
-      if (dataObject == null || editorCookie == null)
+      if (dataObject == null || editorCookie == null) {
          return;
+      }
       project = FileOwnerQuery.getOwner(dataObject.getPrimaryFile());
-      if(project==null) //don't allow debugging outside of projects...
+      if (project == null) //don't allow debugging outside of projects...
+      {
          return;
+      }
 
       JEditorPane editorPane = getEditorPane(editorCookie);
       StyledDocument document = editorCookie.getDocument();
-      if (editorPane == null || document == null)
+      if (editorPane == null || document == null) {
          return;
+      }
 
       int caretDot = editorPane.getCaret().getDot();
       int lineNumber = NbDocument.findLineNumber(document, caretDot);
-      if (lineNumber == -1)
+      if (lineNumber == -1) {
          return;
+      }
 
       FileObject fileObject = node.getLookup().lookup(FileObject.class);
       String url;
@@ -144,54 +149,59 @@ public class PlsqlToggleBreakpointActionProvider extends ActionsProviderSupport
       String methodName = null;
       PlsqlBlock block = PlsqlBlockUtilities.getCurrentBlock(caretDot, dataObject.getLookup().lookup(PlsqlBlockFactory.class).getBlockHierarchy());
       if (block != null && lineNumber == NbDocument.findLineNumber(document, block.getStartOffset())) {
-         if (block.getType() == PlsqlBlockType.PROCEDURE_DEF || block.getType() == PlsqlBlockType.PROCEDURE_IMPL)
+         if (block.getType() == PlsqlBlockType.PROCEDURE_DEF || block.getType() == PlsqlBlockType.PROCEDURE_IMPL) {
             methodName = block.getName().toUpperCase(Locale.ENGLISH);
-         else if (block.getType() == PlsqlBlockType.FUNCTION_DEF || block.getType() == PlsqlBlockType.FUNCTION_IMPL)
+         } else if (block.getType() == PlsqlBlockType.FUNCTION_DEF || block.getType() == PlsqlBlockType.FUNCTION_IMPL) {
             methodName = block.getName().toUpperCase(Locale.ENGLISH);
-         else if (block.getType() == PlsqlBlockType.PACKAGE || block.getType() == PlsqlBlockType.PACKAGE_BODY)
+         } else if (block.getType() == PlsqlBlockType.PACKAGE || block.getType() == PlsqlBlockType.PACKAGE_BODY) {
             methodName = ""; // All methods
-
+         }
          if (methodName != null) {
             DatabaseConnectionManager connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
-            if (connectionProvider == null)
+            if (connectionProvider == null) {
                return;
+            }
             DatabaseConnection databaseConnection = connectionProvider.getTemplateConnection();
-            if (databaseConnection == null)
+            if (databaseConnection == null) {
                return;
+            }
 
             className = PlsqlDebuggerUtilities.getClassName(block, databaseConnection);
-            if (className.startsWith("$Oracle.Procedure"))
+            if (className.startsWith("$Oracle.Procedure")) {
                methodName = ""; // All methods
+            }
          }
       }
 
       Breakpoint oldBreakpoint = null;
-      String[] classNames = new String[] {className};
-      for (Breakpoint point : DebuggerManager.getDebuggerManager().getBreakpoints())
+      String[] classNames = new String[]{className};
+      for (Breakpoint point : DebuggerManager.getDebuggerManager().getBreakpoints()) {
          if (className != null && point instanceof MethodBreakpoint) {
-            MethodBreakpoint methodBreakpoint = (MethodBreakpoint)point;
+            MethodBreakpoint methodBreakpoint = (MethodBreakpoint) point;
             if (methodName.equals(methodBreakpoint.getMethodName())
-                  && Arrays.deepEquals(classNames, methodBreakpoint.getClassFilters())) {
+                    && Arrays.deepEquals(classNames, methodBreakpoint.getClassFilters())) {
                oldBreakpoint = methodBreakpoint;
                break;
             }
          } else if (point instanceof LineBreakpoint) {
-            LineBreakpoint lineBreakpoint = (LineBreakpoint)point;
-            if (lineBreakpoint.getURL().equals(url) &&
-                  lineBreakpoint.getLineNumber() == lineNumber + 1) {
+            LineBreakpoint lineBreakpoint = (LineBreakpoint) point;
+            if (lineBreakpoint.getURL().equals(url)
+                    && lineBreakpoint.getLineNumber() == lineNumber + 1) {
                oldBreakpoint = lineBreakpoint;
                break;
             }
          }
+      }
 
-      if (oldBreakpoint != null)
+      if (oldBreakpoint != null) {
          DebuggerManager.getDebuggerManager().removeBreakpoint(oldBreakpoint);
-      else {
+      } else {
          Breakpoint breakpoint = null;
-         if (className != null)
+         if (className != null) {
             breakpoint = MethodBreakpoint.create(className, methodName);
-         else
+         } else {
             breakpoint = LineBreakpoint.create(url, lineNumber + 1);
+         }
          breakpoint.setGroupName(ProjectUtils.getInformation(project).getName());
          DebuggerManager.getDebuggerManager().addBreakpoint(breakpoint);
       }
@@ -209,8 +219,9 @@ public class PlsqlToggleBreakpointActionProvider extends ActionsProviderSupport
       Node[] nodes = TopComponent.getRegistry().getCurrentNodes();
       if (nodes != null && nodes.length == 1) {
          FileObject file = nodes[0].getLookup().lookup(FileObject.class);
-         if (file != null && file.getMIMEType().equals("text/x-plsql"))
+         if (file != null && file.getMIMEType().equals("text/x-plsql")) {
             return nodes[0];
+         }
       }
       return null;
    }
@@ -223,6 +234,7 @@ public class PlsqlToggleBreakpointActionProvider extends ActionsProviderSupport
          final JEditorPane[] paneArray = new JEditorPane[1];
          try {
             EventQueue.invokeAndWait(new Runnable() {
+
                public void run() {
                   JEditorPane[] panes = editorCookie.getOpenedPanes();
                   paneArray[0] = panes != null && panes.length == 1 ? panes[0] : null;

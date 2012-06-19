@@ -41,47 +41,48 @@
  */
 package org.netbeans.modules.plsql.debug;
 
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
-import org.netbeans.modules.plsqlsupport.db.DatabaseContentUtilities;
-import org.netbeans.modules.plsql.lexer.PlsqlBlock;
-import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
-import org.netbeans.modules.plsql.utilities.PlsqlParserUtil;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.List;
 import java.util.Locale;
 import javax.swing.JEditorPane;
 import javax.swing.text.Caret;
 import org.netbeans.api.db.explorer.DatabaseConnection;
+import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
+import org.netbeans.modules.plsql.utilities.PlsqlParserUtil;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
+import org.netbeans.modules.plsqlsupport.db.DatabaseContentUtilities;
+import org.openide.awt.ActionID;
+import org.openide.awt.ActionReference;
+import org.openide.awt.ActionRegistration;
 import org.openide.cookies.EditorCookie;
 import org.openide.loaders.DataObject;
 import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
 import org.openide.util.HelpCtx;
 import org.openide.util.NbBundle;
-import org.openide.util.RequestProcessor;
 import org.openide.util.actions.CookieAction;
 import org.openide.windows.IOProvider;
 import org.openide.windows.InputOutput;
 import org.openide.windows.OutputWriter;
 
-
+@ActionID(id = "org.netbeans.modules.plsql.debug.PlsqlDebugCompileAction", category = "PLSQL")
+@ActionRegistration(displayName = "#CTL_PlsqlDebugCompileAction")
+@ActionReference(path = "Editors/text/x-plsql/Popup", name = "org-netbeans-modules-plsql-debug-DebugCompileAction", position = 1000)
 public final class PlsqlDebugCompileAction extends CookieAction {
 
    String objectName;
-    @Override
-    protected int mode() {
-       return CookieAction.MODE_EXACTLY_ONE;
-    }
 
-    @Override
-    protected Class<?>[] cookieClasses() {
-        return new Class[]{EditorCookie.class};
-    }
+   @Override
+   protected int mode() {
+      return CookieAction.MODE_EXACTLY_ONE;
+   }
+
+   @Override
+   protected Class<?>[] cookieClasses() {
+      return new Class[]{EditorCookie.class};
+   }
 
    @Override
    protected boolean asynchronous() {
@@ -136,20 +137,20 @@ public final class PlsqlDebugCompileAction extends CookieAction {
       }
    }
 
-    @Override
-    public String getName() {
-        return NbBundle.getMessage(PlsqlDebugCompileAction.class, "CTL_PlsqlDebugCompileAction");
-    }
+   @Override
+   public String getName() {
+      return NbBundle.getMessage(PlsqlDebugCompileAction.class, "CTL_PlsqlDebugCompileAction");
+   }
 
-    @Override
-    public HelpCtx getHelpCtx() {
-        return HelpCtx.DEFAULT_HELP;
-    }
+   @Override
+   public HelpCtx getHelpCtx() {
+      return HelpCtx.DEFAULT_HELP;
+   }
 
-    @Override    
+   @Override
    protected boolean enable(Node[] activatedNodes) {
-       objectName = getObjectName(activatedNodes);
-       return objectName!=null;
+      objectName = getObjectName(activatedNodes);
+      return objectName != null;
    }
 
    private String getObjectName(Node[] activatedNodes) {
@@ -166,12 +167,12 @@ public final class PlsqlDebugCompileAction extends CookieAction {
          return null;
       }
       String selection = panes[0].getSelectedText();
-      if(selection!=null) { //check that this is a valid oracle identifier
-         if(selection.startsWith("\"") && selection.endsWith("\"")) {
+      if (selection != null) { //check that this is a valid oracle identifier
+         if (selection.startsWith("\"") && selection.endsWith("\"")) {
             return selection;
          }
          String upper = selection.toUpperCase(Locale.ENGLISH);
-         if(DatabaseContentUtilities.isValidOracleUppercaseIdentifier(upper)) {
+         if (DatabaseContentUtilities.isValidOracleUppercaseIdentifier(upper)) {
             return upper;
          }
          return null;
@@ -181,16 +182,15 @@ public final class PlsqlDebugCompileAction extends CookieAction {
       //go through the parse tree and find the "top" node. This is the object we should debug complie
       DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
       PlsqlBlockFactory fac = dataObject.getLookup().lookup(PlsqlBlockFactory.class);
-      List<PlsqlBlock> blockHierarchy = fac.getBlockHierarchy();
-      String objectName = PlsqlParserUtil.getPackageName(fac, position);
-      if(objectName==null || objectName.length()==0) {
-         objectName = PlsqlParserUtil.getMethodName(fac, position);
+      String packageName = PlsqlParserUtil.getPackageName(fac, position);
+      if (packageName == null || packageName.length() == 0) {
+         packageName = PlsqlParserUtil.getMethodName(fac, position);
       }
-      if(objectName!=null && objectName.length()>0) {
-         if(objectName.startsWith("\"")) {
-            return objectName;
+      if (packageName != null && packageName.length() > 0) {
+         if (packageName.startsWith("\"")) {
+            return packageName;
          } else {
-            return objectName.toUpperCase(Locale.ENGLISH);
+            return packageName.toUpperCase(Locale.ENGLISH);
          }
       }
       return null;

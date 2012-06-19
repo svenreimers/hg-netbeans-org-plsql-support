@@ -60,7 +60,7 @@ import org.openide.util.actions.CookieAction;
 
 @ActionID(id = "org.netbeans.modules.plsql.execution.ViewDataAction", category = "PLSQL")
 @ActionRegistration(displayName = "#CTL_ViewDataAction")
-@ActionReference(path = "Editors/text/x-plsql/Popup", position = 282)
+@ActionReference(path = "Editors/text/x-plsql/Popup", position = 430)
 public final class ViewDataAction extends CookieAction {
 
     /**

@@ -67,7 +67,7 @@ import org.openide.util.datatransfer.ExClipboard;
 
 @ActionID(id = "org.netbeans.modules.plsql.execution.PasteAsSqlCommandAction", category = "PLSQL")
 @ActionRegistration(displayName = "#CTL_PasteAsSqlCommandAction")
-@ActionReference(path = "Editors/text/x-plsql/Popup", position = 286)
+@ActionReference(path = "Editors/text/x-plsql/Popup", position = 4010)
 public class PasteAsSqlCommandAction extends CookieAction {
 
     @Override
@@ -88,62 +88,62 @@ public class PasteAsSqlCommandAction extends CookieAction {
         Clipboard clipboard = Lookup.getDefault().lookup(ExClipboard.class);
         Transferable trn = clipboard.getContents(null);
         if (trn != null) {
-             try {
-                    String contents = (String) trn.getTransferData(DataFlavor.stringFlavor);
-                    StringBuilder sb = new StringBuilder();
-                    String[] lines = contents.trim().split("\n");
-                    int paramCount = 0;  //counter for '?' in SQL
-                    for (int i = 0; i < lines.length; i++) {
-                        String line = lines[i].replaceAll("\\s+$", ""); //remove trailing space
-                        line = line.replace("\\\"" , "\"");  // remove java escape (i.e. \) for double quotes used for column aliases in selects
-                        line = line.replaceFirst("^\\s*\\+?\\s*\"", ""); // remove lines starting with " or +"
-                        line = line.replaceAll("\"\\s*\\+?$", ""); // remove " and "+ from eol
-                        line = line.replaceAll("\"\\s*;+$", ""); // remove "; from eol
-                        //replace ? with code template place holders
-                        for (;line.indexOf("?")>0;++paramCount){
-                          line = line.replaceFirst("\\?", "\\${<value_"+paramCount+">}");
-                        }
-                        
-                        if (line.trim().startsWith("\"")) {
-                            line = line.replaceFirst("\"", ""); //preserves spaces at begining
-                        }
-                        
-                        //finally append line to string builder
-                        if (i == lines.length - 1) {
-                            sb.append(line);
-                        } else {
-                            sb.append(line).append("\n");
-                        }
-                    }
-                    JEditorPane[] panes = ec.getOpenedPanes();
-                    if (panes != null && panes.length > 0) {
-                        insert(sb.toString(), panes[0], doc);
+            try {
+                String contents = (String) trn.getTransferData(DataFlavor.stringFlavor);
+                StringBuilder sb = new StringBuilder();
+                String[] lines = contents.trim().split("\n");
+                int paramCount = 0;  //counter for '?' in SQL
+                for (int i = 0; i < lines.length; i++) {
+                    String line = lines[i].replaceAll("\\s+$", ""); //remove trailing space
+                    line = line.replace("\\\"", "\"");  // remove java escape (i.e. \) for double quotes used for column aliases in selects
+                    line = line.replaceFirst("^\\s*\\+?\\s*\"", ""); // remove lines starting with " or +"
+                    line = line.replaceAll("\"\\s*\\+?$", ""); // remove " and "+ from eol
+                    line = line.replaceAll("\"\\s*;+$", ""); // remove "; from eol
+                    //replace ? with code template place holders
+                    for (; line.indexOf("?") > 0; ++paramCount) {
+                        line = line.replaceFirst("\\?", "\\${<value_" + paramCount + ">}");
                     }
 
-                } catch (UnsupportedFlavorException ex) {
-                    Exceptions.printStackTrace(ex);
-                } catch (Exception ex) {
-                    Exceptions.printStackTrace(ex);
+                    if (line.trim().startsWith("\"")) {
+                        line = line.replaceFirst("\"", ""); //preserves spaces at begining
+                    }
+
+                    //finally append line to string builder
+                    if (i == lines.length - 1) {
+                        sb.append(line);
+                    } else {
+                        sb.append(line).append("\n");
+                    }
                 }
+                JEditorPane[] panes = ec.getOpenedPanes();
+                if (panes != null && panes.length > 0) {
+                    insert(sb.toString(), panes[0], doc);
+                }
+
+            } catch (UnsupportedFlavorException ex) {
+                Exceptions.printStackTrace(ex);
+            } catch (Exception ex) {
+                Exceptions.printStackTrace(ex);
+            }
         }
     }
-    
-    private static void insert(String s, final JTextComponent target, final Document doc) {        
+
+    private static void insert(String s, final JTextComponent target, final Document doc) {
         try {
             //at first, find selected text range
             Caret caret = target.getCaret();
             int p0 = Math.min(caret.getDot(), caret.getMark());
             int p1 = Math.max(caret.getDot(), caret.getMark());
-            doc.remove(p0, p1 - p0);            
+            doc.remove(p0, p1 - p0);
             CodeTemplate ct = CodeTemplateManager.get(target.getDocument()).createTemporary(s);
-            ct.insert(target);              
+            ct.insert(target);
         } catch (BadLocationException ble) {
             Exceptions.printStackTrace(ble);
-        }        
+        }
     }
 
     @Override
-    public String getName() {        
+    public String getName() {
         return NbBundle.getMessage(PasteAsSqlCommandAction.class, "CTL_PasteAsSqlCommandAction");
     }
 

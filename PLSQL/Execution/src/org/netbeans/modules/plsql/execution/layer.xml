@@ -51,7 +51,7 @@
                             <attr name="position" intvalue="19400"/>
                         </file>
                         <file name="org-netbeans-modules-plsql-execution-PlsqlExecuteAction.instance">
-                            <attr bundlevalue="org.netbeans.modules.plsql.execution.Bundle#CTL_fileExecution" name="displayName"/>
+                            <attr bundlevalue="org.netbeans.modules.plsql.execution.Bundle#CTL_ExecutionDescription" name="displayName"/>
                             <attr name="position" intvalue="19500"/>
                         </file>
                 <!-- <file name="org-netbeans-modules-plsql-execution-PlsqlCommitAction.instance">

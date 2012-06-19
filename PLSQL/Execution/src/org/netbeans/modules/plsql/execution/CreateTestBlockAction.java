@@ -41,17 +41,6 @@
  */
 package org.netbeans.modules.plsql.execution;
 
-import static org.netbeans.modules.plsql.lexer.PlsqlBlockType.*;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
-import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
-import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
-import org.netbeans.modules.plsql.lexer.PlsqlBlock;
-import org.netbeans.modules.plsql.lexer.PlsqlTokenId;
-import org.netbeans.modules.plsql.utilities.NotConnectedToDbException;
-import org.netbeans.modules.plsql.utilities.PlsqlFileUtil;
-import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
-import org.netbeans.modules.plsql.utilities.PlsqlParserUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -66,6 +55,17 @@ import org.netbeans.api.lexer.TokenHierarchy;
 import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
+import org.netbeans.modules.plsql.lexer.PlsqlBlock;
+import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
+import static org.netbeans.modules.plsql.lexer.PlsqlBlockType.*;
+import org.netbeans.modules.plsql.lexer.PlsqlTokenId;
+import org.netbeans.modules.plsql.utilities.NotConnectedToDbException;
+import org.netbeans.modules.plsql.utilities.PlsqlFileUtil;
+import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
+import org.netbeans.modules.plsql.utilities.PlsqlParserUtil;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
+import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
+import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionReferences;
@@ -84,7 +84,7 @@ import org.openide.windows.WindowManager;
 @ActionRegistration(displayName = "#CTL_CreateTestBlockAction")
 @ActionReferences(value = {
    @ActionReference(path = "Shortcuts", name = "AS-B"),
-   @ActionReference(path = "Editors/text/x-plsql/Popup", position = 281)})
+   @ActionReference(path = "Editors/text/x-plsql/Popup", position = 1010)})
 public final class CreateTestBlockAction extends CookieAction {
 
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);

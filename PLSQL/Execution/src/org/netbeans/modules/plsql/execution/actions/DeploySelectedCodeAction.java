@@ -46,7 +46,6 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-
 import java.util.List;
 import javax.swing.JEditorPane;
 import javax.swing.JMenu;
@@ -55,7 +54,6 @@ import javax.swing.JSeparator;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Caret;
 import javax.swing.text.Document;
-
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
@@ -76,7 +74,8 @@ import org.openide.util.actions.CookieAction;
 
 @ActionID(id = "org.netbeans.modules.plsql.execution.actions.DeploySelectedCodeAction", category = "PLSQL")
 @ActionRegistration(displayName = "#CTL_DeploySelectedCodeAction")
-@ActionReference(path = "Editors/text/x-plsql/Popup", name = "org-netbeans-modules-plsql-execution-action-DeploySelectedCodeAction", position = 280)
+@ActionReference(path = "Editors/text/x-plsql/Popup", name = "org-netbeans-modules-plsql-execution-action-DeploySelectedCodeAction",
+position = 410)
 public final class DeploySelectedCodeAction extends CookieAction {
 
     private Node[] activatedNodes;
@@ -87,7 +86,8 @@ public final class DeploySelectedCodeAction extends CookieAction {
     private final String TEMP_SQL_FILE_PREFIX = "Tempory";
 
     /**
-     * Create a sql execution window for the selected methoad
+     * Create a SQL execution window for the selected method
+     *
      * @param activatedNodes
      */
     @Override
@@ -128,6 +128,7 @@ public final class DeploySelectedCodeAction extends CookieAction {
 
     /**
      * Enable this action when right clicked on procedures or functions
+     *
      * @param arg0
      * @return
      */
@@ -216,17 +217,17 @@ public final class DeploySelectedCodeAction extends CookieAction {
                 tmpFile.deleteOnExit();
                 writer = new FileWriter(tmpFile);
                 writer.write(output);
-                
+
             } catch (IOException ex) {
                 Exceptions.printStackTrace(ex);
-            }
-            finally{
-               if (writer!=null)  
-                try {
-                    writer.close();
-                } catch (IOException ignore) {
-                   // Exceptions.printStackTrace(ex);
-                } 
+            } finally {
+                if (writer != null) {
+                    try {
+                        writer.close();
+                    } catch (IOException ignore) {
+                        // Exceptions.printStackTrace(ex);
+                    }
+                }
             }
             File[] files = {tmpFile};
             try {

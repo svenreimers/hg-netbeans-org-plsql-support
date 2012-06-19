@@ -41,20 +41,24 @@
  */
 package org.netbeans.modules.plsql.debug;
 
+import org.netbeans.api.debugger.DebuggerInfo;
+import org.netbeans.api.debugger.DebuggerManager;
+import org.netbeans.api.debugger.Session;
+import org.netbeans.api.debugger.jpda.ListeningDICookie;
 import org.netbeans.api.project.Project;
+import org.openide.awt.ActionID;
+import org.openide.awt.ActionRegistration;
 import org.openide.loaders.DataObject;
 import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
 import org.openide.util.HelpCtx;
 import org.openide.util.NbBundle;
-import org.openide.util.actions.CookieAction;
-import org.netbeans.api.debugger.DebuggerInfo;
-import org.netbeans.api.debugger.DebuggerManager;
-import org.netbeans.api.debugger.Session;
-import org.netbeans.api.debugger.jpda.ListeningDICookie;
 import org.openide.util.RequestProcessor;
 import org.openide.util.RequestProcessor.Task;
+import org.openide.util.actions.CookieAction;
 
+@ActionID(id = "org.netbeans.modules.plsql.debug.PlsqlDebugListenAction", category = "Project/Node")
+@ActionRegistration(displayName = "#CTL_PlsqlDebugListenAction")
 public final class PlsqlDebugListenAction extends CookieAction {
 
    private static final int DEBUG_PORT = 13406;

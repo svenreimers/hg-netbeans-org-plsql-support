@@ -41,15 +41,6 @@
  */
 package org.netbeans.modules.plsql.debug;
 
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsqlsupport.db.DatabaseContentUtilities;
-import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
-import org.netbeans.modules.plsql.execution.PlsqlExecutableBlocksMaker;
-import org.netbeans.modules.plsql.execution.PlsqlExecutableObject;
-import org.netbeans.modules.plsql.execution.PlsqlFileExecutor;
-import org.netbeans.modules.plsql.lexer.PlsqlBlock;
-import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
-import org.netbeans.modules.plsql.lexer.PlsqlBlockUtilities;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -66,32 +57,53 @@ import javax.swing.JOptionPane;
 import javax.swing.text.Document;
 import javax.swing.text.StyledDocument;
 import org.netbeans.api.db.explorer.DatabaseConnection;
-import org.netbeans.api.project.FileOwnerQuery;
-import org.netbeans.api.project.Project;
-import org.openide.cookies.EditorCookie;
-import org.openide.loaders.DataObject;
-import org.openide.loaders.DataObjectNotFoundException;
-import org.openide.nodes.Node;
-import org.openide.util.Exceptions;
-import org.openide.util.HelpCtx;
-import org.openide.util.NbBundle;
-import org.openide.util.actions.CookieAction;
-import org.openide.windows.IOProvider;
-import org.openide.windows.InputOutput;
-import org.openide.windows.OutputWriter;
 import org.netbeans.api.debugger.Breakpoint;
 import org.netbeans.api.debugger.DebuggerInfo;
 import org.netbeans.api.debugger.DebuggerManager;
 import org.netbeans.api.debugger.Session;
 import org.netbeans.api.debugger.jpda.LineBreakpoint;
 import org.netbeans.api.debugger.jpda.ListeningDICookie;
+import org.netbeans.api.project.FileOwnerQuery;
+import org.netbeans.api.project.Project;
+import org.netbeans.modules.plsql.execution.PlsqlExecutableBlocksMaker;
+import org.netbeans.modules.plsql.execution.PlsqlExecutableObject;
+import org.netbeans.modules.plsql.execution.PlsqlFileExecutor;
+import org.netbeans.modules.plsql.lexer.PlsqlBlock;
+import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
+import org.netbeans.modules.plsql.lexer.PlsqlBlockUtilities;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
+import org.netbeans.modules.plsqlsupport.db.DatabaseContentUtilities;
+import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
+import org.openide.awt.ActionID;
+import org.openide.awt.ActionReference;
+import org.openide.awt.ActionReferences;
+import org.openide.awt.ActionRegistration;
+import org.openide.cookies.EditorCookie;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.loaders.DataFolder;
+import org.openide.loaders.DataObject;
+import org.openide.loaders.DataObjectNotFoundException;
+import org.openide.nodes.Node;
 import org.openide.text.NbDocument;
+import org.openide.util.Exceptions;
+import org.openide.util.HelpCtx;
+import org.openide.util.NbBundle;
 import org.openide.util.RequestProcessor;
 import org.openide.util.RequestProcessor.Task;
+import org.openide.util.actions.CookieAction;
+import org.openide.windows.IOProvider;
+import org.openide.windows.InputOutput;
+import org.openide.windows.OutputWriter;
 
+@ActionID(id = "org.netbeans.modules.plsql.debug.PlsqlDebugAction", category = "PLSQL")
+@ActionRegistration(displayName = "#CTL_PlsqlDebugAction", iconBase = "org/netbeans/modules/plsql/debug/debug.png")
+@ActionReferences({
+//   @ActionReference(path = "Shortcuts", name = "DS-D"),
+   @ActionReference(path = "Shortcuts", name = "OS-D"),
+   @ActionReference(path = "Editors/text/x-plsql/Popup", name = "org-netbeans-modules-plsql-debug-PlsqlDebugAction",
+   position = 1020, separatorAfter = 1050)
+})
 public final class PlsqlDebugAction extends CookieAction {
 
    private static final RequestProcessor RP = new RequestProcessor(PlsqlDebugAction.class.getName());
@@ -152,6 +164,7 @@ public final class PlsqlDebugAction extends CookieAction {
 
    /**
     * Enable this action only for the SQL execution window
+    *
     * @param nodes
     * @return
     */
