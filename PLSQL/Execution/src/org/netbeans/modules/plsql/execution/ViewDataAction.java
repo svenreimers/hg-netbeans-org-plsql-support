@@ -43,7 +43,6 @@ package org.netbeans.modules.plsql.execution;
 
 
 import javax.swing.JEditorPane;
-
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
@@ -64,7 +63,7 @@ import org.openide.util.actions.CookieAction;
 public final class ViewDataAction extends CookieAction {
 
     /**
-     * Create a sql execution window for the selected methoad
+     * Create a SQL execution window for the selected method
      * @param activatedNodes
      */
     @Override

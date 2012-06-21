@@ -61,7 +61,7 @@ import org.openide.util.datatransfer.ExClipboard;
 
 @ActionID(id = "org.netbeans.modules.plsql.execution.CopyAsJavaStringAction", category = "PLSQL")
 @ActionRegistration(displayName = "#CTL_CopyAsJavaStringAction")
-@ActionReference(path = "Editors/text/x-plsql/Popup", position = 4000)
+@ActionReference(path = "Editors/text/x-plsql/Popup", position = 3995)
 public class CopyAsJavaStringAction extends CookieAction {
 
     @Override
