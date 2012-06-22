@@ -41,8 +41,10 @@
  */
 package org.netbeans.modules.plsql.utilities;
 
+import java.io.File;
 import org.netbeans.modules.plsql.lexer.PlsqlBlockType;
 import java.io.IOException;
+import java.util.Collection;
 import org.netbeans.api.project.Project;
 import org.openide.filesystems.FileObject;
 import org.openide.loaders.DataObject;
@@ -92,4 +94,10 @@ public interface PlsqlFileLocatorService {
    public void addFileToCache(Project project, FileObject fileObject) throws IOException;
 
    public void rebuildCache(Project project);
+   
+    /**
+    * Give all objects in a project.
+    * @param project
+    */
+   public Collection<File> getAllPlsqlFiles(Project project);     
 }

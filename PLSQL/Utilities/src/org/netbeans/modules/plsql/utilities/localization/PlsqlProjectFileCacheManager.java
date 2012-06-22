@@ -106,6 +106,12 @@ class PlsqlProjectFileCacheManager extends FileChangeAdapter implements Serializ
    FileObject get(final PlsqlSearchObject searchObject) {
       return cache.get(searchObject);
    }
+   
+   Collection<File> getAllPlsqlObjects(){
+   final PlsqlFileFinder scanner = new PlsqlFileFinder(rootFolder);
+      final Collection<File> listFiles = scanner.findPlsqlFiles();
+      return listFiles;
+   }
 
    int numberPlsqlObjects() {
       return cache.numberPlsqlObjects();

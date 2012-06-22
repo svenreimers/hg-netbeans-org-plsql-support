@@ -41,6 +41,7 @@
  */
 package org.netbeans.modules.plsql.utilities.localization;
 
+import java.util.Collection;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.modules.plsql.lexer.PlsqlBlockType;
 import org.netbeans.modules.plsql.utilities.PlsqlFileLocatorService;
@@ -179,4 +180,16 @@ public class PlsqlFileLocatorServiceImpl implements PlsqlFileLocatorService {
          }
       }
    }
+
+    @Override
+    public Collection<File> getAllPlsqlFiles(Project project) {
+        if (project != null) {
+            PlsqlProjectFileCacheManager fileCache = cachePerProject.get(getProjectName(project));
+            if (fileCache != null) {
+                Collection<File> allPlsqlFiles = fileCache.getAllPlsqlObjects();
+                return allPlsqlFiles;
+            }
+        }
+        return null;
+    }
 }
