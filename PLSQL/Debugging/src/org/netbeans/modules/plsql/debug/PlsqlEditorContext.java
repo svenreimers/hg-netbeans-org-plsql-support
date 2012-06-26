@@ -41,6 +41,7 @@
  */
 package org.netbeans.modules.plsql.debug;
 
+import java.io.UnsupportedEncodingException;
 import static org.netbeans.modules.plsql.lexer.PlsqlBlockType.*;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
@@ -52,6 +53,7 @@ import org.netbeans.modules.plsql.lexer.PlsqlBlockUtilities;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -63,8 +65,11 @@ import javax.swing.JEditorPane;
 import javax.swing.SwingUtilities;
 import javax.swing.text.StyledDocument;
 import org.netbeans.api.db.explorer.DatabaseConnection;
+import org.netbeans.api.debugger.Breakpoint;
+import org.netbeans.api.debugger.DebuggerManager;
 import org.netbeans.api.debugger.jpda.JPDAThread;
 import org.netbeans.api.debugger.jpda.LineBreakpoint;
+import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.spi.debugger.jpda.EditorContext;
 import org.netbeans.spi.debugger.ui.EditorContextDispatcher;
 import org.openide.cookies.EditorCookie;
@@ -77,6 +82,8 @@ import org.openide.util.Exceptions;
 import org.openide.util.WeakListeners;
 import org.netbeans.api.project.Project;
 import org.openide.cookies.LineCookie;
+import org.openide.filesystems.FileUtil;
+import org.openide.loaders.DataFolder;
 import org.openide.text.Annotation;
 import org.openide.text.Line;
 import org.openide.util.actions.SystemAction;
@@ -125,8 +132,8 @@ public class PlsqlEditorContext extends EditorContext {
       }
       return false;
    }
-
-   private String extractMethodName(String url, String namespace) {
+   
+     private String extractMethodName(String url, String namespace) {
       return null;
    }
 
@@ -184,7 +191,7 @@ public class PlsqlEditorContext extends EditorContext {
          for (Iterator it = annotations.iterator(); it.hasNext();) {
             removeSingleAnnotation((Annotation) it.next());
          }
-      } else {
+      } else if(a instanceof Annotation){
          removeSingleAnnotation((Annotation) a);
       }
    }
@@ -345,12 +352,9 @@ public class PlsqlEditorContext extends EditorContext {
       if (blockFactory == null) {
          return null;
       }
-
+      
       int offset = NbDocument.findLineOffset(document, lineNumber - 1);
       PlsqlBlock block = PlsqlBlockUtilities.getCurrentBlock(offset, blockFactory.getBlockHierarchy());
-      if (block == null) {
-         return null;
-      }
 
       DatabaseConnectionManager connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
       if (connectionProvider == null) {
@@ -359,6 +363,17 @@ public class PlsqlEditorContext extends EditorContext {
       DatabaseConnection databaseConnection = connectionProvider.getTemplateConnection();
       if (databaseConnection == null) {
          return null;
+      }
+      
+      if (block == null) {
+          //to avoid making the classname null
+         DatabaseContentManager cache = DatabaseContentManager.getInstance(databaseConnection);
+         FileObject primaryFile = dataObject.getPrimaryFile();
+         String fileName = primaryFile.getName();
+         if(cache !=null)
+           return "$Oracle.PackageBody." + cache.getOwner(fileName) + "." + fileName;
+         else  
+           return null;
       }
 
       return PlsqlDebuggerUtilities.getClassName(block, databaseConnection);
@@ -399,7 +414,7 @@ public class PlsqlEditorContext extends EditorContext {
            String url,
            int lineNumber,
            String annotationType,
-           Object timeStamp) {
+           Object timeStamp) {       
       return annotate(url, lineNumber, annotationType, timeStamp, null);
    }
 
@@ -445,31 +460,90 @@ public class PlsqlEditorContext extends EditorContext {
    }
 
    @Override
-   public Object annotate(final String url,
-           int lineNumber,
-           String annotationType,
-           Object timeStamp,
-           JPDAThread thread) {
-      if (url == null) {
+    public Object annotate(final String url,
+            int lineNumber,
+            String annotationType,
+            Object timeStamp,
+            JPDAThread thread) {
+        if (url == null) {
+            return null;
+        }
+        Project project = PlsqlToggleBreakpointActionProvider.getProject();
+        if (project == null) {
+           return setDebugProject();
+        }
+        DataObject dataObject = getDataObject(url);
+        if (dataObject == null) {
+            final List result = new ArrayList();
+            getDataObject(url, lineNumber, result);
+            if (result.size() > 0) {
+                lineNumber = ((Integer) result.get(0)).intValue();
+                dataObject = (DataObject) result.get(1);
+            }
+        }
+        if (dataObject == null || lineNumber < 1) {
+            return null;
+        }
+        LineCookie lc = dataObject.getCookie(LineCookie.class);
+        if (lc == null) {
+            return null;
+        }
+        Line line = lc.getLineSet().getCurrent(lineNumber - 1);
+        return new DebuggerAnnotation(annotationType, line, thread);
+    }
+   
+    private DataObject setDebugProject() {
+        String debugProj = null;
+        Breakpoint[] breakpoints = DebuggerManager.getDebuggerManager().getBreakpoints();
+        ArrayList<String> projNames = new ArrayList<String>();
+       
+        for(Breakpoint breakpoint : breakpoints){
+           if(projNames.indexOf(breakpoint.getGroupName()) == -1)
+                projNames.add(breakpoint.getGroupName());
+        }
+        String[] nameArry = new String[projNames.size()];
+
+        nameArry = projNames.toArray(nameArry);
+        if (!projNames.isEmpty()) {
+            GetProjectDialog projDialog = new GetProjectDialog(null, nameArry, true);
+            projDialog.setVisible(true);
+            debugProj = projDialog.getValue();
+        }
+
+        if (debugProj != null) {
+            DataObject dataObject = null;
+            for (Breakpoint breakpoint : breakpoints) {                
+                if (breakpoint.getGroupName().equalsIgnoreCase(debugProj)) {                    
+                    if (breakpoint instanceof LineBreakpoint) {
+                        LineBreakpoint lbp = (LineBreakpoint) breakpoint;
+                        String url = lbp.getURL();
+                        int lineNumber = lbp.getLineNumber();
+                        if (url != null && lineNumber > -1) {
+                            String fileName = url.substring(6);
+                            try {
+                                fileName = java.net.URLDecoder.decode(fileName, "UTF-8");
+                            } catch (UnsupportedEncodingException ex) {
+                                Exceptions.printStackTrace(ex);
+                            }
+                            final File file = new File(fileName);
+                            if (!file.exists()) {
+                                return null;
+                            }
+                            try {
+                                dataObject = DataFolder.find(FileUtil.toFileObject(file));
+                                if (dataObject != null) {
+                                    Project debugProject = FileOwnerQuery.getOwner(dataObject.getPrimaryFile());
+                                    PlsqlToggleBreakpointActionProvider.setProject(debugProject);
+                                    return dataObject;
+                                }
+                            } catch (DataObjectNotFoundException ex) {
+                                return null;
+                            }
+                        }
+                    }
+                }
+            }
+        }
          return null;
-      }
-      DataObject dataObject = getDataObject(url);
-      if (dataObject == null) {
-         final List result = new ArrayList();
-         getDataObject(url, lineNumber, result);
-         if (result.size() > 0) {
-            lineNumber = ((Integer) result.get(0)).intValue();
-            dataObject = (DataObject) result.get(1);
-         }
-      }
-      if (dataObject == null || lineNumber < 1) {
-         return null;
-      }
-      LineCookie lc = dataObject.getCookie(LineCookie.class);
-      if (lc == null) {
-         return null;
-      }
-      Line line = lc.getLineSet().getCurrent(lineNumber - 1);
-      return new DebuggerAnnotation(annotationType, line, thread);
-   }
+    }
 }
