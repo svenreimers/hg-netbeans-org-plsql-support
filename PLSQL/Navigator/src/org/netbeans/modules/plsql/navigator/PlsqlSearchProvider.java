@@ -49,14 +49,16 @@ public class PlsqlSearchProvider implements SearchProvider {
         }
 
         for (Project project : projects) {
-            //For Local Files
+            //For Local Files            
             Collection<File> allObjects = locatorService.getAllPlsqlFiles(project);
-            for (File fileObj : allObjects) {
-                String name = fileObj.getName().toLowerCase().substring(0, fileObj.getName().indexOf("."));
-                boolean match = useRegExp ? Pattern.matches(query, name) : name.contains(query);
-                if (match) {
-                    if (!response.addResult(new OpenLocalPlsqlFile(fileObj.getPath()), fileObj.getName() + "(" + project.getProjectDirectory().getName() + ")")) {
-                        return;
+            if (allObjects != null) {
+                for (File fileObj : allObjects) {
+                    String name = fileObj.getName().toLowerCase().substring(0, fileObj.getName().indexOf("."));
+                    boolean match = useRegExp ? Pattern.matches(query, name) : name.contains(query);
+                    if (match) {
+                        if (!response.addResult(new OpenLocalPlsqlFile(fileObj.getPath()), fileObj.getName() + "(" + project.getProjectDirectory().getName() + ")")) {
+                            return;
+                        }
                     }
                 }
             }
@@ -75,11 +77,13 @@ public class PlsqlSearchProvider implements SearchProvider {
     }
 
     private Set<String> getPlsqlFilesFromDB(Project project) {
-        DatabaseConnectionManager connectionProvider = project.getLookup().lookup(DatabaseConnectionManager.class);
-        DatabaseContentManager cache = DatabaseContentManager.getInstance(connectionProvider.getTemplateConnection());
         Set<String> allPackages = new HashSet<String>();
-        if (cache != null) {
-            allPackages = (Set<String>) cache.getAllPackages();
+        DatabaseConnectionManager connectionProvider = project.getLookup().lookup(DatabaseConnectionManager.class);
+        if (connectionProvider != null) {
+            DatabaseContentManager cache = DatabaseContentManager.getInstance(connectionProvider.getTemplateConnection());
+            if (cache != null) {
+                allPackages = (Set<String>) cache.getAllPackages();
+            }
         }
         return allPackages;
     }
