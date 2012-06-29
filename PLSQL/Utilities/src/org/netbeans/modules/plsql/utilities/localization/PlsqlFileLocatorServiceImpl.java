@@ -183,13 +183,14 @@ public class PlsqlFileLocatorServiceImpl implements PlsqlFileLocatorService {
 
     @Override
     public Collection<File> getAllPlsqlFiles(Project project) {
+        Collection<File> allPlsqlFiles = null;
         if (project != null) {
             PlsqlProjectFileCacheManager fileCache = cachePerProject.get(getProjectName(project));
             if (fileCache != null) {
-                Collection<File> allPlsqlFiles = fileCache.getAllPlsqlObjects();
+                allPlsqlFiles = fileCache.getAllPlsqlObjects();
                 return allPlsqlFiles;
             }
         }
-        return null;
+        return allPlsqlFiles;
     }
 }
