@@ -286,6 +286,9 @@ public class PlsqlFileUtil {
    }
 
    public static boolean fileChanged(final File tmpFile, final long lastModified) {
+       if (lastModified == -1) {
+            return false;
+       }
       if (tmpFile.exists()) {
          if (lastModified == -1) {
             return false;
