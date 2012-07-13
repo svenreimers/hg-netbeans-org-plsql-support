@@ -496,20 +496,24 @@ public class PlsqlEditorContext extends EditorContext {
         String debugProj = null;
         Breakpoint[] breakpoints = DebuggerManager.getDebuggerManager().getBreakpoints();
         ArrayList<String> projNames = new ArrayList<String>();
-       
+        
         for(Breakpoint breakpoint : breakpoints){
            if(projNames.indexOf(breakpoint.getGroupName()) == -1)
                 projNames.add(breakpoint.getGroupName());
         }
-        String[] nameArry = new String[projNames.size()];
-
-        nameArry = projNames.toArray(nameArry);
-        if (!projNames.isEmpty()) {
-            GetProjectDialog projDialog = new GetProjectDialog(null, nameArry, true);
-            projDialog.setVisible(true);
-            debugProj = projDialog.getValue();
+        if (projNames.isEmpty()) {
+            debugProj = null;
+        } else if (projNames.size() == 1) {
+            debugProj = projNames.get(0);
+        } else {
+            String[] nameArry = new String[projNames.size()];
+            nameArry = projNames.toArray(nameArry);
+            if (!projNames.isEmpty()) {
+                GetProjectDialog projDialog = new GetProjectDialog(null, nameArry, true);
+                projDialog.setVisible(true);
+                debugProj = projDialog.getValue();
+            }
         }
-
         if (debugProj != null) {
             DataObject dataObject = null;
             for (Breakpoint breakpoint : breakpoints) {                
