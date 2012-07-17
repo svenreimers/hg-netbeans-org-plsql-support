@@ -210,15 +210,19 @@ public class PlsqlFileExecutor {
             }
             if (state == NORMAL) {
                 nonCommentQuery.append(line).append("\n");
-            }
+             }
         }
-            nonCommentQuery.deleteCharAt(nonCommentQuery.length() - 1);
-        
+         
+        String querryString = nonCommentQuery.toString().trim();
+        if(querryString.endsWith(";")){
+           querryString = querryString.substring(0, querryString.lastIndexOf(";"));
+        }
+                  
         String newQuery = "";
         String token;
         boolean format = false;
         
-        StringTokenizer tokenizer = new StringTokenizer(nonCommentQuery.toString(), " \t\n");
+        StringTokenizer tokenizer = new StringTokenizer(querryString, " \t\n");
         while (tokenizer.hasMoreTokens()) {
             token = tokenizer.nextToken();
             
