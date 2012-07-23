@@ -338,6 +338,23 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
                     if (!newblocks.isEmpty()) {
                         blocks = newblocks;
                     }
+                }else if (OptionsUtilities.isCommandWindowAutoSelectEnabled()) {
+                    List<PlsqlExecutableObject> newblocks = new ArrayList<PlsqlExecutableObject>();
+
+                    int caretPos = 0;
+                    if ((panes != null) && (panes.length > 0)) {
+                        caretPos = panes[0].getCaretPosition();
+                    }
+                    for (PlsqlExecutableObject block : blocks) {
+                        if (caretPos >= block.getStartOffset() && caretPos <= block.getEndOffset()) {
+                            if (block.getPlsqlString().startsWith("SELECT")) {
+                                newblocks.add(block);
+                            }
+                        }
+                    }
+                    if (!newblocks.isEmpty()) {
+                        blocks = newblocks;
+                    }
                 }
             }
         }
