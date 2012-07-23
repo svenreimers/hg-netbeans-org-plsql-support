@@ -67,6 +67,7 @@ public final class GeneralPanel extends javax.swing.JPanel {
         cbExpandFolds = new javax.swing.JCheckBox();
         jPanel3 = new javax.swing.JPanel();
         cbAutoCommit = new javax.swing.JCheckBox();
+        cbAutoSelect = new javax.swing.JCheckBox();
 
         jPanel1.setBorder(javax.swing.BorderFactory.createTitledBorder(org.openide.util.NbBundle.getMessage(GeneralPanel.class, "GeneralPanel.Database.Border.Title"))); // NOI18N
 
@@ -79,7 +80,7 @@ public final class GeneralPanel extends javax.swing.JPanel {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(cbDeployAllDatabasesAutomatically)
-                .addContainerGap(94, Short.MAX_VALUE))
+                .addContainerGap(215, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -99,7 +100,7 @@ public final class GeneralPanel extends javax.swing.JPanel {
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(cbExpandFolds)
-                .addContainerGap(384, Short.MAX_VALUE))
+                .addContainerGap(429, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -112,19 +113,25 @@ public final class GeneralPanel extends javax.swing.JPanel {
 
         org.openide.awt.Mnemonics.setLocalizedText(cbAutoCommit, org.openide.util.NbBundle.getMessage(GeneralPanel.class, "GeneralPanel.cbAutoCommit.text")); // NOI18N
 
+        org.openide.awt.Mnemonics.setLocalizedText(cbAutoSelect, org.openide.util.NbBundle.getMessage(GeneralPanel.class, "GeneralPanel.cbAutoSelect.text")); // NOI18N
+
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(cbAutoCommit)
-                .addContainerGap(509, Short.MAX_VALUE))
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(cbAutoCommit)
+                    .addComponent(cbAutoSelect))
+                .addContainerGap(483, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addComponent(cbAutoCommit)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(cbAutoSelect)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -149,7 +156,7 @@ public final class GeneralPanel extends javax.swing.JPanel {
                 .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(79, Short.MAX_VALUE))
+                .addContainerGap(56, Short.MAX_VALUE))
         );
 
         jPanel1.getAccessibleContext().setAccessibleName(org.openide.util.NbBundle.getMessage(GeneralPanel.class, "GeneralPanel.Database.Border.Title")); // NOI18N
@@ -161,12 +168,14 @@ public final class GeneralPanel extends javax.swing.JPanel {
       cbDeployAllDatabasesAutomatically.setSelected(NbPreferences.forModule(GeneralPanel.class).getBoolean(OptionsUtilities.AUTO_DEPLOY_ALL_DATABASES_KEY, true));
       cbExpandFolds.setSelected(NbPreferences.forModule(GeneralPanel.class).getBoolean(OptionsUtilities.PLSQL_EXPAND_FOLDS_KEY, false));
       cbAutoCommit.setSelected(NbPreferences.forModule(GeneralPanel.class).getBoolean(OptionsUtilities.COMMAND_WINDOW_AUTO_COMMIT_KEY, false));
+      cbAutoSelect.setSelected(NbPreferences.forModule(GeneralPanel.class).getBoolean(OptionsUtilities.COMMAND_WINDOW_AUTO_SELECT_KEY, false));
    }
 
    void store() {
       NbPreferences.forModule(GeneralPanel.class).putBoolean(OptionsUtilities.AUTO_DEPLOY_ALL_DATABASES_KEY, cbDeployAllDatabasesAutomatically.isSelected());
       NbPreferences.forModule(GeneralPanel.class).putBoolean(OptionsUtilities.PLSQL_EXPAND_FOLDS_KEY, cbExpandFolds.isSelected());
       NbPreferences.forModule(GeneralPanel.class).putBoolean(OptionsUtilities.COMMAND_WINDOW_AUTO_COMMIT_KEY, cbAutoCommit.isSelected());
+      NbPreferences.forModule(GeneralPanel.class).putBoolean(OptionsUtilities.COMMAND_WINDOW_AUTO_SELECT_KEY, cbAutoSelect.isSelected());
    }
 
    boolean valid() {
@@ -175,6 +184,7 @@ public final class GeneralPanel extends javax.swing.JPanel {
    }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JCheckBox cbAutoCommit;
+    private javax.swing.JCheckBox cbAutoSelect;
     private javax.swing.JCheckBox cbDeployAllDatabasesAutomatically;
     private javax.swing.JCheckBox cbExpandFolds;
     private javax.swing.JPanel jPanel1;
