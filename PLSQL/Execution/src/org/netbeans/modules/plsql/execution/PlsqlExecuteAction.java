@@ -317,6 +317,9 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
             connectionProvider.connect(connection);
         }
 
+        PlsqlExecutableBlocksMaker blockMaker = new PlsqlExecutableBlocksMaker(document);
+        blocks = blockMaker.makeExceutableObjects();
+                
         //if the user has selected any text in the window, create exec block using selected text only
         if (validator.isValidTDB(dataObject)) {
             JEditorPane[] panes = edCookie.getOpenedPanes();
@@ -324,16 +327,19 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
                 String selectedSql = panes[0].getSelectedText();
                 if (selectedSql != null && !selectedSql.trim().equals("")) { //some text has been selected
                     //create executable block with selected sql
-                    blocks = new ArrayList<PlsqlExecutableObject>();
-                    blocks.add(new PlsqlExecutableObject(0, selectedSql, "SQL", PlsqlExecutableObjectType.STATEMENT, 0, selectedSql.length() - 1));
+                    List<PlsqlExecutableObject> newblocks = new ArrayList<PlsqlExecutableObject>();
+                    int selectionStart = panes[0].getSelectionStart();
+                    int selectionEnd = panes[0].getSelectionEnd();
+                    for (PlsqlExecutableObject block : blocks) {
+                        if ((selectionStart <= block.getStartOffset()) && (selectionEnd >= block.getEndOffset())) {
+                            newblocks.add(block);
+                        }
+                    }
+                    if (!newblocks.isEmpty()) {
+                        blocks = newblocks;
+                    }
                 }
             }
-        }
-
-        //if blocks were not created using selected text, use entire document to create exec blocks
-        if (blocks == null) {
-            PlsqlExecutableBlocksMaker blockMaker = new PlsqlExecutableBlocksMaker(document);
-            blocks = blockMaker.makeExceutableObjects();
         }
         String extension = file.getExt();
         if (blocks.size() > 0 && "tdb".equalsIgnoreCase(extension) && (dataObject.getNodeDelegate().getDisplayName() == null || !dataObject.getNodeDelegate().getDisplayName().contains(TEST_BLOCK_NAME_PREFIX))) {
