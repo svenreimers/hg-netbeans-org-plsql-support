@@ -49,6 +49,7 @@ public class OptionsUtilities {
    public static final String PLSQL_ANNOTATIONS_ENABLED_KEY = "plsql.annotations.enabled";
    public static final String PLSQL_EXPAND_FOLDS_KEY = "plsql.folds.expand";
    public static final String COMMAND_WINDOW_AUTO_COMMIT_KEY = "command.window.auto.commit";
+   public static final String COMMAND_WINDOW_AUTO_SELECT_KEY = "command.window.auto.select";
    public static final String PLSQL_ANNOTATIONS_GENERAL_KEY = "plsql.annotations.general";
    public static final String PLSQL_ANNOTATIONS_IFS_KEY = "plsql.annotations.ifs";
    public static final String PLSQL_ANNOTATIONS_CURSOR_WHERE_KEY = "plsql.annotations.cursor.where";
@@ -77,6 +78,10 @@ public class OptionsUtilities {
 
    public static boolean isCommandWindowAutoCommitEnabled() {
       return NbPreferences.forModule(GeneralPanel.class).getBoolean(COMMAND_WINDOW_AUTO_COMMIT_KEY, false);
+   }
+   
+   public static boolean isCommandWindowAutoSelectEnabled() {
+      return NbPreferences.forModule(GeneralPanel.class).getBoolean(COMMAND_WINDOW_AUTO_SELECT_KEY, false);
    }
 
    public static boolean isPlSqlAnnotationCursorWhereEnabled() {

@@ -5,7 +5,6 @@
 package org.netbeans.modules.plsql.navigator;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.util.*;
 import java.util.regex.Pattern;
 import org.netbeans.api.db.explorer.DatabaseConnection;
@@ -13,7 +12,6 @@ import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ui.OpenProjects;
 import org.netbeans.modules.plsql.lexer.PlsqlBlockType;
 import org.netbeans.modules.plsql.utilities.NotConnectedToDbException;
-import org.netbeans.modules.plsql.utilities.PlsqlExecutorService;
 import org.netbeans.modules.plsql.utilities.PlsqlFileLocatorService;
 import org.netbeans.modules.plsql.utilities.PlsqlFileUtil;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
@@ -22,7 +20,6 @@ import org.netbeans.spi.quicksearch.SearchProvider;
 import org.netbeans.spi.quicksearch.SearchRequest;
 import org.netbeans.spi.quicksearch.SearchResponse;
 import org.openide.cookies.OpenCookie;
-import org.openide.filesystems.FileObject;
 import org.openide.loaders.DataObject;
 import org.openide.util.Exceptions;
 import org.openide.util.Lookup;
@@ -30,7 +27,6 @@ import org.openide.util.Lookup;
 public class PlsqlSearchProvider implements SearchProvider {
 
     final static String MODEL_DIRECTORY_PATH = "#COMPONENT#" + File.separator + "database" + File.separator + "#COMPONENT#";
-    private final PlsqlExecutorService executorService = Lookup.getDefault().lookup(PlsqlExecutorService.class);
     private final PlsqlFileLocatorService locatorService = Lookup.getDefault().lookup(PlsqlFileLocatorService.class);
 
     /**
@@ -52,29 +48,27 @@ public class PlsqlSearchProvider implements SearchProvider {
             query = query.replaceAll("\\*", ".*");
         }
 
-        final List<String> fileExtentions = new ArrayList<String>(executorService.getExecutionOrder());
-        fileExtentions.add(".body");
-        fileExtentions.add(".spec");
-
         for (Project project : projects) {
-            //For Local Files
-            for (String fileExtention : fileExtentions) {
-                Map<String, String> plsqlObjects = getLocalPlsqlObjects(project, fileExtention);
-                for (String plsqlObject : plsqlObjects.keySet()) {
-                    boolean match = useRegExp ? Pattern.matches(query, plsqlObject) : plsqlObject.contains(query);
+            //For Local Files            
+            Collection<File> allObjects = locatorService.getAllPlsqlFiles(project);
+            if (allObjects != null) {
+                for (File fileObj : allObjects) {
+                    String name = fileObj.getName().toLowerCase().substring(0, fileObj.getName().indexOf("."));
+                    boolean match = useRegExp ? Pattern.matches(query, name) : name.contains(query);
                     if (match) {
-                        if (!response.addResult(new OpenLocalPLSQLFile(plsqlObjects.get(plsqlObject)), plsqlObject.toLowerCase() + " (" + project.getProjectDirectory().getName() + ")")) {
+                        if (!response.addResult(new OpenLocalPlsqlFile(fileObj.getPath()), fileObj.getName() + "(" + project.getProjectDirectory().getName() + ")")) {
                             return;
                         }
                     }
                 }
             }
+
             //for Package files in DB. Do not consider tables, views, etc
             Set<String> DBFiles = getPlsqlFilesFromDB(project);
             for (String DBFile : DBFiles) {
                 boolean match = useRegExp ? Pattern.matches(query, DBFile.toLowerCase()) : DBFile.toLowerCase().contains(query);
                 if (match) {
-                    if (!response.addResult(new OpenPLSQLFileFromDB(DBFile, project), DBFile.toLowerCase() + " (" + project.getProjectDirectory().getName() + ")")) {
+                    if (!response.addResult(new OpenPlsqlFileFromDB(DBFile, project), DBFile.toLowerCase() + " (" + project.getProjectDirectory().getName() + ")")) {
                         return;
                     }
                 }
@@ -82,53 +76,23 @@ public class PlsqlSearchProvider implements SearchProvider {
         }
     }
 
-    private Map<String, String> getLocalPlsqlObjects(Project project, final String fileExtention) {
-        FileObject workspace = project.getProjectDirectory().getFileObject("workspace");
-        Map<String, String> dbObj = new HashMap<String, String>();
-        if (workspace != null && workspace.isFolder()) {
-            final FileObject[] folders = workspace.getChildren();
-            for (FileObject folder : folders) {
-                if (folder.isFolder() && !folder.getName().startsWith(".")) {
-
-                    File filePath = new File(workspace.getPath() + File.separator + MODEL_DIRECTORY_PATH.replaceAll("#COMPONENT#", folder.getName()));
-                    if (filePath.exists()) {
-                        final FileFilter filter = new FileFilter() {
-
-                            @Override
-                            public boolean accept(final File file) {
-                                return (file.isFile() && file.getName().endsWith(fileExtention));
-                            }
-                        };
-                        final File[] objectFiles = filePath.listFiles(filter);
-                        if (objectFiles != null) {
-                            for (File objectFile : objectFiles) {
-                                dbObj.put(objectFile.getName().toString().toLowerCase(), objectFile.getPath().toString().toLowerCase());
-                            }
-                        }
-                    }
-                }
-            }
-            return dbObj;
-        }
-        return dbObj;
-    }
-
     private Set<String> getPlsqlFilesFromDB(Project project) {
-        DatabaseConnectionManager connectionProvider = project.getLookup().lookup(DatabaseConnectionManager.class);
-        DatabaseContentManager cache = DatabaseContentManager.getInstance(connectionProvider.getTemplateConnection());
         Set<String> allPackages = new HashSet<String>();
-        if (cache != null) {
-            allPackages = (Set<String>) cache.getAllPackages();
+        DatabaseConnectionManager connectionProvider = project.getLookup().lookup(DatabaseConnectionManager.class);
+        if (connectionProvider != null) {
+            DatabaseContentManager cache = DatabaseContentManager.getInstance(connectionProvider.getTemplateConnection());
+            if (cache != null) {
+                allPackages = (Set<String>) cache.getAllPackages();
+            }
         }
         return allPackages;
     }
 
-    private static class OpenLocalPLSQLFile implements Runnable {
+    private static class OpenLocalPlsqlFile implements Runnable {
 
-        File objectFile;
         String filePath;
 
-        public OpenLocalPLSQLFile(String filePath_) {
+        public OpenLocalPlsqlFile(String filePath_) {
             filePath = filePath_;
         }
 
@@ -142,13 +106,12 @@ public class PlsqlSearchProvider implements SearchProvider {
         }
     }
 
-    private static class OpenPLSQLFileFromDB implements Runnable {
+    private static class OpenPlsqlFileFromDB implements Runnable {
 
-        File objectFile;
         String packageName;
         Project project;
 
-        public OpenPLSQLFileFromDB(String packageName_, Project project_) {
+        public OpenPlsqlFileFromDB(String packageName_, Project project_) {
             packageName = packageName_;
             project = project_;
         }
