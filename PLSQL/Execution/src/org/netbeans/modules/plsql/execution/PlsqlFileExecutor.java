@@ -85,6 +85,7 @@ import org.netbeans.modules.db.sql.execute.SQLExecutionResult;
 import org.netbeans.modules.db.sql.execute.SQLExecutionResults;
 import org.netbeans.modules.db.sql.execute.StatementInfo;
 import org.netbeans.modules.db.sql.history.SQLHistory;
+import org.netbeans.modules.db.sql.history.SQLHistoryEntry;
 import org.netbeans.modules.db.sql.history.SQLHistoryManager;
 import org.openide.DialogDisplayer;
 import org.openide.NotifyDescriptor;
@@ -1353,16 +1354,9 @@ public class PlsqlFileExecutor {
         return null;
     }
     
-    private void closeExecutionResult() {
-        if (executionResults != null) {
-            executionResults = null;
-        }
-    }
-    
     private final class SQLExecutor implements Runnable, Cancellable {
         
         private static final int DEFAULT_PAGE_SIZE = 100;
-        private FileObject USERDIR = FileUtil.getConfigRoot();
         private final DatabaseConnection dbconn;
         private final String sqlStmt;
         private String label;
@@ -1424,13 +1418,13 @@ public class PlsqlFileExecutor {
                 DataView view = DataView.create(conn, sql, DEFAULT_PAGE_SIZE);
 
                 // Save SQL statements executed for the SQLHistoryManager
-                SQLHistoryManager.getInstance().saveSQL(new SQLHistory(url, sql, new Date()));
+                SQLHistoryManager.getInstance().saveSQL(new SQLHistoryEntry(url, sql, new Date()));
                 result = new SQLExecutionResult(info, view);
                 results.add(result);
             }
 
             // Persist SQL executed
-            SQLHistoryManager.getInstance().save(USERDIR);
+            SQLHistoryManager.getInstance().save();
             
             if (!cancelled) {
                 return new SQLExecutionResults(results);
