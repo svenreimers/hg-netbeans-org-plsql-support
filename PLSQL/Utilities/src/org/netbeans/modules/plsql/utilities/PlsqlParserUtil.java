@@ -107,8 +107,23 @@ public class PlsqlParserUtil {
                 break;
             }
         }
+        //get method from user
+        if(match == null && findBestMatch && matchList.size() > 0){
+            if(matchList.size()==1){
+                match = matchList.get(0);
+            }
+            else{
+                match = getMethodFromUser(dest,matchList);
+            }
+        }
 
         return (match == null && findBestMatch && matchList.size() > 0) ? null : match;
+    }
+    
+    private static PlsqlBlock getMethodFromUser(Document doc, List<PlsqlBlock> blocks) {
+        SelectMethodDialog dialog = new SelectMethodDialog(null, true, doc, blocks);
+        dialog.setVisible(true);
+        return dialog.getSelectedPlsqlBlock();
     }
     
     /**
@@ -183,8 +198,8 @@ public class PlsqlParserUtil {
             }
             if (match == null && matchList.size() > 0) {
                 return matchList;
-            }            
-        }
+            }
+            }
         List<PlsqlBlock> returnList = new ArrayList<PlsqlBlock>();
         if (match != null) {
             returnList.add(match);

@@ -337,6 +337,9 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
                     }
                     if (!newblocks.isEmpty()) {
                         blocks = newblocks;
+                    }else {
+                        blocks = new ArrayList<PlsqlExecutableObject>();
+                        blocks.add(new PlsqlExecutableObject(0, selectedSql, "SQL", PlsqlExecutableObjectType.STATEMENT, 0, selectedSql.length() - 1));
                     }
                 }else if (OptionsUtilities.isCommandWindowAutoSelectEnabled()) {
                     List<PlsqlExecutableObject> newblocks = new ArrayList<PlsqlExecutableObject>();
