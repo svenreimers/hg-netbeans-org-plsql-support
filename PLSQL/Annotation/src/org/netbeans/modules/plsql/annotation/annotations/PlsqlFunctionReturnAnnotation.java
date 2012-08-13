@@ -63,10 +63,10 @@ public class PlsqlFunctionReturnAnnotation extends PlsqlBlockAnnotation {
       return new PlsqlFunctionReturnAnnotation();
    }
 
-   public PlsqlFunctionReturnAnnotation(int offset, int ignoreOffset) {
+   public PlsqlFunctionReturnAnnotation(int offset, int ignoreOffset, int severity) {
       this.offset = offset;
       this.ignoreOffset = ignoreOffset;
-      this.severity = ERROR;
+      this.severity = severity;
       this.category = GENERAL;
    }
 
@@ -82,22 +82,25 @@ public class PlsqlFunctionReturnAnnotation extends PlsqlBlockAnnotation {
 
    @Override
    public String getShortDescription() {
-      return NbBundle.getMessage(this.getClass(), "function_return_annotation");
+       if (this.severity == WARNING) {
+           return NbBundle.getMessage(this.getClass(), "function_return_annotation_warning");
+       } else {
+           return NbBundle.getMessage(this.getClass(), "function_return_annotation");
+       }
    }
 
     @Override
     public void evaluateAnnotation(Map<Integer, List<PlsqlAnnotation>> annotationsToAdd, Document doc, PlsqlBlock block, Document specDoc, PlsqlBlockFactory specBlockFac) {
-        boolean isMissing = true;
-        isMissing = !PlsqlMethodAnnotationUtil.isReturn(doc, block);
+        int isReturn = PlsqlMethodAnnotationUtil.isReturnExist(doc, block);
         int ignoreMarkerOffset = isIgnoreSpecified(doc, block.getStartOffset(), getIgnoreKey(), true);
         boolean exists = false;
 
-        if (isMissing) {
+        if (isReturn > 0) {
             exists = true;
-            PlsqlFunctionReturnAnnotation annotation = new PlsqlFunctionReturnAnnotation(block.getStartOffset(), block.getStartOffset());
+            PlsqlFunctionReturnAnnotation annotation = new PlsqlFunctionReturnAnnotation(block.getStartOffset(), block.getStartOffset(), isReturn);
             if (annotation != null) {
                 if (!isIgnoreAlowed() || -1 == ignoreMarkerOffset) {
-	PlsqlAnnotationUtil.addAnnotation(annotation, annotationsToAdd);
+                    PlsqlAnnotationUtil.addAnnotation(annotation, annotationsToAdd);
                 }
                 checkIgnoreAnnotation(annotationsToAdd, getIgnoreKey(), ignoreMarkerOffset, exists);
             }
