@@ -6,5 +6,5 @@ OpenIDE-Module: org.netbeans.modules.plsql.annotation
 OpenIDE-Module-Layer: org/netbeans/modules/plsql/annotation/layer.xml
 OpenIDE-Module-Localizing-Bundle: org/netbeans/modules/plsql/annotatio
  n/Bundle.properties
-OpenIDE-Module-Specification-Version: 1.8.17
+OpenIDE-Module-Specification-Version: 8.72.0.8
 
