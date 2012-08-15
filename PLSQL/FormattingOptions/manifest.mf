@@ -6,6 +6,6 @@ OpenIDE-Module-Layer: org/netbeans/modules/plsql/format/options/layer.
  xml
 OpenIDE-Module-Localizing-Bundle: org/netbeans/modules/plsql/format/op
  tions/Bundle.properties
-OpenIDE-Module-Specification-Version: 1.7.8
+OpenIDE-Module-Specification-Version: 8.72.0.9
 AutoUpdate-Show-In-Client: false
 
