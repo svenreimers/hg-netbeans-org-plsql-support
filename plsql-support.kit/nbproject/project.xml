@@ -19,7 +19,7 @@
                     <build-prerequisite/>
                     <compile-dependency/>
                     <run-dependency>
-                        <specification-version>1.8.17</specification-version>
+                        <specification-version>1.8.18</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
@@ -41,7 +41,7 @@
                     <build-prerequisite/>
                     <compile-dependency/>
                     <run-dependency>
-                        <specification-version>1.8.32</specification-version>
+                        <specification-version>1.8.33</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
@@ -109,7 +109,7 @@
                     <build-prerequisite/>
                     <compile-dependency/>
                     <run-dependency>
-                        <specification-version>1.7.24</specification-version>
+                        <specification-version>1.7.25</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>
