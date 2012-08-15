@@ -64,6 +64,7 @@ import org.netbeans.modules.db.sql.execute.SQLExecutionResult;
 import org.netbeans.modules.db.sql.execute.SQLExecutionResults;
 import org.netbeans.modules.db.sql.execute.StatementInfo;
 import org.netbeans.modules.db.sql.history.SQLHistory;
+import org.netbeans.modules.db.sql.history.SQLHistoryEntry;
 import org.netbeans.modules.db.sql.history.SQLHistoryManager;
 import org.netbeans.modules.plsql.filetype.PlsqlEditor;
 import org.netbeans.modules.plsql.filetype.StatementExecutionHistory;
@@ -196,15 +197,19 @@ public class PlsqlFileExecutor {
             }
             if (state == NORMAL) {
                 nonCommentQuery.append(line).append("\n");
-            }
+             }
         }
-        nonCommentQuery.deleteCharAt(nonCommentQuery.length() - 1);
-        
+         
+        String querryString = nonCommentQuery.toString().trim();
+        if(querryString.endsWith(";")){
+           querryString = querryString.substring(0, querryString.lastIndexOf(";"));
+        }
+                  
         String newQuery = "";
         String token;
         boolean format = false;
         
-        StringTokenizer tokenizer = new StringTokenizer(nonCommentQuery.toString(), " \t\n");
+        StringTokenizer tokenizer = new StringTokenizer(querryString, " \t\n");
         while (tokenizer.hasMoreTokens()) {
             token = tokenizer.nextToken();
             
@@ -407,9 +412,9 @@ public class PlsqlFileExecutor {
         }
         Connection con;
         Statement stm = null;
-        String firstWord = null;
-        boolean commit = false;
-
+        String firstWord = null;             
+        PlsqlCommit commit = PlsqlCommit.getInstance((DataObject)object);
+        
         //quick & dirty fix to avoid having output tabs for the SQL Execution window (unless there's an exception)
         //first check to see if this is a simple select statement and if so treat it separately.
         if (executableObjs.size() == 1) {
@@ -522,11 +527,7 @@ public class PlsqlFileExecutor {
                         } else {
                             firstWord = plsqlText;
                         }
-                        
-                        if (plsqlText.toUpperCase().contains("INSERT") || plsqlText.toUpperCase().contains("UPDATE") || plsqlText.toUpperCase().contains("DELETE")) {
-                            commit = true;
-                        }
-                        
+                                           
                         if (firstWord.equalsIgnoreCase("SELECT")) {
                             //this should really never happen... Unless there are multiple parts of a file and some sections are select statements
                             if (plsqlEditor != null && firstSelectStatement) {
@@ -647,9 +648,6 @@ public class PlsqlFileExecutor {
                     }
                 }
                 if (exeObj.getType() == PlsqlExecutableObjectType.BEGINEND) {
-                    if (plsqlText.toUpperCase().contains("INSERT") || plsqlText.toUpperCase().contains("UPDATE") || plsqlText.toUpperCase().contains("DELETE")) {
-                        commit = true;
-                    }
                     try {
                         stm.executeUpdate(plsqlText);
                         processDbmsOutputMessages(con, io.getOut());
@@ -668,9 +666,6 @@ public class PlsqlFileExecutor {
                     }
                 }
                 if (exeObj.getType() == PlsqlExecutableObjectType.UNKNOWN) {
-                    if (plsqlText.toUpperCase().contains("INSERT") || plsqlText.toUpperCase().contains("UPDATE") || plsqlText.toUpperCase().contains("DELETE")) {
-                        commit = true;
-                    }
                     //Parse aliases
                     define = getAliases(definesMap, doc, exeObj.getStartOffset(), exeObj.getEndOffset(), define, io);
                     //Replace aliases
@@ -715,7 +710,7 @@ public class PlsqlFileExecutor {
                                             ignoreDefines = "OFF".equalsIgnoreCase(token);
                                             if (!ignoreDefines && token.length() == 1) {
                                                  define.clear();
-		         define.add(token.charAt(0));
+                                                 define.add(token.charAt(0));
                                             }
                                         }
                                     }
@@ -973,10 +968,16 @@ public class PlsqlFileExecutor {
             }
             
             if (fileName.endsWith(".tdb") && !autoCommit) {
-                if (!deploymentOk && !commit && !(firstWord != null
+                if (!deploymentOk && !(firstWord != null
                         && (firstWord.equalsIgnoreCase("INSERT") || firstWord.equalsIgnoreCase("UPDATE") || firstWord.equalsIgnoreCase("DELETE")))) {
                     con.commit();
+                }else{
+                    if(deploymentOk && (firstWord != null
+                        && (firstWord.equalsIgnoreCase("INSERT") || firstWord.equalsIgnoreCase("UPDATE") || firstWord.equalsIgnoreCase("DELETE")))){
+                    commit.setCommit(true);
+                    }
                 }
+                
             } else {
                 con.commit();
             }
@@ -1160,7 +1161,7 @@ public class PlsqlFileExecutor {
                         definesMap.put(alias.toUpperCase(Locale.ENGLISH), value);
                     }
                 } else if (tokenTxt.toUpperCase(Locale.ENGLISH).startsWith("SET ")) {
-                    StringTokenizer tokenizer = new StringTokenizer(tokenTxt);
+                    StringTokenizer tokenizer = new StringTokenizer(tokenTxt);                   
                     tokenizer.nextToken();
                     String alias;
                     boolean isNext = tokenizer.hasMoreTokens();
@@ -1171,11 +1172,6 @@ public class PlsqlFileExecutor {
                         alias = tokenizer.nextToken();
                     } else {
                         break;
-                    }
-                    
-                    if (alias.length() == 1) {
-	    define.clear();
-	    define.add(alias.charAt(0));//If define changed we catch it here
                     }
                 }
             }
@@ -1340,16 +1336,9 @@ public class PlsqlFileExecutor {
         return null;
     }
     
-    private void closeExecutionResult() {
-        if (executionResults != null) {
-            executionResults = null;
-        }
-    }
-    
     private final class SQLExecutor implements Runnable, Cancellable {
         
         private static final int DEFAULT_PAGE_SIZE = 100;
-        private FileObject USERDIR = FileUtil.getConfigRoot();
         private final DatabaseConnection dbconn;
         private final String sqlStmt;
         private String label;
@@ -1411,13 +1400,13 @@ public class PlsqlFileExecutor {
                 DataView view = DataView.create(conn, sql, DEFAULT_PAGE_SIZE);
 
                 // Save SQL statements executed for the SQLHistoryManager
-                SQLHistoryManager.getInstance().saveSQL(new SQLHistory(url, sql, new Date()));
+                SQLHistoryManager.getInstance().saveSQL(new SQLHistoryEntry(url, sql, new Date()));
                 result = new SQLExecutionResult(info, view);
                 results.add(result);
             }
 
             // Persist SQL executed
-            SQLHistoryManager.getInstance().save(USERDIR);
+            SQLHistoryManager.getInstance().save();
             
             if (!cancelled) {
                 return new SQLExecutionResults(results);

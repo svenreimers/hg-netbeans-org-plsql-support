@@ -44,6 +44,8 @@ package org.netbeans.modules.plsql.execution;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -52,10 +54,7 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.text.Document;
 import org.netbeans.api.db.explorer.DatabaseConnection;
-import org.netbeans.api.progress.ProgressHandle;
-import org.netbeans.api.progress.ProgressHandleFactory;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.awt.ActionID;
@@ -66,8 +65,6 @@ import org.openide.cookies.SaveCookie;
 import org.openide.loaders.DataObject;
 import org.openide.util.*;
 import org.openide.util.actions.Presenter;
-import org.openide.windows.IOProvider;
-import org.openide.windows.InputOutput;
 
 @ActionID(id = "org.netbeans.modules.plsql.execution.PlsqlCommitAction", category = "PLSQL")
 @ActionRegistration(displayName = "#CTL_PlsqlCommit")
@@ -78,7 +75,8 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
     private DatabaseConnectionManager connectionProvider;
     private DatabaseConnection connection;
     private JButton button;
-    public boolean autoCommit = true;
+    PlsqlCommit commit; 
+    private PropertyChangeListener EnableCommit;
 
     public PlsqlCommitAction() {
         this(Utilities.actionsGlobalContext());
@@ -107,7 +105,7 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
 
         if (dataObject != null) {
             setEnabled(true);
-            autoCommit = OptionsUtilities.isCommandWindowAutoCommitEnabled();
+           commit = PlsqlCommit.getInstance(dataObject);
         } else {
             setEnabled(false);
         }
@@ -139,47 +137,26 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
             return;
         }
 
-        EditorCookie edCookie = dataObject.getLookup().lookup(EditorCookie.class);
-        Document document = edCookie.getDocument();
         saveIfModified(dataObject);
-
-        InputOutput io = null;
-        DataObject obj = FileExecutionUtil.getDataObject(document);
-        ProgressHandle handle = ProgressHandleFactory.createHandle("Commit database file...", this);
-        handle.start();
-
-        try {
-            io = IOProvider.getDefault().getIO(obj.getPrimaryFile().getNameExt(), false);
-            if (!io.isClosed()) {
-                io.getOut().println((new StringBuilder()).append("> Commit Statement successfully"));
-            }
-
-            if (connection.getJDBCConnection() != null) {
-                connectionProvider.commitRollbackTransactions(connection, true);
-            }
-
-        } catch (Exception ex) {
-            io.getOut().println((new StringBuilder()).append(">!!! Error Commit Statement"));
-            Exceptions.printStackTrace(ex);
-        } finally {
-            handle.finish();
-        }
+        commit.commitTransaction(dataObject, connection, connectionProvider);
     }
-
+    
     @Override
     public Component getToolbarPresenter() {
         if (!isEnabled()) {
             return null;
-        }
+        }     
         button = DropDownButtonFactory.createDropDownButton(
                 new ImageIcon(new BufferedImage(32, 32, BufferedImage.TYPE_BYTE_GRAY)), null);
         button.setAction(this);
         button.setSelected(!OptionsUtilities.isCommandWindowAutoCommitEnabled());
-        button.setEnabled(!OptionsUtilities.isCommandWindowAutoCommitEnabled());
+        button.setEnabled(false);
         button.setDisabledIcon(new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/database_commit_disable.png")));
+        EnableCommit = new EnableCommit();
+        commit.addPropertyChangeListener(EnableCommit);
         return button;
     }
-
+    
     private void saveIfModified(DataObject dataObj) {
         try {
             SaveCookie saveCookie = dataObj.getCookie(SaveCookie.class);
@@ -190,4 +167,20 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
             Exceptions.printStackTrace(ex);
         }
     }
+    
+    private class EnableCommit implements PropertyChangeListener {
+
+        public EnableCommit() {}
+
+        @Override
+        public void propertyChange(PropertyChangeEvent event) {
+          if(!OptionsUtilities.isCommandWindowAutoCommitEnabled() && commit.getCommit()){
+              button.setEnabled(true);
+          }
+          else
+              button.setEnabled(false);
+        }
+
+    }
 }
+

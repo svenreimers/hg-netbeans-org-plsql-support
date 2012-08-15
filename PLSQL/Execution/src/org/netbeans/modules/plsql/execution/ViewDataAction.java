@@ -59,16 +59,16 @@ import org.openide.util.actions.CookieAction;
 
 @ActionID(id = "org.netbeans.modules.plsql.execution.ViewDataAction", category = "PLSQL")
 @ActionRegistration(displayName = "#CTL_ViewDataAction")
-@ActionReference(path = "Editors/text/x-plsql/Popup", position = 282)
+@ActionReference(path = "Editors/text/x-plsql/Popup", position = 430)
 public final class ViewDataAction extends CookieAction {
 
     /**
-     * Create a sql execution window for the selected methoad
+     * Create a SQL execution window for the selected method
      * @param activatedNodes
      */
     @Override
     protected void performAction(Node[] activatedNodes) {
-        String selectStatement = "SELECT ${*} FROM " + getSelectedViewOrTable(activatedNodes) + ";\n${cursor}";
+        String selectStatement = "SELECT * FROM " + getSelectedViewOrTable(activatedNodes) + ";\n";
         SQLCommandWindow.createSQLCommandWindow(activatedNodes, selectStatement, null);
     }
 

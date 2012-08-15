@@ -54,7 +54,8 @@ public class PlsqlTabsAndIndents extends javax.swing.JPanel {
     /** Creates new form PlsqlTabsAndIndents */
     public PlsqlTabsAndIndents() {
         initComponents();
-        chkIndentOnly.putClientProperty(OPTION_ID, indentOnly);
+        chkIndent.putClientProperty(OPTION_ID, autoIndent);  
+        chkUppercase.putClientProperty(OPTION_ID, autoUppercase);
     }
 
     public static PreferencesCustomizer.Factory getController() {
@@ -71,9 +72,12 @@ public class PlsqlTabsAndIndents extends javax.swing.JPanel {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        chkIndentOnly = new javax.swing.JCheckBox();
+        chkIndent = new javax.swing.JCheckBox();
+        chkUppercase = new javax.swing.JCheckBox();
 
-        chkIndentOnly.setText(org.openide.util.NbBundle.getMessage(PlsqlTabsAndIndents.class, "PlsqlTabsAndIndents.chkIndentOnly.text")); // NOI18N
+        chkIndent.setText(org.openide.util.NbBundle.getMessage(PlsqlTabsAndIndents.class, "PlsqlTabsAndIndents.chkIndent.text")); // NOI18N
+
+        chkUppercase.setText(org.openide.util.NbBundle.getMessage(PlsqlTabsAndIndents.class, "PlsqlTabsAndIndents.chkUppercase.text")); // NOI18N
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
@@ -81,21 +85,26 @@ public class PlsqlTabsAndIndents extends javax.swing.JPanel {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(chkIndentOnly)
-                .addContainerGap(66, Short.MAX_VALUE))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(chkIndent)
+                    .addComponent(chkUppercase))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(chkIndentOnly)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(chkIndent)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 7, Short.MAX_VALUE)
+                .addComponent(chkUppercase)
+                .addContainerGap())
         );
     }// </editor-fold>//GEN-END:initComponents
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JCheckBox chkIndentOnly;
+    private javax.swing.JCheckBox chkIndent;
+    private javax.swing.JCheckBox chkUppercase;
     // End of variables declaration//GEN-END:variables
 
 }

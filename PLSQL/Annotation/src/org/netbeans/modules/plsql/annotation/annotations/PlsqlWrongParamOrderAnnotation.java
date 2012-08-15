@@ -136,14 +136,13 @@ public class PlsqlWrongParamOrderAnnotation extends PlsqlBlockAnnotation {
                   if (!isIgnoreAlowed() || -1 == ignoreMarkerOffset) {
                      PlsqlAnnotationUtil.addAnnotation(annotation, annotationsToAdd);
                   }
+                  checkIgnoreAnnotation(annotationsToAdd, getIgnoreKey(), ignoreMarkerOffset, exists);
                   break;
                }
             }
             pre = type;
          }
-      }
-
-      checkIgnoreAnnotation(annotationsToAdd, getIgnoreKey(), ignoreMarkerOffset, exists);
+      }      
    }
 
    private int getParamOrderNo(final String param) {

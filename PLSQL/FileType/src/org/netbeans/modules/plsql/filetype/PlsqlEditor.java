@@ -90,21 +90,22 @@ public class PlsqlEditor extends CloneableEditor {
            if (connection.getJDBCConnection() != null) {
 
                DatabaseConnectionManager connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
-
-               if (DatabaseConnectionManager.getInstance(dataObject).hasDataToCommit(connection)) {
-                   String msg = "There are pending transactions in the database. Do you want to commit?";
-                   String title = dataObject.getNodeDelegate().getDisplayName();
-                   int result = JOptionPane.showOptionDialog(null, msg, title, JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE, null, null, null);
-                   if (result == JOptionPane.YES_OPTION) {
-                       //commit
-                       connectionProvider.commitRollbackTransactions(connection, true);
-                   } else if (result == JOptionPane.NO_OPTION) {
-                       //rollback
-                       connectionProvider.commitRollbackTransactions(connection, false);
-                   } else {
-                       return false;
+               if(connectionProvider.testConnection(connection)){
+                   if (DatabaseConnectionManager.getInstance(dataObject).hasDataToCommit(connection)) {
+                       String msg = "There are pending transactions in the database. Do you want to commit?";
+                       String title = dataObject.getNodeDelegate().getDisplayName();
+                       int result = JOptionPane.showOptionDialog(null, msg, title, JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE, null, null, null);
+                       if (result == JOptionPane.YES_OPTION) {
+                           //commit
+                           connectionProvider.commitRollbackTransactions(connection, true);
+                       } else if (result == JOptionPane.NO_OPTION) {
+                           //rollback
+                           connectionProvider.commitRollbackTransactions(connection, false);
+                       } else {
+                           return false;
+                       }
                    }
-               }
+               } 
            }
            FileUtil.toFile(dataObject.getPrimaryFile()).delete();
        }

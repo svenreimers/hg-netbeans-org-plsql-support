@@ -66,76 +66,78 @@ import org.openide.util.NbBundle;
 
 public class DatabasePanel extends JPanel {
 
-   public static final String DATA_VALID = "dataValid";
+    public static final String DATA_VALID = "dataValid";
+    private Category category;
+    private DefaultTableModel connectionTableModel;
+    private DatabaseConnection mainConnection;
+    private boolean valid = true;
+    private ValidationInvoker validationInvoker = new ValidationInvoker();
 
-   private Category category;
-   private DefaultTableModel connectionTableModel;
-   private DatabaseConnection mainConnection;
+    public DatabasePanel(Category category) {
+        this.category = category;
+        initComponents();
+        connectionTableModel = (DefaultTableModel) connectionTable.getModel();
+        TableColumn connectionTableColumn = connectionTable.getColumnModel().getColumn(0);
+        connectionTableColumn.setCellEditor(new CellEditor());
+        connectionTableColumn.setCellRenderer(new CellRenderer());
+        connectionTable.setRowHeight(connectionTable.getRowHeight() + 4);
+        connectionTableModel.addTableModelListener(validationInvoker);
+        connectionTable.getColumnModel().getSelectionModel().addListSelectionListener(validationInvoker);
+        performValidation();
+    }
 
-   private boolean valid = true;
-   private ValidationInvoker validationInvoker = new ValidationInvoker();
+    public List<DatabaseConnection> getDatabaseConnections() {
+        List<DatabaseConnection> connections = new ArrayList<DatabaseConnection>();
+        if (mainConnection != null) {
+            connections.add(mainConnection);
+        }
+        for (int i = 0; i < connectionTableModel.getRowCount(); i++) {
+            Object item = connectionTableModel.getValueAt(i, 0);
+            if (item instanceof DatabaseConnection) {
+                DatabaseConnection connection = (DatabaseConnection) item;
+                if (!connections.contains(connection)) {
+                    connections.add(connection);
+                }
+            }
+        }
+        return connections;
+    }
 
-   public DatabasePanel(Category category) {
-      this.category = category;
-      initComponents();
-      connectionTableModel = (DefaultTableModel)connectionTable.getModel();
-      TableColumn connectionTableColumn = connectionTable.getColumnModel().getColumn(0);
-      connectionTableColumn.setCellEditor(new CellEditor());
-      connectionTableColumn.setCellRenderer(new CellRenderer());
-      connectionTable.setRowHeight(connectionTable.getRowHeight() + 4);
-      connectionTableModel.addTableModelListener(validationInvoker);
-      connectionTable.getColumnModel().getSelectionModel().addListSelectionListener(validationInvoker);
-      performValidation();
-   }
+    public void setDatabaseConnections(List<DatabaseConnection> connections) {
+        connectionTableModel.setRowCount(0);
+        for (DatabaseConnection connection : connections) {
+            connectionTableModel.addRow(new Object[]{connection});
+        }
+        if (!connections.isEmpty()) {
+            mainConnection = connections.get(0);
+        }
+    }
 
-   public DatabaseConnection[] getDatabaseConnections() {
-      List<DatabaseConnection> connections = new ArrayList<DatabaseConnection>();
-      if (mainConnection != null)
-         connections.add(mainConnection);
-      for (int i = 0; i < connectionTableModel.getRowCount(); i++) {
-         Object item = connectionTableModel.getValueAt(i, 0);
-         if (item instanceof DatabaseConnection) {
-            DatabaseConnection connection = (DatabaseConnection)item;
-            if (!connections.contains(connection))
-               connections.add(connection);
-         }
-      }
-      return connections.toArray(new DatabaseConnection[connections.size()]);
-   }
+    private void performValidation() {
+        int row = connectionTable.getSelectedRow();
+        boolean hasSelection = row != -1;
+        boolean hasSelectedConnection = hasSelection && connectionTableModel.getRowCount() > row
+                && connectionTableModel.getValueAt(row, 0) instanceof DatabaseConnection;
+        btnRemove.setEnabled(hasSelection);
+        btnSetAsMain.setEnabled(hasSelectedConnection);
 
-   public void setDatabaseConnections(DatabaseConnection[] connections) {
-      connectionTableModel.setRowCount(0);
-      for (DatabaseConnection connection : connections)
-         connectionTableModel.addRow(new Object[] {connection});
-      if (connections.length > 0)
-         mainConnection = connections[0];
-   }
+        String errorMessage = "";
 
-   private void performValidation() {
-      int row = connectionTable.getSelectedRow();
-      boolean hasSelection = row != -1;
-      boolean hasSelectedConnection = hasSelection && connectionTableModel.getRowCount() > row
-            && connectionTableModel.getValueAt(row, 0) instanceof DatabaseConnection;
-      btnRemove.setEnabled(hasSelection);
-      btnSetAsMain.setEnabled(hasSelectedConnection);
+        for (DatabaseConnection connection : getDatabaseConnections()) {
+            if (!connection.getDriverClass().equals(DatabaseConnectionManager.ORACLE_DRIVER_CLASS_NAME)) {
+                errorMessage += NbBundle.getMessage(getClass(), "MSG_NonOracleDatabaseChosen");
+                break;
+            }
+        }
 
-      String errorMessage = "";
+        boolean wasValid = valid;
+        valid = errorMessage.equals("");
+        category.setValid(valid);
+        category.setErrorMessage(errorMessage);
+        firePropertyChange(DATA_VALID, wasValid, valid);
+    }
 
-      DatabaseConnection[] connections = getDatabaseConnections();
-      for (DatabaseConnection connection : connections)
-         if (!connection.getDriverClass().equals(DatabaseConnectionManager.ORACLE_DRIVER_CLASS_NAME)) {
-            errorMessage += NbBundle.getMessage(getClass(), "MSG_NonOracleDatabaseChosen");
-            break;
-         }
-
-      boolean wasValid = valid;
-      valid = errorMessage.equals("");
-      category.setValid(valid);
-      category.setErrorMessage(errorMessage);
-      firePropertyChange(DATA_VALID, wasValid, valid);
-   }
-
-   @SuppressWarnings("unchecked")
+    @SuppressWarnings("unchecked")
    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
    private void initComponents() {
 
@@ -215,35 +217,37 @@ public class DatabasePanel extends JPanel {
    }// </editor-fold>//GEN-END:initComponents
 
    private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddActionPerformed
-      connectionTableModel.addRow((Object[])null);
-      connectionTable.editCellAt(connectionTableModel.getRowCount() - 1, 0);
+       connectionTableModel.addRow((Object[]) null);
+       connectionTable.editCellAt(connectionTableModel.getRowCount() - 1, 0);
    }//GEN-LAST:event_btnAddActionPerformed
 
    private void btnRemoveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRemoveActionPerformed
-      int row = connectionTable.getSelectedRow();
-      assert row != -1;
-      TableCellEditor editor = connectionTable.getCellEditor();
-      if (editor != null)
-         editor.stopCellEditing();
-      DatabaseConnection connection = (DatabaseConnection)connectionTableModel.getValueAt(row, 0);
-      if (connection == mainConnection)
-         mainConnection = null;
-      connectionTableModel.removeRow(row);
+       int row = connectionTable.getSelectedRow();
+       assert row != -1;
+       TableCellEditor editor = connectionTable.getCellEditor();
+       if (editor != null) {
+           editor.stopCellEditing();
+       }
+       DatabaseConnection connection = (DatabaseConnection) connectionTableModel.getValueAt(row, 0);
+       if (connection == mainConnection) {
+           mainConnection = null;
+       }
+       connectionTableModel.removeRow(row);
    }//GEN-LAST:event_btnRemoveActionPerformed
 
    private void btnSetAsMainActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSetAsMainActionPerformed
-      int row = connectionTable.getSelectedRow();
-      assert row != -1;
-      Object item = connectionTableModel.getValueAt(row, 0);
-      if (item instanceof DatabaseConnection) {
-         mainConnection = (DatabaseConnection)item;
-         connectionTableModel.fireTableDataChanged();
-         TableCellEditor cellEditor = connectionTable.getCellEditor();
-         if(cellEditor!=null)
-            cellEditor.stopCellEditing();
-      }
+       int row = connectionTable.getSelectedRow();
+       assert row != -1;
+       Object item = connectionTableModel.getValueAt(row, 0);
+       if (item instanceof DatabaseConnection) {
+           mainConnection = (DatabaseConnection) item;
+           connectionTableModel.fireTableDataChanged();
+           TableCellEditor cellEditor = connectionTable.getCellEditor();
+           if (cellEditor != null) {
+               cellEditor.stopCellEditing();
+           }
+       }
    }//GEN-LAST:event_btnSetAsMainActionPerformed
-
    // Variables declaration - do not modify//GEN-BEGIN:variables
    private javax.swing.JButton btnAdd;
    private javax.swing.JButton btnRemove;
@@ -253,47 +257,52 @@ public class DatabasePanel extends JPanel {
    private javax.swing.JLabel databaseConnectionLabel;
    // End of variables declaration//GEN-END:variables
 
-   private class ValidationInvoker implements TableModelListener, ListSelectionListener {
+    private class ValidationInvoker implements TableModelListener, ListSelectionListener {
 
-      public ValidationInvoker() {}
+        public ValidationInvoker() {
+        }
 
-      public void tableChanged(TableModelEvent e) {
-         performValidation();
-      }
+        @Override
+        public void tableChanged(TableModelEvent e) {
+            performValidation();
+        }
 
-      public void valueChanged(ListSelectionEvent e) {
-         performValidation();
-      }
-   }
+        @Override
+        public void valueChanged(ListSelectionEvent e) {
+            performValidation();
+        }
+    }
 
-   private static class CellEditor extends DefaultCellEditor {
+    private static class CellEditor extends DefaultCellEditor {
 
-      public CellEditor() {
-         super(new JComboBox());
-         DatabaseExplorerUIs.connect((JComboBox)editorComponent, ConnectionManager.getDefault());
-      }
+        public CellEditor() {
+            super(new JComboBox());
+            DatabaseExplorerUIs.connect((JComboBox) editorComponent, ConnectionManager.getDefault());
+        }
 
-      @Override
-      public Object getCellEditorValue() {
-         Object item = ((JComboBox)editorComponent).getSelectedItem();
-         return item instanceof DatabaseConnection ? (DatabaseConnection)item : null;
-      }
-   }
+        @Override
+        public Object getCellEditorValue() {
+            Object item = ((JComboBox) editorComponent).getSelectedItem();
+            return item instanceof DatabaseConnection ? (DatabaseConnection) item : null;
+        }
+    }
 
-   private class CellRenderer extends DefaultTableCellRenderer {
+    private class CellRenderer extends DefaultTableCellRenderer {
 
-      public CellRenderer() {}
+        public CellRenderer() {
+        }
 
-      @Override
-      public Component getTableCellRendererComponent(JTable table, Object value,
-                                                     boolean selected, boolean hasFocus, int row, int column) {
-         super.getTableCellRendererComponent(table, value, selected, hasFocus, row, column);
-         if (value != null) {
-            setText(((DatabaseConnection)value).getName());
-            if (value == mainConnection)
-               setFont(getFont().deriveFont(Font.BOLD));
-         }
-         return this;
-      }
-   }
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean selected, boolean hasFocus, int row, int column) {
+            super.getTableCellRendererComponent(table, value, selected, hasFocus, row, column);
+            if (value != null) {
+                setText(((DatabaseConnection) value).getName());
+                if (value == mainConnection) {
+                    setFont(getFont().deriveFont(Font.BOLD));
+                }
+            }
+            return this;
+        }
+    }
 }

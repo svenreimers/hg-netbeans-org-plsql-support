@@ -5,6 +5,6 @@ OpenIDE-Module: org.netbeans.modules.plsql.completion
 OpenIDE-Module-Layer: org/netbeans/modules/plsql/completion/layer.xml
 OpenIDE-Module-Localizing-Bundle: org/netbeans/modules/plsql/completio
  n/Bundle.properties
-OpenIDE-Module-Specification-Version: 1.8.5
+OpenIDE-Module-Specification-Version: 1.8.8
 AutoUpdate-Show-In-Client: false
 

@@ -1446,131 +1446,136 @@ public class DatabaseContentUtilities {
       return null;
    }
 
-   /**
-    * Get model
-    * @param objectName
-    * @param type
-    * @param connection
-    * @return
-    */
-   public static DatabaseModelObjectInfo getModelObject(String objectName, String type, DatabaseConnection connection) throws SQLException {
-      PreparedStatement stmt = null;
-      DatabaseModelObjectInfo modelObject = null;
-      //FETCH MODEL
-      String query = "SELECT COMPONENT, MODEL_FILE FROM " + connection.getSchema() + ".FNDBAS_MODEL_OBJECT_TAB WHERE OBJECT_TYPE=? AND OBJECT_NAME=?";
-      try {
-         if (connection != null) {
-            stmt = connection.getJDBCConnection().prepareStatement(query);
-            stmt.setString(1, type);
-            stmt.setString(2, objectName);
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-               modelObject = new DatabaseModelObjectInfo(objectName, rs.getString(1), type, rs.getBytes(2));
-            }
-            rs.close();
-            stmt.close();
-         }
-      } catch (SQLException ex) {
-         return null; //work around for non-ifs databases
-      } finally {
-         if (stmt != null) {
-            stmt.close();
-         }
-      }
-      return modelObject;
-   }
-
-   /**
-    * Get models updated after lastFetchDate
-    * @param lastFetchDate
-    * @param type
-    * @param models
-    * @param connection
-    * @return lastImportFileDate
-    */
-   public static String getModelNames(String lastFetchDate, Map<String, Set<String>> models, DatabaseConnection connection) throws SQLException {
-      PreparedStatement stmt = null;
-
-      //FETCH MODEL NAMES
-      String query = "SELECT object_name, object_type, to_char(import_file_stamp, " + TIMESTAMP_FORMAT + ") import_file_stamp "
-            + "FROM " + connection.getSchema() + ".fndbas_model_object_tab "
-            + "WHERE import_file_stamp > to_date(?, " + TIMESTAMP_FORMAT + ") "
-            + "ORDER BY import_file_stamp DESC";
-      try {
-         String timestamp = null;
-         if (connection != null) {
-            stmt = connection.getJDBCConnection().prepareStatement(query);
-            stmt.setString(1, lastFetchDate);
-            ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-               Set<String> modelList = models.get(rs.getString(2));
-               if (modelList == null) {
-                  modelList = new HashSet<String>();
-                  models.put(rs.getString(2), modelList);
-               }
-               modelList.add(rs.getString(1));
-               if (timestamp == null) {
-                  timestamp = rs.getString(3);
-               }
-            }
-            rs.close();
-            stmt.close();
-         }
-         return timestamp != null ? timestamp : lastFetchDate;
-      } catch (SQLException ex) {
-         return null; //work around for non-ifs databases
-      } finally {
-         if (stmt != null) {
-            stmt.close();
-         }
-      }
-   }
-
-   /**
-    * Method that will return the last modified time of the given model object
-    * @param name
-    * @param type
-    * @param connection
-    * @return
-    */
-   public static long getLastModifiedTime(String name, String type, DatabaseConnection connection) throws SQLException {
-      {
-         Date timeStamp = null;
-         DateFormat dfm = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-         if (connection != null) {
-            try {
-               List<String> objList = new ArrayList<String>();
-               ResultSet objSet = null;
-
-               String query = "SELECT FILE_TIME_STAMP FROM FNDBAS_MODEL_OBJECT_TAB A WHERE OBJECT_TYPE = ? AND OBJECT_NAME= ?";
-               PreparedStatement stmt = null;
-               try {
-                  stmt = connection.getJDBCConnection().prepareStatement(query);
-                  stmt.setString(1, type);
-                  stmt.setString(2, name);
-                  objSet = stmt.executeQuery();
-                  while (objSet.next()) {
-                     objList.add(objSet.getString("FILE_TIME_STAMP"));
-                  }
-               } finally {
-                  if (stmt != null) {
-                     stmt.close();
-                  }
-               }
-               if (objList.size() > 0) {
-                  timeStamp = dfm.parse(objList.get(0));
-               }
-            } catch (ParseException ex) {
-               Exceptions.printStackTrace(ex);
-            }
-         }
-
-         if (timeStamp == null) {
-            return -1;
-         } else {
-            return timeStamp.getTime();
-         }
-      }
-   }
+//   /**
+//    * Get model
+//    * @param objectName
+//    * @param type
+//    * @param connection
+//    * @return
+//    */
+//   public static DatabaseModelObjectInfo getModelObject(String objectName, String type, DatabaseConnection connection) throws SQLException {
+//     return getModelObject(objectName, type, connection.getSchema(), connection.getJDBCConnection());      
+//   }
+//   
+//   
+//    public static DatabaseModelObjectInfo getModelObject(String objectName, String type, String schema, Connection connection) throws SQLException {
+//      PreparedStatement stmt = null;
+//      DatabaseModelObjectInfo modelObject = null;
+//      //FETCH MODEL
+//      String query = "SELECT COMPONENT, MODEL_FILE FROM " + schema + ".FNDBAS_MODEL_OBJECT_TAB WHERE OBJECT_TYPE=? AND OBJECT_NAME=?";
+//      try {
+//         if (connection != null) {
+//            stmt = connection.prepareStatement(query);
+//            stmt.setString(1, type);
+//            stmt.setString(2, objectName);
+//            ResultSet rs = stmt.executeQuery();
+//            while (rs.next()) {
+//               modelObject = new DatabaseModelObjectInfo(objectName, rs.getString(1), type, rs.getBytes(2));
+//            }
+//            rs.close();
+//            stmt.close();
+//         }
+//      } catch (SQLException ex) {
+//         return null; //work around for non-ifs databases
+//      } finally {
+//         if (stmt != null) {
+//            stmt.close();
+//         }
+//      }
+//      return modelObject;
+//   }
+//
+//   /**
+//    * Get models updated after lastFetchDate
+//    * @param lastFetchDate
+//    * @param type
+//    * @param models
+//    * @param connection
+//    * @return lastImportFileDate
+//    */
+//   public static String getModelNames(String lastFetchDate, Map<String, Set<String>> models, DatabaseConnection connection) throws SQLException {
+//      PreparedStatement stmt = null;
+//
+//      //FETCH MODEL NAMES
+//      String query = "SELECT object_name, object_type, to_char(import_file_stamp, " + TIMESTAMP_FORMAT + ") import_file_stamp "
+//            + "FROM " + connection.getSchema() + ".fndbas_model_object_tab "
+//            + "WHERE import_file_stamp > to_date(?, " + TIMESTAMP_FORMAT + ") "
+//            + "ORDER BY import_file_stamp DESC";
+//      try {
+//         String timestamp = null;
+//         if (connection != null) {
+//            stmt = connection.getJDBCConnection().prepareStatement(query);
+//            stmt.setString(1, lastFetchDate);
+//            ResultSet rs = stmt.executeQuery();
+//            while (rs.next()) {
+//               Set<String> modelList = models.get(rs.getString(2));
+//               if (modelList == null) {
+//                  modelList = new HashSet<String>();
+//                  models.put(rs.getString(2), modelList);
+//               }
+//               modelList.add(rs.getString(1));
+//               if (timestamp == null) {
+//                  timestamp = rs.getString(3);
+//               }
+//            }
+//            rs.close();
+//            stmt.close();
+//         }
+//         return timestamp != null ? timestamp : lastFetchDate;
+//      } catch (SQLException ex) {
+//         return null; //work around for non-ifs databases
+//      } finally {
+//         if (stmt != null) {
+//            stmt.close();
+//         }
+//      }
+//   }
+//
+//   /**
+//    * Method that will return the last modified time of the given model object
+//    * @param name
+//    * @param type
+//    * @param connection
+//    * @return
+//    */
+//   public static long getLastModifiedTime(String name, String type, DatabaseConnection connection) throws SQLException {
+//      {
+//         Date timeStamp = null;
+//         DateFormat dfm = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//
+//         if (connection != null) {
+//            try {
+//               List<String> objList = new ArrayList<String>();
+//               ResultSet objSet = null;
+//
+//               String query = "SELECT FILE_TIME_STAMP FROM FNDBAS_MODEL_OBJECT_TAB A WHERE OBJECT_TYPE = ? AND OBJECT_NAME= ?";
+//               PreparedStatement stmt = null;
+//               try {
+//                  stmt = connection.getJDBCConnection().prepareStatement(query);
+//                  stmt.setString(1, type);
+//                  stmt.setString(2, name);
+//                  objSet = stmt.executeQuery();
+//                  while (objSet.next()) {
+//                     objList.add(objSet.getString("FILE_TIME_STAMP"));
+//                  }
+//               } finally {
+//                  if (stmt != null) {
+//                     stmt.close();
+//                  }
+//               }
+//               if (objList.size() > 0) {
+//                  timeStamp = dfm.parse(objList.get(0));
+//               }
+//            } catch (ParseException ex) {
+//               Exceptions.printStackTrace(ex);
+//            }
+//         }
+//
+//         if (timeStamp == null) {
+//            return -1;
+//         } else {
+//            return timeStamp.getTime();
+//         }
+//      }
+//   }
 }

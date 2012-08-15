@@ -41,17 +41,6 @@
  */
 package org.netbeans.modules.plsql.execution;
 
-import static org.netbeans.modules.plsql.lexer.PlsqlBlockType.*;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
-import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
-import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
-import org.netbeans.modules.plsql.lexer.PlsqlBlock;
-import org.netbeans.modules.plsql.lexer.PlsqlTokenId;
-import org.netbeans.modules.plsql.utilities.NotConnectedToDbException;
-import org.netbeans.modules.plsql.utilities.PlsqlFileUtil;
-import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
-import org.netbeans.modules.plsql.utilities.PlsqlParserUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -66,6 +55,17 @@ import org.netbeans.api.lexer.TokenHierarchy;
 import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
+import org.netbeans.modules.plsql.lexer.PlsqlBlock;
+import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
+import static org.netbeans.modules.plsql.lexer.PlsqlBlockType.*;
+import org.netbeans.modules.plsql.lexer.PlsqlTokenId;
+import org.netbeans.modules.plsql.utilities.NotConnectedToDbException;
+import org.netbeans.modules.plsql.utilities.PlsqlFileUtil;
+import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
+import org.netbeans.modules.plsql.utilities.PlsqlParserUtil;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
+import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
+import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionReferences;
@@ -84,7 +84,7 @@ import org.openide.windows.WindowManager;
 @ActionRegistration(displayName = "#CTL_CreateTestBlockAction")
 @ActionReferences(value = {
    @ActionReference(path = "Shortcuts", name = "AS-B"),
-   @ActionReference(path = "Editors/text/x-plsql/Popup", position = 281)})
+   @ActionReference(path = "Editors/text/x-plsql/Popup", position = 1010)})
 public final class CreateTestBlockAction extends CookieAction {
 
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
@@ -106,7 +106,7 @@ public final class CreateTestBlockAction extends CookieAction {
             return;
         }
 
-        String tempTemplate = "";
+        String tempTemplate = "-- Enter values for your parameters. Use enter to move to the next parameter\n";
 
         Project project = FileOwnerQuery.getOwner(dataObject.getPrimaryFile());
         if (project == null) {
@@ -119,10 +119,10 @@ public final class CreateTestBlockAction extends CookieAction {
         DatabaseConnection databaseConnection = dbConnectionProvider != null ? dbConnectionProvider.getPooledDatabaseConnection(false) : null;
         try {
             if (selectedBlock != null && selectedBlock.getType() == VIEW) {
-                tempTemplate = "SELECT ${*} FROM " + selectedName + ";\n${cursor}";
+                tempTemplate = tempTemplate + "SELECT ${*} FROM " + selectedName + ";\n${cursor}";
             } else if (selectedBlock != null && selectedBlock.getType() == CURSOR) {
                 try {
-                    tempTemplate = doc.getText(selectedBlock.getStartOffset(), selectedBlock.getEndOffset() - selectedBlock.getStartOffset());
+                    tempTemplate = tempTemplate + doc.getText(selectedBlock.getStartOffset(), selectedBlock.getEndOffset() - selectedBlock.getStartOffset());
                 } catch (BadLocationException ex) {
                     //Failed to extract statement from cursor. This shouldn't happen, but if it does - do nothing;
                     return;
@@ -156,6 +156,7 @@ public final class CreateTestBlockAction extends CookieAction {
                         selectedBlock = null;
                         DataObject dataObj = null;
                         PlsqlBlock block = PlsqlParserUtil.findMatchingBlock(PlsqlParserUtil.getBlockHierarchy(dataObject), doc, doc, selectedName, parentName, temp.getStartOffset(), false, false, true);
+
                         if (block == null) {
                             Document specDoc = getSpecDocument(doc);
                             if (specDoc == null) {
@@ -183,7 +184,7 @@ public final class CreateTestBlockAction extends CookieAction {
                     if (selectedBlock.getParent() != null) {
                         selectedName = selectedBlock.getParent().getName() + "." + selectedBlock.getName();
                     }
-                    tempTemplate = createMethodTemplate(doc);
+                        tempTemplate = tempTemplate + createMethodTemplate(doc);
                 } catch (NotConnectedToDbException e) {
                     Exceptions.printStackTrace(e);
                 }
@@ -357,7 +358,7 @@ public final class CreateTestBlockAction extends CookieAction {
             }
 
             //Now we have got the parameters and types
-            tempTemplate = "DECLARE\n";
+            tempTemplate = tempTemplate +  "DECLARE\n";
             for (int i = 0; i < keys.size(); i++) {
                 boolean out = false;
                 boolean in = false;
@@ -663,7 +664,8 @@ public final class CreateTestBlockAction extends CookieAction {
 
     private void selectMatchingBlock(DataObject dataObj, Document specDoc, int offset) {
         List<PlsqlBlock> newBlockHier = PlsqlParserUtil.getBlockHierarchy(dataObj);
-        PlsqlBlock block = PlsqlParserUtil.findMatchingBlock(newBlockHier, doc, specDoc, selectedName, parentName, offset, false, false, true);
+       // PlsqlBlock block = null;
+       PlsqlBlock block = PlsqlParserUtil.findMatchingBlock(newBlockHier, doc, specDoc, selectedName, parentName, offset, false, false, true);
         if (block != null && block.getParent() != null) {
             selectedBlock = block;
             doc = specDoc;

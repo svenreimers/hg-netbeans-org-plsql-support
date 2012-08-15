@@ -88,6 +88,73 @@ public class PlsqlParserUtil {
         } else {
             usageParams = fetchMethodDefParamTypes(source, startOffset);
         }
+  
+        if (packageName == null || packageName.equals("")) {
+            packageName = getPackageName(getBlockFactory(source), startOffset);
+        }
+
+        //Take PlsqlBlock one by one and compare the parameters
+        for (int x = 0; x < matchList.size(); x++) {
+            PlsqlBlock block = matchList.get(x);
+            if (!(block.getParent() != null ? block.getParent().getName().equalsIgnoreCase(packageName) : true)) {
+                continue; //If the parent block name is not the same this is not a match
+            }
+
+            List<String> params = fetchMethodDefParamTypes(dest, block.getStartOffset());
+            int defaultNo = fetchDefaultParams(dest, block.getStartOffset());
+            if (compareParameters(usageParams, params, defaultNo)) {
+                match = block;
+                break;
+            }
+        }
+        //get method from user
+        if(match == null && findBestMatch && matchList.size() > 0){
+            if(matchList.size()==1){
+                match = matchList.get(0);
+            }
+            else{
+                match = getMethodFromUser(dest,matchList);
+            }
+        }
+
+        return (match == null && findBestMatch && matchList.size() > 0) ? null : match;
+    }
+    
+    private static PlsqlBlock getMethodFromUser(Document doc, List<PlsqlBlock> blocks) {
+        SelectMethodDialog dialog = new SelectMethodDialog(null, true, doc, blocks);
+        dialog.setVisible(true);
+        return dialog.getSelectedPlsqlBlock();
+    }
+    
+    /**
+     * Method that will find & return list of matching FUNCTION/ PROCEDURE of the body file
+     * @param blockHier
+     * @param source
+     * @param dest
+     * @param name
+     * @param startOffset
+     * @param isUsage       whether this is method usage
+     * @param isImpl
+     * @param findBestMatch   whether best match is OK
+     * @return
+     */    
+    public static List<PlsqlBlock> findMatchingBlocks(final List<PlsqlBlock> blockHier, final Document source,
+            final Document dest, final String name, String packageName, final int startOffset, final boolean isUsage, final boolean isImpl, final boolean findBestMatch) {
+        PlsqlBlock match = null;
+        final List<PlsqlBlock> matchList = new ArrayList<PlsqlBlock>();
+        if (isImpl) {
+            findMatchingImplBlocks(blockHier, name, matchList);
+        } else {
+            findMatchingDefBlocks(blockHier, name, matchList);
+        }
+
+        //There are several methods with the same name. Have to check the signature
+        List<String> usageParams;
+        if (isUsage) {
+            usageParams = fetchMethodParamTypes(source, startOffset);
+        } else {
+            usageParams = fetchMethodDefParamTypes(source, startOffset);
+        }
 
         if (packageName == null || packageName.equals("")) {
             packageName = getPackageName(getBlockFactory(source), startOffset);
@@ -107,9 +174,38 @@ public class PlsqlParserUtil {
                 break;
             }
         }
+        if (match == null && findBestMatch) {
+           List<PlsqlBlock> similarParaCountList = new ArrayList<PlsqlBlock>();
+           int usageCount = fetchMethodParamsCount(source, startOffset);
+           for (int x = 0; x < matchList.size(); x++) {
+               PlsqlBlock block = matchList.get(x);
+               if (!(block.getParent() != null ? block.getParent().getName().equalsIgnoreCase(packageName) : true)) {
+                   continue; //If the parent block name is not the same this is not a match
+               }
 
-        return (match == null && findBestMatch && matchList.size() > 0) ? null : match;
-    }
+               int count = fetchMethodParamsCount(dest, block.getStartOffset());
+               
+               if (usageCount == count) {
+                   similarParaCountList.add(block);
+               }
+            }
+            if (similarParaCountList.size() > 0) {
+                if (similarParaCountList.size() == 1) {
+                    match = similarParaCountList.get(0);
+                } else {
+                    return similarParaCountList;
+                }
+            }
+            if (match == null && matchList.size() > 0) {
+                return matchList;
+            }
+            }
+        List<PlsqlBlock> returnList = new ArrayList<PlsqlBlock>();
+        if (match != null) {
+            returnList.add(match);
+        }
+        return (match == null && findBestMatch && matchList.size() > 0) ? null : returnList;
+    }        
 
     /**
      * Compare given parameter lists
@@ -257,6 +353,50 @@ public class PlsqlParserUtil {
         }
         return params;
     }
+    
+    private static int fetchMethodParamsCount(final Document doc, final int start) {
+        int noOfParams = 0;
+        final TokenHierarchy tokenHierarchy = TokenHierarchy.get(doc);
+        @SuppressWarnings("unchecked")
+        final TokenSequence<PlsqlTokenId> ts = tokenHierarchy.tokenSequence(PlsqlTokenId.language());
+
+        if (ts != null) {
+            ts.move(start);
+            Token<PlsqlTokenId> token = ts.token();
+            HashSet<String> keywords = new HashSet<String>();
+            while (ts.moveNext()) {
+                token = ts.token();
+                if ((token.text().toString().equals(",")) || (token.text().toString().equals(")"))) {
+                    noOfParams++;
+                }
+
+                if ((token.text().toString().equalsIgnoreCase("IS")) || (token.text().toString().equals(")")) || (token.text().toString().equals(";"))) {
+                    break;
+                }
+            }
+        }
+        return noOfParams;
+    }
+    
+    public static String fetchMethodHeader(final Document doc, final int start) {
+        String header = "";
+        final TokenHierarchy tokenHierarchy = TokenHierarchy.get(doc);
+        @SuppressWarnings("unchecked")
+        final TokenSequence<PlsqlTokenId> ts = tokenHierarchy.tokenSequence(PlsqlTokenId.language());
+
+        if (ts != null) {
+            ts.move(start);
+            Token<PlsqlTokenId> token = ts.token();
+            while (ts.moveNext()) {
+                token = ts.token();
+                header += token;
+                if ((token.text().toString().equalsIgnoreCase("IS")) || (token.text().toString().equals(")")) || (token.text().toString().equals(";"))) {
+                    break;
+                }
+            }
+        }
+        return header;
+    }        
 
     /**
      * Method that will access the parameter types of the function/procedure definition

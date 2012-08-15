@@ -41,6 +41,7 @@
  */
 package org.netbeans.modules.plsql.format;
 
+import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -68,7 +69,8 @@ import org.openide.util.NbBundle;
  */
 public class PlsqlFormatter extends ExtFormatter {
 
-    private boolean isIndentOnly = false;
+    private boolean isAutoIndent = true;
+    private boolean isAutoUppercase = true;
     private boolean isTyping = false;
 
     public PlsqlFormatter(Class kitClass) {
@@ -205,7 +207,7 @@ public class PlsqlFormatter extends ExtFormatter {
      */
     @Override
     public int[] getReformatBlock(JTextComponent target, String arg1) {
-        if (isIndentOnly || arg1.length() != 1) //We dont need to consider spaces
+        if (arg1.length() != 1) //We dont need to consider spaces
         {
             return null;
         }
@@ -237,7 +239,7 @@ public class PlsqlFormatter extends ExtFormatter {
             DataObject dataObj = null;
             Object obj = doc.getProperty(Document.StreamDescriptionProperty);
             if (obj instanceof DataObject) {
-                dataObj = (DataObject) obj;
+               dataObj = (DataObject) obj;
             }
 
             if (dataObj == null) {
@@ -250,8 +252,9 @@ public class PlsqlFormatter extends ExtFormatter {
 
                 //Get indent only value from the preferences
                 Preferences prefs = MimeLookup.getLookup(PlsqlEditorKit.MIME_TYPE).lookup(Preferences.class);
-                isIndentOnly = prefs.getBoolean("indentOnly", false);
-
+                isAutoIndent = prefs.getBoolean("autoIndent", true); 
+                isAutoUppercase = prefs.getBoolean("autoUppercase", true);
+                
                 try {
                     PlsqlFormatSupport plsqlFormatSup = (PlsqlFormatSupport) createFormatSupport(fw);
                     FormatTokenPosition pos = plsqlFormatSup.getFormatStartPosition();
@@ -272,37 +275,28 @@ public class PlsqlFormatter extends ExtFormatter {
 
                         if (pos != null && pos.getToken() != null) {
                             //if a new line indent
-                            if (!isIndentOnly) {
+                            if (isAutoUppercase) {
                                 plsqlFormatSup.formatKeyWords(plsqlFormatSup, pos, blockFactory, startOffset - colStart);
                                 if (startOffset != -1 && pane != null) {
                                     pane.setCaretPosition(startOffset);  // set the correct caret position                           
                                 }
                             }
-
-//                         FormatTokenPosition firstNWS = plsqlFormatSup.findLineFirstNonWhitespace(pos);
-//                         if (firstNWS != null && firstNWS.getToken().getImage().equalsIgnoreCase("END")) {
-//                             plsqlFormatSup.indentLine(pos);
-//                         }
                         }
                         isTyping = false;
                         return;
                     }
-//                      
-                    //pos = formatPreviousLine(pos,plsqlFormatSup);
-
+                    if (isAutoUppercase) {
+                        if (startOffset == -1) {
+                            plsqlFormatSup.formatLine(plsqlFormatSup, pos, blockFactory);
+                        } else {
+                            plsqlFormatSup.formatKeyWords(plsqlFormatSup, pos, blockFactory, startOffset - colStart);
+                        }
+                    }
+                    if(isAutoIndent){
                     while (pos != null) {
                         // Indent the current line
 
                         plsqlFormatSup.indentLine(pos);
-
-                        //If not indent only format also
-                        if (!isIndentOnly) {
-                            if (startOffset == -1) {
-                                plsqlFormatSup.formatLine(plsqlFormatSup, pos, blockFactory);
-                            } else {
-                                plsqlFormatSup.formatKeyWords(plsqlFormatSup, pos, blockFactory, startOffset - colStart);
-                            }
-                        }
 
                         // Goto next line
                         FormatTokenPosition pos2 = plsqlFormatSup.findLineEnd(pos);
@@ -327,6 +321,7 @@ public class PlsqlFormatter extends ExtFormatter {
                             pos = plsqlFormatSup.findLineStart(pos);
                         }
                     }
+                    }
                 } catch (IllegalStateException e) {
                 }
 
@@ -335,7 +330,7 @@ public class PlsqlFormatter extends ExtFormatter {
                     isTyping = false;
                 }
             } finally {
-//            blockFactory.afterSave(doc);
+               
             }
         }
     }
@@ -693,15 +688,17 @@ public class PlsqlFormatter extends ExtFormatter {
 
                     if (temp != null) {
                         tokenTemp = getEndParent(temp);
-                        // check whether this is not just BEGIN/END block. i.e it's part of function/procedure BEGIN
-                        if (tokenTemp.getImage().trim().equalsIgnoreCase("BEGIN") && !nextToken.getImage().trim().equals(";")) {
-                            temp = getPreviousToken(tokenTemp);
+                        if (tokenTemp != null && nextToken != null) {
+                            // check whether this is not just BEGIN/END block. i.e it's part of function/procedure BEGIN
+                            if (tokenTemp.getImage().trim().equalsIgnoreCase("BEGIN") && !nextToken.getImage().trim().equals(";")) {
+                                temp = getPreviousToken(tokenTemp);
 
-                            if (temp != null) {
-                                tokenTemp = getBeginParent(temp);
-                                tokenTemp = getPreviousToken(tokenTemp);
-                            } else {
-                                break;
+                                if (temp != null) {
+                                    tokenTemp = getBeginParent(temp);
+                                    tokenTemp = getPreviousToken(tokenTemp);
+                                } else {
+                                    break;
+                                }
                             }
                         }
                     } else {

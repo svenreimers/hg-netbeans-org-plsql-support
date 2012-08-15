@@ -56,138 +56,142 @@ import org.openide.cookies.OpenCookie;
 import org.openide.filesystems.FileUtil;
 import org.openide.loaders.*;
 import org.openide.nodes.Node;
+import org.openide.util.Exceptions;
 import org.openide.util.actions.SystemAction;
 import org.openide.windows.OutputEvent;
 import org.openide.windows.OutputListener;
 
-public class PlsqlOutputListener  implements OutputListener {
+public class PlsqlOutputListener implements OutputListener {
 
-   private List docLinesArray;
-   private int lineNo;
-   private int position;
-   private String originalFileName=null;
-   private String objectName=null;
-   private Project project;
-   private DatabaseContentManager cache;
+    private List docLinesArray;
+    private int lineNo;
+    private int position;
+    private String originalFileName = null;
+    private String objectName = null;
+    private Project project;
+    private DatabaseContentManager cache;
 
-   public PlsqlOutputListener() {
-   }
+    public PlsqlOutputListener() {
+    }
 
-   public PlsqlOutputListener(Project project, String objectName, int lineNo) {
-      this.project = project;
-      this.objectName = objectName;
-      this.lineNo = lineNo;
-      DatabaseConnectionManager provider = DatabaseConnectionManager.getInstance(project);
-      this.cache = provider!=null ? DatabaseContentManager.getInstance(provider.getTemplateConnection()) : null;
-   }
-   
-   public void outputLineSelected(OutputEvent outputevent) {
-   }
+    public PlsqlOutputListener(Project project, String objectName, int lineNo) {
+        this.project = project;
+        this.objectName = objectName;
+        this.lineNo = lineNo;
+        DatabaseConnectionManager provider = DatabaseConnectionManager.getInstance(project);
+        this.cache = provider != null ? DatabaseContentManager.getInstance(provider.getTemplateConnection()) : null;
+    }
 
-   public void outputLineAction(OutputEvent outputEvent) {
-      if (originalFileName != null) {
-         try {
-            File file = new File(originalFileName);
-            if (file.exists()) {
-               DataObject dObject = DataFolder.find(FileUtil.toFileObject(file));
-               OpenCookie openCookie = dObject.getCookie(OpenCookie.class);
-               openCookie.open();
-               Node n = dObject.getNodeDelegate();
-               EditorCookie ec = dObject.getCookie(EditorCookie.class);        
-               if (ec != null) {
-                  JEditorPane panes[] = ec.getOpenedPanes();
-                  if (panes.length > 0) {
-                     JEditorPane pane = panes[0];
-                     int caretPos = getCaretPositionFromLineNumber(lineNo, pane.getDocument());
-                     pane.setCaretPosition(caretPos);
-                  }
-               }
-            } else {
-               JOptionPane.showMessageDialog(null, "Required File Not found");
+    @Override
+    public void outputLineSelected(OutputEvent outputevent) {
+    }
+
+    @Override
+    public void outputLineAction(OutputEvent outputEvent) {
+        if (originalFileName != null) {
+            try {
+                File file = new File(originalFileName);
+                if (file.exists()) {
+                    DataObject dObject = DataFolder.find(FileUtil.toFileObject(file));
+                    OpenCookie openCookie = dObject.getCookie(OpenCookie.class);
+                    openCookie.open();
+                    Node n = dObject.getNodeDelegate();
+                    EditorCookie ec = dObject.getCookie(EditorCookie.class);
+                    if (ec != null) {
+                        JEditorPane panes[] = ec.getOpenedPanes();
+                        if (panes.length > 0) {
+                            JEditorPane pane = panes[0];
+                            int caretPos = getCaretPositionFromLineNumber(lineNo, pane.getDocument());
+                            pane.setCaretPosition(caretPos);
+                        }
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(null, "Required File Not found");
+                }
+            } catch (DataObjectNotFoundException ex) {
+                Exceptions.printStackTrace(ex);
             }
-         } catch (DataObjectNotFoundException ex) {
-            ex.printStackTrace();
-         }
-      } else if(objectName!=null && cache!=null && project!=null) { //navigate to object
-         PlsqlGoToDbImplAction action = SystemAction.get(PlsqlGoToDbImplAction.class);
-         if(cache.isFunction(objectName)) {
-            action.goToFunction(objectName, project, lineNo);
-         } else if(cache.isProcedure(objectName)) {
-            action.goToProcedure(objectName, project, lineNo);            
-         } else {
-            action.goToPackage(objectName, project, null, lineNo);            
-         }
-      }
-   }
+        } else if (objectName != null && cache != null && project != null) { //navigate to object
+            PlsqlGoToDbImplAction action = SystemAction.get(PlsqlGoToDbImplAction.class);
+            if (cache.isFunction(objectName)) {
+                action.goToFunction(objectName, project, lineNo);
+            } else if (cache.isProcedure(objectName)) {
+                action.goToProcedure(objectName, project, lineNo);
+            } else {
+                action.goToPackage(objectName, project, null, lineNo);
+            }
+        }
+    }
 
-   public void outputLineCleared(OutputEvent outputevent) {
-   }
+    @Override
+    public void outputLineCleared(OutputEvent outputevent) {
+    }
 
-   public int getCaretPositionFormLineNumber(int lineNo, int pos) {
-      if (getDocLinesArray() == null) {
-         throw new RuntimeException("DocLinesArray is Null");
-      }
-      int caretPos = 0;
-      for (int i = 0; i < lineNo; i++) {
-         String line = (String) getDocLinesArray().get(i);
-         caretPos += line.length();
-      }
+    public int getCaretPositionFormLineNumber(int lineNo, int pos) {
+        if (getDocLinesArray() == null) {
+            throw new RuntimeException("DocLinesArray is Null");
+        }
+        int caretPos = 0;
+        for (int i = 0; i < lineNo; i++) {
+            String line = (String) getDocLinesArray().get(i);
+            caretPos += line.length();
+        }
 
-      caretPos += pos;
-      return caretPos;
-   }
+        caretPos += pos;
+        return caretPos;
+    }
 
-   public int getCaretPositionFromLineNumber(int lineNo, Document doc) {
-      String docText = "";
-      try {
-         docText = doc.getText(0, doc.getLength());
-      } catch (BadLocationException ex) {
-         ex.printStackTrace();
-      } catch (NullPointerException ex) {
-         ex.printStackTrace();
-      }
-      
-      int caret = 0;
-      int linebrakCount = 0;
-      for (int i = 0; i < docText.length() && linebrakCount + 1 < lineNo; i++) {
-         caret++;
-         if (docText.charAt(i) == '\n') {
-            linebrakCount++;
-         }
-      }
+    public int getCaretPositionFromLineNumber(int lineNo, Document doc) {
+        String docText = "";
+        try {
+            docText = doc.getText(0, doc.getLength());
+        } catch (BadLocationException ex) {
+            Exceptions.printStackTrace(ex);
+        } catch (NullPointerException ex) {
+            Exceptions.printStackTrace(ex);
+        }
 
-      return caret;
-   }
+        int caret = 0;
+        int linebrakCount = 0;
+        for (int i = 0; i < docText.length() && linebrakCount + 1 < lineNo; i++) {
+            caret++;
+            if (docText.charAt(i) == '\n') {
+                linebrakCount++;
+            }
+        }
 
-   public List getDocLinesArray() {
-      return docLinesArray;
-   }
+        return caret;
+    }
 
-   public void setDocLinesArray(List docLinesArray) {
-      this.docLinesArray = docLinesArray;
-   }
+    public List getDocLinesArray() {
+        return docLinesArray;
+    }
 
-   public int getLineNo() {
-      return lineNo;
-   }
+    public void setDocLinesArray(List docLinesArray) {
+        this.docLinesArray = docLinesArray;
+    }
 
-   public void setLineNo(int lineNo) {
-      this.lineNo = lineNo;
-   }
+    public int getLineNo() {
+        return lineNo;
+    }
 
-   public int getPosition() {
-      return position;
-   }
+    public void setLineNo(int lineNo) {
+        this.lineNo = lineNo;
+    }
 
-   public void setPosition(int position) {
-      this.position = position;
-   }
+    public int getPosition() {
+        return position;
+    }
 
-   public String getOriginalFileName() {
-      return originalFileName;
-   }
+    public void setPosition(int position) {
+        this.position = position;
+    }
 
-   public void setOriginalFileName(String originalFileName) {
-      this.originalFileName = originalFileName;
-   }
+    public String getOriginalFileName() {
+        return originalFileName;
+    }
+
+    public void setOriginalFileName(String originalFileName) {
+        this.originalFileName = originalFileName;
+    }
 }

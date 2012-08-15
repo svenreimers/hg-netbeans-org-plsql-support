@@ -168,16 +168,21 @@ public class PlsqlContext {
    }
    
    private int findNextFrom(TokenSequence<PlsqlTokenId> ts) {
+      int parenCount = 0; 
       while (ts.moveNext()) {
          Token<PlsqlTokenId> token = ts.token();
          PlsqlTokenId tokenID = token.id();
          String value = token.toString();
          if(tokenID == PlsqlTokenId.OPERATOR && ";".equals(value)) {
             return -1;
+         }else if(tokenID == PlsqlTokenId.LPAREN) {
+            parenCount++;
+         } else if(tokenID == PlsqlTokenId.RPAREN) {
+            parenCount--;
          } else if (tokenID == PlsqlTokenId.KEYWORD) {
             if("NULL".equalsIgnoreCase(value)) {
                //ignore NULL since this is a valid SQL keyword
-            } else if("FROM".equalsIgnoreCase(value)) {
+            } else if(parenCount==0 && "FROM".equalsIgnoreCase(value)) {
                return ts.offset()+5;
             } 
          }
@@ -191,6 +196,7 @@ public class PlsqlContext {
    private int findTableAndViewListStartPosition(TokenSequence<PlsqlTokenId> ts) {
       boolean whereFound = false;
       boolean setFound = false;
+      boolean asFound = false;
       int rParenCount=0;
       int lParenCount=0;
       PlsqlTokenId previousKeyWordTokenId = null;
@@ -209,12 +215,15 @@ public class PlsqlContext {
                lParenCount++;
                previousKeyWordTokenId = null;
             }
-         } else if(tokenId == PlsqlTokenId.KEYWORD) {
+         } else if(tokenId == PlsqlTokenId.KEYWORD || "SET".equalsIgnoreCase(value)) {
             if(rParenCount==0) {
                if("WHERE".equalsIgnoreCase(value) || "BY".equalsIgnoreCase(value)) {
                   //set for where as well as order by and group by
                   whereFound = true;
                } else if("SET".equalsIgnoreCase(value)) {
+                   if(whereFound){
+                    return ts.offset()+5; 
+                   }
                   setFound = true;
                } else if("FROM".equalsIgnoreCase(value)) {
                  if(whereFound)
@@ -227,9 +236,12 @@ public class PlsqlContext {
                  else 
                     return -1; //found update before where or set...
                } else if(lParenCount==1 && "INTO".equalsIgnoreCase(value)) { //find "INSERT INTO xxx (" type of statements
-                  if(previousKeyWordTokenId==null) //no other keywords between INTO and the parenthesis 
+                  if(previousKeyWordTokenId==null || asFound) //no other keywords between INTO and the parenthesis 
                      return ts.offset()+5;
+               } else if("AS".equalsIgnoreCase(value)){
+                 asFound = true;
                }
+               
             }
             previousKeyWordTokenId = tokenId;
          }
@@ -267,29 +279,38 @@ public class PlsqlContext {
          } else if (parenCount==0 && tokenID == PlsqlTokenId.KEYWORD) {
             if(keyWord.equalsIgnoreCase(value)) {
                return ts.offset();
-            } 
+            }
+            else if(value.equalsIgnoreCase("SELECT") || value.equalsIgnoreCase("UPDATE") || value.equalsIgnoreCase("INSERT") || value.equalsIgnoreCase("DELETE")){
+                return -1;
+            }
          }
       }
       return -1;
    }
    
    private HashMap<String, String> extractAliases(TokenSequence<PlsqlTokenId> ts) {
-      //start at the first point after the FROM statement
-      //extract list of tables/views and aliases.
       HashMap<String, String> map = new HashMap<String, String>();
       int parenCount = 0;
       String viewName = null;
       String alias = null;
       final String SELECT_STATEMENT="select...";
+        if(isUpdateStmt(ts.offset())){
+            ts.move(findStmtStart(ts, "UPDATE")); 
+            ts.moveIndex(ts.index()+1);
+        }
       while (ts.moveNext()) {
          Token<PlsqlTokenId> token = ts.token();
          PlsqlTokenId tokenID = token.id();
          String value = token.toString();
-         if(tokenID == PlsqlTokenId.OPERATOR && ";".equals(value)) {
-            break;
+         if(tokenID == PlsqlTokenId.OPERATOR && (";".equals(value) || "=".equals(value))) {
+            if("=".equals(value)) 
+                viewName = null;
+            else
+                break;
          } else if(tokenID == PlsqlTokenId.DOT && viewName!=null) {
             //schema prefix for the object - ignore the schema
-            viewName = null;
+             if(!isInsertStmt(ts.offset()))
+                viewName = null;
          } else if(tokenID == PlsqlTokenId.LPAREN) {
             parenCount++;
          } else if(tokenID == PlsqlTokenId.RPAREN) {
@@ -298,6 +319,8 @@ public class PlsqlContext {
             parenCount--;
             if(parenCount==0 && viewName==null) //closing parenthesis. If viewName != null this is probably an insert into statement...
                viewName = SELECT_STATEMENT;
+            else
+                break;
          } else if(parenCount==0) {
             if(tokenID == PlsqlTokenId.IDENTIFIER || tokenID==PlsqlTokenId.STRING_LITERAL) {
                if(viewName==null) {
@@ -311,8 +334,9 @@ public class PlsqlContext {
                else if(viewName!=null && viewName!=SELECT_STATEMENT) //Yes - this should be "==..." and not equals(...)
                   selectViewsWithoutAlias.add(viewName);
                viewName = alias = null;
-            } else if(tokenID==PlsqlTokenId.KEYWORD) {
-                break;
+            } else if(tokenID==PlsqlTokenId.KEYWORD || "SET".equals(value)) {
+                if(!("AS".equalsIgnoreCase(value)))  
+                   break;
             }
          }
       }
@@ -329,6 +353,22 @@ public class PlsqlContext {
       TokenSequence<PlsqlTokenId> ts = tokenHierarchy.tokenSequence(PlsqlTokenId.language());
       ts.move(caretOffset);
       return findStmtStart(ts, "SELECT")>-1;
+   }
+   
+   private boolean isUpdateStmt(int caretOffset) {
+      TokenHierarchy tokenHierarchy = TokenHierarchy.get(doc);
+      @SuppressWarnings("unchecked")
+      TokenSequence<PlsqlTokenId> ts = tokenHierarchy.tokenSequence(PlsqlTokenId.language());
+      ts.move(caretOffset);
+      return findStmtStart(ts, "UPDATE")>-1;
+   }
+   
+   private boolean isInsertStmt(int caretOffset) {
+      TokenHierarchy tokenHierarchy = TokenHierarchy.get(doc);
+      @SuppressWarnings("unchecked")
+      TokenSequence<PlsqlTokenId> ts = tokenHierarchy.tokenSequence(PlsqlTokenId.language());
+      ts.move(caretOffset);
+      return findStmtStart(ts, "INSERT")>-1;
    }
 
    private boolean isExceptionStmt(int caretOffset) {

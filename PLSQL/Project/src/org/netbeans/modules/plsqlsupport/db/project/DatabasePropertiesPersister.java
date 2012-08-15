@@ -73,9 +73,9 @@ public class DatabasePropertiesPersister extends PropertiesPersister<DatabaseCon
                 if (fields.length == 4) {
                     DatabaseConnection connection = null;
                     for (DatabaseConnection c : ConnectionManager.getDefault().getConnections()) {
-                        if (c.getDatabaseURL().equalsIgnoreCase(fields[0]) &&
-                                c.getUser().equalsIgnoreCase(fields[1]) &&
-                                c.getSchema().equalsIgnoreCase(fields[3])) {
+                        if (c.getDatabaseURL().equalsIgnoreCase(fields[0])
+                                && c.getUser().equalsIgnoreCase(fields[1])
+                                && c.getSchema().equalsIgnoreCase(fields[3])) {
                             connection = c;
                         }
                     }
@@ -98,16 +98,16 @@ public class DatabasePropertiesPersister extends PropertiesPersister<DatabaseCon
                 }
             }
         }
-        manager.setDatabaseConnections(connections.toArray(new DatabaseConnection[connections.size()]));
+        manager.setDatabaseConnections(connections);
     }
 
     @Override
     protected void storeProperties(EditableProperties properties) {
-        DatabaseConnection[] connections = manager.getDatabaseConnections();
-        String[] connectionStrings = new String[connections.length];        
-        for (int i = 0; i < connections.length; i++) {
+        List<DatabaseConnection> connections = manager.getDatabaseConnections();
+        String[] connectionStrings = new String[connections.size()];
+        for (int i = 0; i < connections.size(); i++) {
             StringBuilder builder = new StringBuilder();
-            DatabaseConnection connection = connections[i];
+            DatabaseConnection connection = connections.get(i);
             if (connection.getDatabaseURL() != null) {
                 builder.append(connection.getDatabaseURL());
             }
@@ -123,13 +123,13 @@ public class DatabasePropertiesPersister extends PropertiesPersister<DatabaseCon
             if (connection.getSchema() != null) {
                 builder.append(connection.getSchema());
             }
-            connectionStrings[i] = builder.toString();            
+            connectionStrings[i] = builder.toString();
         }
         setProperty(properties, CONNECTIONS_KEY, connectionStrings);
         //get appowner of main DB (i.e. the first connection)
         String appowner = "";
-        if (connections.length > 0){ 
-            appowner = connections[0].getSchema();
+        if (!connections.isEmpty()) {
+            appowner = connections.get(0).getSchema();
         }
         setProperty(properties, DB_APPOWNER_KEY, appowner);
     }

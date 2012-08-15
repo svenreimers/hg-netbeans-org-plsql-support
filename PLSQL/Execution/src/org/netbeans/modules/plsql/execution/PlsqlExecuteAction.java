@@ -55,19 +55,10 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JEditorPane;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPopupMenu;
+import javax.swing.*;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import javax.swing.text.Document;
-
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.progress.ProgressHandleFactory;
@@ -75,29 +66,26 @@ import org.netbeans.modules.plsql.filetype.PlsqlDataObject;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
-import org.openide.awt.ActionID;
-import org.openide.awt.ActionReference;
-import org.openide.awt.ActionRegistration;
-import org.openide.awt.DropDownButtonFactory;
+import org.openide.awt.*;
 import org.openide.cookies.EditorCookie;
 import org.openide.cookies.SaveCookie;
 import org.openide.filesystems.FileObject;
 import org.openide.loaders.DataObject;
-import org.openide.util.Cancellable;
-import org.openide.util.ContextAwareAction;
-import org.openide.util.Exceptions;
-import org.openide.util.ImageUtilities;
-import org.openide.util.Lookup;
-import org.openide.util.NbBundle;
-import org.openide.util.RequestProcessor;
-import org.openide.util.Utilities;
+import org.openide.util.*;
 import org.openide.util.actions.Presenter;
 
 @ActionID(id = "org.netbeans.modules.plsql.execution.PlsqlExecuteAction", category = "PLSQL")
-@ActionRegistration(displayName = "#CTL_fileExecution")
-@ActionReference(path = "Shortcuts", name = "AS-E")
+@ActionRegistration(displayName = "#CTL_Execution", iconBase = "org/netbeans/modules/plsql/execution/execute.png")
+@ActionReferences({
+    @ActionReference(path = "Shortcuts", name = "DS-E"),
+    @ActionReference(path = "Shortcuts", name = "OS-E"),
+    @ActionReference(path = "Editors/text/x-plsql/Popup", name = "org-netbeans-modules-plsql-execution-PlsqlExecuteAction",
+    position = 405, separatorBefore = 404)
+})
 public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAction, Presenter.Toolbar {
 
+    private static final String ICON_PATH = "org/netbeans/modules/plsql/execution/execute.png";
+    private static final RequestProcessor RP = new RequestProcessor(PlsqlExecuteAction.class);
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
     private static final String DATABASE_CONNECTION_KEY = "databaseConnection";
     private static final String TEST_BLOCK_NAME_PREFIX = "TestBlock:";
@@ -110,15 +98,17 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
     private JButton button;
     private ActionListener buttonListener = new ButtonListener();
     private boolean autoCommit = true;
+    PlsqlCommit commit;
 
     public PlsqlExecuteAction() {
         this(Utilities.actionsGlobalContext());
     }
 
     public PlsqlExecuteAction(Lookup context) {
-        putValue(NAME, NbBundle.getMessage(PlsqlExecuteAction.class, "CTL_fileExecution"));
-        putValue(SHORT_DESCRIPTION, NbBundle.getMessage(PlsqlExecuteAction.class, "CTL_fileExecution"));
-        putValue(SMALL_ICON, new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/execute.png")));
+        putValue(NAME, NbBundle.getMessage(PlsqlExecuteAction.class, "CTL_Execution"));
+        putValue(SHORT_DESCRIPTION, NbBundle.getMessage(PlsqlExecuteAction.class, "CTL_ExecutionDescription"));
+//        putValue(LONG_DESCRIPTION, NbBundle.getMessage(PlsqlExecuteAction.class, "CTL_ExecutionDescription"));
+        putValue(SMALL_ICON, new ImageIcon(ImageUtilities.loadImage(ICON_PATH)));
 
         dataObject = context.lookup(DataObject.class);
 
@@ -137,6 +127,9 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
         setEnabled(dataObject != null);
         if (validator.isValidTDB(dataObject)) {
             autoCommit = OptionsUtilities.isCommandWindowAutoCommitEnabled();
+        }
+        if (dataObject != null) {
+            commit = PlsqlCommit.getInstance(dataObject);
         }
     }
 
@@ -168,7 +161,7 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
 
         // If autocommit OFF - take the connection from data object.
         if (!autoCommit) {
-            connection = dataObject.getLookup().lookup(DatabaseConnection.class);
+            setConnection(connectionProvider.getTemplateConnection());
         }
 
         if (connection == null) {
@@ -231,23 +224,75 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
 
     private void populatePopupMenu() {
         popup.removeAll();
-        if (autoCommit) {
-            for (DatabaseConnection c : connectionProvider.getDatabaseConnections()) {
-                String url = c.getDatabaseURL();
-                String schema = c.getUser();
-                int pos = url.indexOf("@") + 1;
-                if (pos > 0) {
-                    url = url.substring(pos);
+        for (DatabaseConnection c : connectionProvider.getDatabaseConnections()) {
+            String url = c.getDatabaseURL();
+            String schema = c.getUser();
+            int pos = url.indexOf("@") + 1;
+            if (pos > 0) {
+                url = url.substring(pos);
+            }
+            url = schema + "@" + url;
+            String alias = c.getDisplayName();
+            if (alias != null && !alias.equals(c.getName())) {
+                url = alias + " [" + url + "]";
+            }
+            JMenuItem item = new JMenuItem(url);
+            item.putClientProperty(DATABASE_CONNECTION_KEY, c);
+            item.addActionListener(buttonListener);
+            popup.add(item);
+        }
+    }
+
+    private void setConnection(DatabaseConnection newConnection) {
+        if (connection != null && connection.getName().equals(newConnection.getName())) {
+            connection = dataObject.getLookup().lookup(DatabaseConnection.class);
+        } else {
+            if (connection != null) {
+                connection = dataObject.getLookup().lookup(DatabaseConnection.class);
+                if (commit.getCommit()) {
+                    if (!OptionsUtilities.isDeployNoPromptEnabled()) {
+
+                        String msg = "Commit transactions for " + connection.getDisplayName() + " ?";
+                        String title = "Confirm!";
+                        int showOptionDialog = JOptionPane.showOptionDialog(null,
+                                msg,
+                                title,
+                                JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE,
+                                null, null, null);
+
+                        if (showOptionDialog == JOptionPane.YES_OPTION) {
+                            commit.commitTransaction(dataObject, connection, connectionProvider);
+                        } else if (showOptionDialog == JOptionPane.NO_OPTION) {
+                            commit.rollbackTransaction(dataObject, connection, connectionProvider);
+                        } else {
+                            return;
+                        }
+                    }
                 }
-                url = schema + "@" + url;
-                String alias = c.getDisplayName();
-                if (alias != null && !alias.equals(c.getName())) {
-                    url = alias + " [" + url + "]";
+            }
+            if (!connectionProvider.isDefaultDatabase(newConnection)) {
+                if (!OptionsUtilities.isDeployNoPromptEnabled()) {
+                    String msg = "You are now connecting to a secondary database.";
+                    String title = "Connecting to a Secondary Database!";
+                    if (JOptionPane.showOptionDialog(null,
+                            msg,
+                            title,
+                            JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE,
+                            null, null, null) == JOptionPane.NO_OPTION) {
+                        return;
+                    }
+                    connection = newConnection;
+                    try {
+                        Connection jdbcConnection = connection.getJDBCConnection();
+                        if (jdbcConnection == null || !jdbcConnection.isValid(1000)) {
+                            return;
+                        }
+                    } catch (SQLException ex) {
+                        return;
+                    }
                 }
-                JMenuItem item = new JMenuItem(url);
-                item.putClientProperty(DATABASE_CONNECTION_KEY, c);
-                item.addActionListener(buttonListener);
-                popup.add(item);
+            } else {
+                connection = newConnection;
             }
         }
     }
@@ -267,35 +312,14 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
         if (file == null) {
             return;
         }
-
-        if (autoCommit && !connectionProvider.isDefaultDatabase(connection)) {
-            if (!OptionsUtilities.isDeployNoPromptEnabled()) {
-                String msg = "You are now connecting to a secondary database.";
-                String title = "Connecting to a Secondary Database!";
-                if (JOptionPane.showOptionDialog(null,
-                        msg,
-                        title,
-                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE,
-                        null, null, null) == JOptionPane.NO_OPTION) {
-                    return;
-                }
-                connectionProvider.connect(connection);
-                try {
-                    Connection jdbcConnection = connection.getJDBCConnection();
-                    if (jdbcConnection == null || !jdbcConnection.isValid(1000)) {
-                        return;
-                    }
-                } catch (SQLException ex) {
-                    return;
-                }
-            }
-        } else {
-            //to reconnect if the connection is gone. 
-            if (connection.getJDBCConnection() == null) {
-                connectionProvider.connect(connection);
-            }
+        //to reconnect if the connection is gone. 
+        if (connection.getJDBCConnection() == null) {
+            connectionProvider.connect(connection);
         }
 
+        PlsqlExecutableBlocksMaker blockMaker = new PlsqlExecutableBlocksMaker(document);
+        blocks = blockMaker.makeExceutableObjects();
+                
         //if the user has selected any text in the window, create exec block using selected text only
         if (validator.isValidTDB(dataObject)) {
             JEditorPane[] panes = edCookie.getOpenedPanes();
@@ -303,24 +327,46 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
                 String selectedSql = panes[0].getSelectedText();
                 if (selectedSql != null && !selectedSql.trim().equals("")) { //some text has been selected
                     //create executable block with selected sql
-                    blocks = new ArrayList<PlsqlExecutableObject>();
-                    blocks.add(new PlsqlExecutableObject(0, selectedSql, "SQL", PlsqlExecutableObjectType.STATEMENT, 0, selectedSql.length() - 1));
+                    List<PlsqlExecutableObject> newblocks = new ArrayList<PlsqlExecutableObject>();
+                    int selectionStart = panes[0].getSelectionStart();
+                    int selectionEnd = panes[0].getSelectionEnd();
+                    for (PlsqlExecutableObject block : blocks) {
+                        if ((selectionStart <= block.getStartOffset()) && (selectionEnd >= block.getEndOffset())) {
+                            newblocks.add(block);
+                        }
+                    }
+                    if (!newblocks.isEmpty()) {
+                        blocks = newblocks;
+                    }else {
+                        blocks = new ArrayList<PlsqlExecutableObject>();
+                        blocks.add(new PlsqlExecutableObject(0, selectedSql, "SQL", PlsqlExecutableObjectType.STATEMENT, 0, selectedSql.length() - 1));
+                    }
+                }else if (OptionsUtilities.isCommandWindowAutoSelectEnabled()) {
+                    List<PlsqlExecutableObject> newblocks = new ArrayList<PlsqlExecutableObject>();
+
+                    int caretPos = 0;
+                    if ((panes != null) && (panes.length > 0)) {
+                        caretPos = panes[0].getCaretPosition();
+                    }
+                    for (PlsqlExecutableObject block : blocks) {
+                        if (caretPos >= block.getStartOffset() && caretPos <= block.getEndOffset()) {
+                            if (block.getPlsqlString().startsWith("SELECT")) {
+                                newblocks.add(block);
+                            }
+                        }
+                    }
+                    if (!newblocks.isEmpty()) {
+                        blocks = newblocks;
+                    }
                 }
             }
-        }
-
-        //if blocks were not created using selected text, use entire document to create exec blocks
-        if (blocks == null) {
-            PlsqlExecutableBlocksMaker blockMaker = new PlsqlExecutableBlocksMaker(document);
-            blocks = blockMaker.makeExceutableObjects();
         }
         String extension = file.getExt();
         if (blocks.size() > 0 && "tdb".equalsIgnoreCase(extension) && (dataObject.getNodeDelegate().getDisplayName() == null || !dataObject.getNodeDelegate().getDisplayName().contains(TEST_BLOCK_NAME_PREFIX))) {
             String str = blocks.get(0).getPlsqlString().replaceAll("\n", " ");
             dataObject.getNodeDelegate().setDisplayName(str.length() > 30 ? str.substring(0, 30) + "..." : str);
         }
-        RequestProcessor processor = RequestProcessor.getDefault();
-        processor.post(new ExecutionHandler(connectionProvider, connection, blocks, document));
+        RP.post(new ExecutionHandler(connectionProvider, connection, blocks, document));
 
     }
 
@@ -409,7 +455,8 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
         public void actionPerformed(ActionEvent e) {
 
             JMenuItem item = (JMenuItem) e.getSource();
-            connection = (DatabaseConnection) item.getClientProperty(DATABASE_CONNECTION_KEY);
+            DatabaseConnection newConnection = (DatabaseConnection) item.getClientProperty(DATABASE_CONNECTION_KEY);
+            setConnection(newConnection);
             saveAndExecute();
 
         }

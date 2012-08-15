@@ -45,7 +45,11 @@ import org.netbeans.modules.plsql.lexer.PlsqlTokenId;
 import java.util.List;
 import java.util.Map;
 import javax.swing.text.Document;
+import javax.swing.text.JTextComponent;
+import org.netbeans.api.editor.EditorRegistry;
 import org.netbeans.api.lexer.Token;
+import org.netbeans.modules.plsql.annotation.PlsqlAnnotationManager;
+import org.netbeans.modules.plsql.annotation.PlsqlAnnotationUtil;
 
 /**
  * Annotation class for annotations based on tokens
@@ -55,4 +59,33 @@ public abstract class PlsqlTokenAnnotation extends PlsqlAnnotation {
 
    public abstract void evaluateAnnotation(Map<Integer, List<PlsqlAnnotation>> annotationsToAdd,
            Document doc, Token<PlsqlTokenId> token, int tokenOffset, int endParse, Object obj);   
+   
+    /**
+    * Check and remove/add the ignore marker annotation
+    * @param annotationsToAdd
+    * @param ignoreKey
+    * @param ignoreMarkerOffset
+    * @param exists
+    */
+   public void checkIgnoreAnnotation(final Map<Integer, List<PlsqlAnnotation>> annotationsToAdd, final String ignoreKey, final int ignoreMarkerOffset, final boolean exists) {
+      if (!exists && -1 != ignoreMarkerOffset) {
+         PlsqlAnnotationUtil.addAnnotation(new PlsqlWrongIgnoreMarkerAnnotation(ignoreKey, ignoreMarkerOffset), annotationsToAdd);
+      } else if (exists && -1 != ignoreMarkerOffset) {
+         //Remove the WrongIgnoreMarkerAnnotation if existing
+         final JTextComponent comp = EditorRegistry.lastFocusedComponent();
+         if (comp == null) {
+            return;
+         }
+
+         final Document doc = comp.getDocument();
+         if (doc == null) {
+            return;
+         }
+
+         final PlsqlAnnotationManager annotationManager = PlsqlAnnotationUtil.getAnnotationManager(doc);
+         if (annotationManager != null) {
+            annotationManager.removeAnnotation(ignoreMarkerOffset, "Plsql-wrong-ignore-marker-annotation");
+         }
+      }
+   }
 }

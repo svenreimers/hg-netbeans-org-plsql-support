@@ -111,15 +111,6 @@ public class SQLCommandWindow {
                         if ((panes != null) && (panes.length != 0)) {
                             JEditorPane component = panes[0];
                             if (component != null) {
-                                //Ugly workaround for a bug in code templates.
-                                //This bug makes it impossible to insert code templates at the first position in a file.
-                                //By adding a comment line at the start of the file we avoid this problem for our test blocks...
-                                Document doc = component.getDocument();
-                                try {
-                                    doc.insertString(0, "-- Enter values for your parameters. Use enter to move to the next parameter\n", null);
-                                } catch (BadLocationException ex) {
-                                    Exceptions.printStackTrace(ex);
-                                }
                                 CodeTemplate ct = CodeTemplateManager.get(component.getDocument()).createTemporary(codeTemplate);
                                 ct.insert(component);
                             }

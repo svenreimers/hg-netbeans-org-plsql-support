@@ -104,6 +104,37 @@ public class PlsqlPackageAnnotationUtil {
 
       return offset;
    }
+   //Use in global variable annotation to get the end of CONSTANT variables
+    public static int checkForFirstImplBlock(final PlsqlBlock temp) {
+      int offset = temp.getEndOffset();
+      final Comparator<PlsqlBlock> comparator = new Comparator<PlsqlBlock>() {
+
+         @Override
+         public int compare(final PlsqlBlock block1, final PlsqlBlock block2) {
+            Integer o1pos, o2pos;
+            if (block1.getStartOffset() > -1 && block2.getStartOffset() > -1) {
+               o1pos = Integer.valueOf(block1.getStartOffset());
+               o2pos = Integer.valueOf(block2.getStartOffset());
+            } else {
+               o1pos = Integer.valueOf(block1.getEndOffset());
+               o2pos = Integer.valueOf(block2.getEndOffset());
+            }
+            return o1pos.compareTo(o2pos);
+         }
+      };
+
+      final List<PlsqlBlock> blocks = temp.getChildBlocks();
+      Collections.sort(blocks, comparator);
+      for (PlsqlBlock child : blocks) {
+            PlsqlBlockType type = child.getType();
+        if (!(type == PlsqlBlockType.COMMENT || type == PlsqlBlockType.CURSOR)) {
+            offset = child.getStartOffset();
+            break;
+         }
+      }
+
+      return offset;
+   }
 
    public static boolean insertPackageDeclaration(final DataObject dataObj, final Document doc, final String decType, final int offset) {
       if (PlsqlAnnotationUtil.isFileReadOnly(doc)) {

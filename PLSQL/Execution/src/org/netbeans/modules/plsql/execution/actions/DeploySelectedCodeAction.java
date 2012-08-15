@@ -46,7 +46,7 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-
+import java.util.List;
 import javax.swing.JEditorPane;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
@@ -54,7 +54,6 @@ import javax.swing.JSeparator;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Caret;
 import javax.swing.text.Document;
-
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
@@ -75,7 +74,8 @@ import org.openide.util.actions.CookieAction;
 
 @ActionID(id = "org.netbeans.modules.plsql.execution.actions.DeploySelectedCodeAction", category = "PLSQL")
 @ActionRegistration(displayName = "#CTL_DeploySelectedCodeAction")
-@ActionReference(path = "Editors/text/x-plsql/Popup", name = "org-netbeans-modules-plsql-execution-action-DeploySelectedCodeAction", position = 280)
+@ActionReference(path = "Editors/text/x-plsql/Popup", name = "org-netbeans-modules-plsql-execution-action-DeploySelectedCodeAction",
+position = 410)
 public final class DeploySelectedCodeAction extends CookieAction {
 
     private Node[] activatedNodes;
@@ -86,7 +86,8 @@ public final class DeploySelectedCodeAction extends CookieAction {
     private final String TEMP_SQL_FILE_PREFIX = "Tempory";
 
     /**
-     * Create a sql execution window for the selected methoad
+     * Create a SQL execution window for the selected method
+     *
      * @param activatedNodes
      */
     @Override
@@ -127,6 +128,7 @@ public final class DeploySelectedCodeAction extends CookieAction {
 
     /**
      * Enable this action when right clicked on procedures or functions
+     *
      * @param arg0
      * @return
      */
@@ -180,13 +182,13 @@ public final class DeploySelectedCodeAction extends CookieAction {
 
         JMenu menu = new JMenu(getName());
         ActionListener buttonListener = new ButtonListener();
-        DatabaseConnection[] databaseConnections = connectionProvider.getDatabaseConnections();
-        for (int i = 0; i < databaseConnections.length; i++) {
-            JMenuItem item = new JMenuItem(databaseConnections[i].getName());
-            item.putClientProperty(DATABASE_CONNECTION_KEY, databaseConnections[i]);
+        List<DatabaseConnection> databaseConnections = connectionProvider.getDatabaseConnections();
+        for (int i = 0; i < databaseConnections.size(); i++) {
+            JMenuItem item = new JMenuItem(databaseConnections.get(i).getName());
+            item.putClientProperty(DATABASE_CONNECTION_KEY, databaseConnections.get(i));
             item.addActionListener(buttonListener);
             menu.add(item);
-            if (i == 0 && databaseConnections.length > 1) {
+            if (i == 0 && databaseConnections.size() > 1) {
                 menu.add(new JSeparator());
             }
         }
@@ -208,15 +210,24 @@ public final class DeploySelectedCodeAction extends CookieAction {
                 Exceptions.printStackTrace(ex);
             }
             File tmpFile = null;
+            FileWriter writer = null;
             try {
                 tmpFile = File.createTempFile(TEMP_SQL_FILE_PREFIX, ".sql",
                         FileUtil.toFile(project.getLookup().lookup(CacheDirectoryProvider.class).getCacheDirectory()));
                 tmpFile.deleteOnExit();
-                FileWriter writer = new FileWriter(tmpFile);
+                writer = new FileWriter(tmpFile);
                 writer.write(output);
-                writer.close();
+
             } catch (IOException ex) {
                 Exceptions.printStackTrace(ex);
+            } finally {
+                if (writer != null) {
+                    try {
+                        writer.close();
+                    } catch (IOException ignore) {
+                        // Exceptions.printStackTrace(ex);
+                    }
+                }
             }
             File[] files = {tmpFile};
             try {

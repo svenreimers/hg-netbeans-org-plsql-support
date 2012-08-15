@@ -101,9 +101,8 @@ public class PlsqlUnreachableAnnotation extends PlsqlBlockAnnotation {
             if (!isIgnoreAlowed() || -1 == ignoreMarkerOffset) {
                PlsqlAnnotationUtil.addAnnotation(annotation, annotationsToAdd);
             }
-         }
-
-         checkIgnoreAnnotation(annotationsToAdd, getIgnoreKey(), ignoreMarkerOffset, exists);
+            checkIgnoreAnnotation(annotationsToAdd, getIgnoreKey(), ignoreMarkerOffset, exists);
+         }        
       } catch (BadLocationException ex) {
          Exceptions.printStackTrace(ex);
       }

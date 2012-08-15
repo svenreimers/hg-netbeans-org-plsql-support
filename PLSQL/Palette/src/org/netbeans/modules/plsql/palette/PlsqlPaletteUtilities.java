@@ -48,6 +48,7 @@ import javax.swing.text.JTextComponent;
 import org.netbeans.editor.BaseDocument;
 import org.netbeans.lib.editor.codetemplates.api.CodeTemplate;
 import org.netbeans.lib.editor.codetemplates.api.CodeTemplateManager;
+import org.openide.util.Exceptions;
 
 
 /*
@@ -95,11 +96,12 @@ public class PlsqlPaletteUtilities {
         if (doc instanceof BaseDocument) {
             ((BaseDocument) doc).runAtomic(new Runnable() {
 
+                @Override
                 public void run() {
                     try {
                         insert(s, target, doc);
                     } catch (BadLocationException ex) {
-                        ex.printStackTrace();
+                        Exceptions.printStackTrace(ex);
                     }
                 }
             });
@@ -125,16 +127,16 @@ public class PlsqlPaletteUtilities {
             int p1 = Math.max(caret.getDot(), caret.getMark());
             doc.remove(p0, p1 - p0);
             start = caret.getDot();
-            
+
             //Insert the text as a code template
             if (target != null) {
                 CodeTemplate ct = CodeTemplateManager.get(target.getDocument()).createTemporary(s);
-                ct.insert(target);                
-           }
+                ct.insert(target);
+            }
         } catch (BadLocationException ble) {
-            ble.printStackTrace();
+            Exceptions.printStackTrace(ble);
         }
 
         return start;
-    }   
+    }
 }

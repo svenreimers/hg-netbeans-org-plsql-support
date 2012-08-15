@@ -13,6 +13,10 @@
     <property name="timestamp.file" value=".lastModified"/>
     
     <property environment="env"/>
+   <property name="env.BUILD_NUMBER" value="0" description="Set a fake value if not run from Jenkins"/>
+   <property name="env.next_jira_release_version" value="8.72.0" description="Set a fake value if not run from Jenkins"/>
+   <property name="new_version" value="${env.next_jira_release_version}.${env.BUILD_NUMBER}" description="Set a version number based on info from Jenkins"/>
+
     <condition property="build.id" value="${env.BUILD_ID}" else="dev">
         <isset property="env.BUILD_ID"/>
     </condition>
@@ -132,10 +136,13 @@
       <echo level="verbose">${modules}</echo>
 
       <foreach param="module.path" target="-vcs-log" list="${modules}" delimiter=":"/>
+<!--        <echoproperties srcfile="build/nbms_update.properties" />-->
+   </target>
+
+   <target name="-add-kit-module" description="add kit module to update" >
       <propertyfile  file="build/nbms_update.properties">
          <entry key="selected.modules" default="" operation="+" value="plsql-support.kit/manifest.mf:"/>
       </propertyfile>
-<!--        <echoproperties srcfile="build/nbms_update.properties" />-->
    </target>
 
    <target name="-vcs-log" description="use mercurial to check if the last commit was a release commit">
@@ -177,31 +184,14 @@
    <target name="current-version" depends="-read-version" description="show current specification.version">
    </target>
 
-   <target name="incr-major" description="increment major version for modules with changes" depends="-find-modules-for-update">
+   <target name="update-version" depends="-find-modules-for-update, -add-kit-module"
+           description="update version for all modules in suite that has changes since last release">
+      <echo level="info">Updating modules to version: ${new_version}</echo>
       <loadproperties srcfile="build/nbms_update.properties" />
       <echo>selected.modules=${selected.modules}</echo>
-      <foreach param="manifest.file" target="-major" >
+      <foreach param="manifest.file" target="-update-meta-files" >
          <path path="${selected.modules}"/>
       </foreach>
-      <delete file="build_info.properties" />
-   </target>
-
-   <target name="incr-minor" description="increment minor version for modules with changes" depends="-find-modules-for-update">
-      <loadproperties srcfile="build/nbms_update.properties" />
-      <echo>selected.modules=${selected.modules}</echo>
-      <foreach param="manifest.file" target="-minor" >
-         <path path="${selected.modules}"/>
-      </foreach>
-      <delete file="build_info.properties" />
-   </target>
-
-   <target name="incr-revision" description="increment revision version for modules with changes" depends="-find-modules-for-update">
-      <loadproperties srcfile="build/nbms_update.properties" />
-      <echo>selected.modules=${selected.modules}</echo>
-      <foreach param="manifest.file" target="-revision" >
-         <path path="${selected.modules}"/>
-      </foreach>
-      <delete file="build_info.properties" />
    </target>
 
    <target name="-read-version">
@@ -209,61 +199,15 @@
       <property file="${manifest.file}"></property>
       <property name="specification.version" value="${OpenIDE-Module-Specification-Version}"/>
       <echo>OpenIDE-Module: ${OpenIDE-Module}</echo>
-      <echo>Current build number:${specification.version}</echo>
-      <propertyregex property="major.version" input="${specification.version}"  regexp="(\d+)\.(\d+)\.(\d+)$" select="\1" />
-      <echo level="verbose">major: ${major.version}</echo>
-      <propertyregex property="minor.version" input="${specification.version}"  regexp="(\d+)\.(\d+)\.(\d+)$" select="\2" />
-      <echo level="verbose">minor: ${minor.version}</echo>
-      <propertyregex property="revision.version" input="${specification.version}"  regexp="(\d+)\.(\d+)\.(\d+)$" select="\3" />
-      <echo level="verbose">revision: ${revision.version}</echo>
-      <propertyfile file="build_info.properties">
-         <entry key="build.major.number" type="int" value="${major.version}" />
-         <entry key="build.minor.number" type="int" value="${minor.version}" />
-         <entry key="build.revision.number" type="int" value="${revision.version}" />
-      </propertyfile>
+      <echo>Current build number:${env.BUILD_NUMBER}</echo>
    </target>
 
-   <target name="-revision" depends="-read-version">
-      <propertyfile  file="build_info.properties">
-         <entry key="build.revision.number" type="int" operation="+" value="1"/>
-      </propertyfile>
-
-      <loadproperties srcfile="build_info.properties" />
-      <manifest file="${manifest.file}" mode="update">
-         <attribute name="OpenIDE-Module-Specification-Version" value="${build.major.number}.${build.minor.number}.${build.revision.number}" />
-      </manifest>
-      <replaceregexp match="(dependency\D*code-name-base\W${OpenIDE-Module}\W/\D*)(\d+\.\d+\.\d+)" byline="false"
-      file="plsql-support.kit/nbproject/project.xml" replace="\1${build.major.number}.${build.minor.number}.${build.revision.number}"/>
-   </target>
-
-   <target name="-minor" depends="-read-version">
-      <propertyfile  file="build_info.properties">
-         <entry key="build.minor.number" type="int" operation="+" value="1" />
-         <entry key="build.revision.number" type="int" value="0" />
-      </propertyfile>
-      <loadproperties srcfile="build_info.properties" />
-
-      <manifest file="${manifest.file}" mode="update">
-         <attribute name="OpenIDE-Module-Specification-Version" value="${build.major.number}.${build.minor.number}.${build.revision.number}" />
-      </manifest>
-      <replaceregexp match="(dependency\D*code-name-base\W${OpenIDE-Module}\W/\D*)(\d+\.\d+\.\d+)" byline="false"
-      file="plsql-support.kit/nbproject/project.xml" replace="\1${build.major.number}.${build.minor.number}.${build.revision.number}"/>
-   </target>
-
-   <target name="-major" depends="-read-version">
-      <propertyfile  file="build_info.properties">
-         <entry key="build.major.number" type="int" operation="+" value="1" />
-         <entry key="build.minor.number" type="int" value="0" />
-         <entry key="build.revision.number" type="int" value="0" />
-      </propertyfile>
-      <!--<echoproperties srcfile="build_info.properties" />-->
-      <loadproperties srcfile="build_info.properties" />
-
+   <target name="-update-meta-files" depends="-read-version">
       <manifest file="${manifest.file}" mode="update" >
-         <attribute name="OpenIDE-Module-Specification-Version" value="${build.major.number}.${build.minor.number}.${build.revision.number}" />
+         <attribute name="OpenIDE-Module-Specification-Version" value="${new_version}" />
       </manifest>
-      <replaceregexp match="(dependency\D*code-name-base\W${OpenIDE-Module}\W/\D*)(\d+\.\d+\.\d+)" byline="false"
-      file="plsql-support.kit/nbproject/project.xml" replace="\1${build.major.number}.${build.minor.number}.${build.revision.number}"/>
+      <replaceregexp match="(dependency\D*code-name-base\W${OpenIDE-Module}\W/\D*)(\d+\.\d+\.\d+\.\d+)" byline="false"
+                     file="plsql-support.kit/nbproject/project.xml" replace="\1${new_version}"/>
    </target>
 
    <target name="all">

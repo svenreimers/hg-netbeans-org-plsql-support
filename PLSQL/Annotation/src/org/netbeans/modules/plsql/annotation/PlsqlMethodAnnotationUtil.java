@@ -64,6 +64,9 @@ import org.openide.windows.WindowManager;
  * @author YADHLK
  */
 public class PlsqlMethodAnnotationUtil {
+static int hasReturn = 0;
+private static final int HAS_RETURNS = 1;
+private static final int NO_RETURNS = 2;
 
    private static Comparator<PlsqlBlock> comparator = new Comparator<PlsqlBlock>() {
 
@@ -253,6 +256,21 @@ public class PlsqlMethodAnnotationUtil {
       }
       return false;
    }
+  
+    public static int isReturnExist(final Document doc, final PlsqlBlock block) {
+        hasReturn = 0;
+        boolean isMissing = isReturn(doc, block);
+
+        if (!isMissing) {
+            if (hasReturn == HAS_RETURNS) {
+                return HAS_RETURNS;
+            } else {
+                return NO_RETURNS;
+            }
+        } else {
+            return 0;
+        }
+    }
 
    public static boolean isReturn(final Document doc, final PlsqlBlock block) {
       boolean isReturn = false;
@@ -265,7 +283,7 @@ public class PlsqlMethodAnnotationUtil {
                && child.getType() != PlsqlBlockType.CUSTOM_FOLD
                && startOffset < child.getStartOffset()) {
             if (!isReturnMissing(startOffset, child.getStartOffset(), doc, true)) {
-               isReturn = true;
+               isReturn = true;               
                break;
             }
          }
@@ -332,6 +350,7 @@ public class PlsqlMethodAnnotationUtil {
                   || token.toString().equalsIgnoreCase("RAISE")) {
                if (moveToReturnEnd(ts, endOffset)) {
                   isReturnMissing = false;
+                  hasReturn = HAS_RETURNS;
                }
             } else if (token.toString().equalsIgnoreCase("ERROR_SYS")
                   || token.toString().equalsIgnoreCase("APPLICATION_SEARCH_SYS")) {
@@ -343,6 +362,7 @@ public class PlsqlMethodAnnotationUtil {
                         if (!token.toString().toLowerCase(Locale.ENGLISH).startsWith("check")) {
                            if (moveToReturnEnd(ts, endOffset)) {
                               isReturnMissing = false;
+                              hasReturn = HAS_RETURNS;
                            }
                         }
                      }

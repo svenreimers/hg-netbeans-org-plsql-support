@@ -53,7 +53,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Stack;
@@ -80,8 +82,9 @@ public class DatabaseConnectionManager {
     public static final String PROP_DATABASE_CONNECTIONS = "databaseConnections";
     public static final String PROP_CW_DATABASE_CONNECTIONS = "commandWindowDatabaseConnections";
     public static final String PROP_ONLINE = "online";
+    private static final String REVERSE_DATABASE_KEY = "reverse.engineering.database";
     private static Map<FileObject, DatabaseConnectionManager> instances = new HashMap<FileObject, DatabaseConnectionManager>();
-    private DatabaseConnection[] connections = new DatabaseConnection[]{};
+    private List<DatabaseConnection> connections = new ArrayList<DatabaseConnection>();
     private final Stack<DatabaseConnection> connectionPool = new Stack<DatabaseConnection>();
     private DatabaseConnection templateConnection;
     private Connection debugConnection = null;
@@ -92,6 +95,8 @@ public class DatabaseConnectionManager {
     private PropertyChangeSupport changeSupport = new PropertyChangeSupport(this);
     private static FileObject tempFolder = null;
     private static final Logger logger = Logger.getLogger(DatabaseConnectionManager.class.getName());
+    private static final RequestProcessor RP = new RequestProcessor(DatabaseConnectionManager.class);
+    private DatabaseConnection reverseConnection;
 
     static {
         String tempDir = System.getProperty("java.io.tmpdir");
@@ -162,7 +167,7 @@ public class DatabaseConnectionManager {
         return templateConnection != null && templateConnection.getJDBCConnection() != null;
     }
 
-    public DatabaseConnection[] getDatabaseConnections() {
+    public List<DatabaseConnection> getDatabaseConnections() {
         return connections;
     }
 
@@ -173,16 +178,16 @@ public class DatabaseConnectionManager {
      */
     public String getPrimaryConnectionURL() {
         String result = "";
-        if (connections.length > 0) {
-            result = connections[0].getDatabaseURL();
+        if (!connections.isEmpty()) {
+            result = connections.get(0).getDatabaseURL();
         }
         return result;
     }
 
     public boolean isDefaultDatabase(DatabaseConnection connection) {
-       return databaseConnectionsAreEqual(connection, templateConnection);
+        return databaseConnectionsAreEqual(connection, templateConnection);
     }
-    
+
     private boolean databaseConnectionsAreEqual(DatabaseConnection a, DatabaseConnection b) {
         return (a != null && b != null
                 && a.getDatabaseURL().equals(b.getDatabaseURL())
@@ -217,10 +222,10 @@ public class DatabaseConnectionManager {
         synchronized (connectionPool) {
             //if main database is still the same add the connection to the connection pool. Otherwise close and discard.
             if (databaseConnectionsAreEqual(connection, this.templateConnection)) {
-               if(!connectionPool.contains(connection)) {
-                  connectionPool.push(connection);
-                  logger.log(Level.FINEST, "Returning connection {0} to cache. Number of pooled connections={1}", new Object[]{connection.hashCode(), connectionPool.size()});
-               }
+                if (!connectionPool.contains(connection)) {
+                    connectionPool.push(connection);
+                    logger.log(Level.FINEST, "Returning connection {0} to cache. Number of pooled connections={1}", new Object[]{connection.hashCode(), connectionPool.size()});
+                }
             } else {
                 if (connection != null) {
                     logger.log(Level.FINEST, "Returning connection {0} to cache. Discard because connected to different database", connection.hashCode());
@@ -248,18 +253,18 @@ public class DatabaseConnectionManager {
         }
     }
 
-   /**
+    /**
      *
      * @return True if there in on going transactions for a command window.
      */
-   public boolean hasDataToCommit(DatabaseConnection connection) {
+    public boolean hasDataToCommit(DatabaseConnection connection) {
         ResultSet rs = null;
         PreparedStatement stmt = null;
         String commitData = null;
         if (connection == null || connection.getJDBCConnection() == null) {
             return false;
         }
-       
+
         try {
             String sqlSelect = " SELECT taddr FROM   v$session WHERE  AUDsid=userenv('SESSIONID')";
             stmt = connection.getJDBCConnection().prepareStatement(sqlSelect);
@@ -269,14 +274,14 @@ public class DatabaseConnectionManager {
             }
             if (commitData != null) {
                 return true;
-            }else{
+            } else {
                 return false;
             }
         } catch (SQLException ex) {
             Exceptions.printStackTrace(ex);
         }
-            return false;
-   }
+        return false;
+    }
 
     private void clearConnectionPool() {
         synchronized (connectionPool) {
@@ -335,8 +340,9 @@ public class DatabaseConnectionManager {
         if (prompt) {
             if (templateConnection == null) {
                 templateConnection = new DatabaseConnectionPanel().showDialog();
-                connections = templateConnection != null ? new DatabaseConnection[]{templateConnection} : new DatabaseConnection[]{};
+                connections.clear();
                 if (templateConnection != null) {
+                    connections.add(templateConnection);
                     usagesEnabled = isFindUsagesEnabled();
                     DatabaseContentManager contentManager = DatabaseContentManager.getInstance(templateConnection);
                     contentManager.addExceptionListener(connectionErrorListener);
@@ -354,8 +360,8 @@ public class DatabaseConnectionManager {
         DatabaseConnection connection = templateConnection;
         if (useConnectionPool) {
             connection = getDatabaseConnectionFromPool();
-            if(connection!=null && connection.getJDBCConnection()==null) {
-               connect(connection);
+            if (connection != null && connection.getJDBCConnection() == null) {
+                connect(connection);
             }
         }
 
@@ -423,13 +429,17 @@ public class DatabaseConnectionManager {
         return debugConnection;
     }
 
-    public void setDatabaseConnections(DatabaseConnection[] connections) {
-        DatabaseConnection[] oldConnections = this.connections;
-        this.connections = connections;
+    public void setDatabaseConnections(List<DatabaseConnection> newConnections) {
+//      List<DatabaseConnection> oldConnections = new ArrayList<DatabaseConnection>(connections.size());
+//      Collections.copy(oldConnections, connections);
+//      this.connections.clear();
+//      this.connections.addAll(newConnections);
+        List<DatabaseConnection> oldConnections = connections;
+        connections = newConnections;
         if (templateConnection != null) {
             DatabaseContentManager.getInstance(templateConnection).removeExceptionListener(connectionErrorListener);
         }
-        templateConnection = connections.length > 0 ? connections[0] : null;
+        templateConnection = !newConnections.isEmpty() ? newConnections.get(0) : null;
         if (templateConnection != null) {
             DatabaseContentManager.getInstance(templateConnection).addExceptionListener(connectionErrorListener);
         }
@@ -437,7 +447,7 @@ public class DatabaseConnectionManager {
         //clear the connection pool and the debug connection when the main database changes
         clearConnectionPool();
         this.debugConnection = null;
-        changeSupport.firePropertyChange(PROP_DATABASE_CONNECTIONS, oldConnections, connections);
+        changeSupport.firePropertyChange(PROP_DATABASE_CONNECTIONS, oldConnections, newConnections);
     }
 
     public synchronized void connect(final DatabaseConnection connection) {
@@ -455,55 +465,55 @@ public class DatabaseConnectionManager {
                 }
                 return;
             } else {
-               if (SwingUtilities.isEventDispatchThread()) {
-                  try {
-                     ConnectionManager.getDefault().showConnectionDialog(connection);
-                  } catch (NullPointerException e) {
-                     failed = true;
-                  } catch (IllegalStateException e) {
-                     failed = true;
-                  }
-               } else {
-                  try {
-                     SwingUtilities.invokeAndWait(new Runnable() {
+                if (SwingUtilities.isEventDispatchThread()) {
+                    try {
+                        ConnectionManager.getDefault().showConnectionDialog(connection);
+                    } catch (NullPointerException e) {
+                        failed = true;
+                    } catch (IllegalStateException e) {
+                        failed = true;
+                    }
+                } else {
+                    try {
+                        SwingUtilities.invokeAndWait(new Runnable() {
 
-                        @Override
-                        public void run() {
-                           ConnectionManager.getDefault().showConnectionDialog(connection);
+                            @Override
+                            public void run() {
+                                ConnectionManager.getDefault().showConnectionDialog(connection);
+                            }
+                        });
+                    } catch (InterruptedException e) {
+                        failed = true;
+                    } catch (InvocationTargetException e) {
+                        failed = true;
+                    }
+                }
+                if ((connection.getJDBCConnection() == null || connection.getJDBCConnection().isClosed())) {
+                    if (SwingUtilities.isEventDispatchThread()) {
+                        Task request = RP.post(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                try {
+                                    ConnectionManager.getDefault().connect(connection);
+                                } catch (DatabaseException ex) {
+                                }
+                            }
+                        });
+                        try {
+                            request.waitFinished(10000);
+                        } catch (InterruptedException ex) {
+                            Exceptions.printStackTrace(ex);
                         }
-                     });
-                  } catch (InterruptedException e) {
-                     failed = true;
-                  } catch (InvocationTargetException e) {
-                     failed = true;
-                  }
-               }
-               if ((connection.getJDBCConnection() == null || connection.getJDBCConnection().isClosed())) {
-                 if (SwingUtilities.isEventDispatchThread()) {
-                    Task request = RequestProcessor.getDefault().post(new Runnable() {
-
-                       @Override
-                       public void run() {
-                          try {
-                             ConnectionManager.getDefault().connect(connection);
-                          } catch (DatabaseException ex) {
-                          }
-                       }
-                    });
-                    try {
-                       request.waitFinished(10000);
-                    } catch (InterruptedException ex) {
-                       Exceptions.printStackTrace(ex);
+                    } else {
+                        try {
+                            ConnectionManager.getDefault().connect(connection);
+                        } catch (DatabaseException ex) {
+                            failed = true;
+                        }
                     }
-                 } else {
-                    try {
-                       ConnectionManager.getDefault().connect(connection);
-                    } catch (DatabaseException ex) {
-                       failed = true;
-                    }
-                 }
-              }
-           }
+                }
+            }
         } catch (SQLException ex) {
             failed = true;
         }
@@ -535,9 +545,9 @@ public class DatabaseConnectionManager {
                 templateConnection = DatabaseConnection.create(templateConnection.getJDBCDriver(), templateConnection.getDatabaseURL(), templateConnection.getUser(), templateConnection.getSchema(), templateConnection.getPassword(), true, templateConnection.getDisplayName());
                 clearConnectionPool();
                 this.debugConnection = null;
-                DatabaseConnection[] oldConnections = new DatabaseConnection[connections.length];
-                System.arraycopy(connections, 0, oldConnections, 0, connections.length);
-                connections[0] = templateConnection;
+                List<DatabaseConnection> oldConnections = new ArrayList<DatabaseConnection>(connections.size());
+                oldConnections.addAll(connections);
+                connections.set(0, templateConnection);
                 changeSupport.firePropertyChange(PROP_DATABASE_CONNECTIONS, oldConnections, connections);
             }
             this.online = online;
@@ -546,12 +556,25 @@ public class DatabaseConnectionManager {
     }
 
     public void addPropertyChangeListener(PropertyChangeListener listener) {
-       PropertyChangeListener[] listeners = changeSupport.getPropertyChangeListeners();
-       for(int i = 0; i<listeners.length; i++) {
-          if(listeners[i]==listener) //don't register the same listener more than once
-             return;
-       }
-       changeSupport.addPropertyChangeListener(listener);
+        PropertyChangeListener[] listeners = changeSupport.getPropertyChangeListeners();
+        for (int i = 0; i < listeners.length; i++) {
+            //don't register the same listener more than once
+            if (listeners[i] == listener) {
+                return;
+            }
+        }
+        changeSupport.addPropertyChangeListener(listener);
+    }
+
+    public void addPropertyChangeListener(String propertyName, PropertyChangeListener listener) {
+        PropertyChangeListener[] listeners = changeSupport.getPropertyChangeListeners();
+        for (int i = 0; i < listeners.length; i++) {
+            if (listeners[i] == listener) //don't register the same listener more than once
+            {
+                return;
+            }
+        }
+        changeSupport.addPropertyChangeListener(propertyName, listener);
     }
 
     public void removePropertyChangeListener(PropertyChangeListener listener) {
@@ -573,6 +596,45 @@ public class DatabaseConnectionManager {
         } catch (Exception ex) { //ugly way to catch IOExceptions, etc
             return false;
         }
+    }
+
+    /**
+     * Set Reverse Engineering DatabaseConnection
+     * @param newConnection
+     */
+    public void setReverseConnection(DatabaseConnection newConnection) {
+        DatabaseConnection oldConnection = this.reverseConnection;
+        this.reverseConnection = newConnection;
+        changeSupport.firePropertyChange(REVERSE_DATABASE_KEY, oldConnection, newConnection);
+    }
+
+    /**
+     * Returns Reverse Engineering DatabaseConnection
+     * @return
+     */
+    public DatabaseConnection getReverseConnection() {
+        return reverseConnection;
+    }
+
+    /**
+     * Returns true is Reverse Engineering DatabaseConnection has been set.
+     * @return
+     */
+    public boolean hasReverseConnection() {
+        return reverseConnection != null;
+    }
+
+    /**
+     * Returns true is Reverse Engineering DatabaseConnection is online.
+     * @return
+     */
+    public boolean isReverseOnline() {
+        try {
+            return hasReverseConnection() && reverseConnection.getJDBCConnection() != null && reverseConnection.getJDBCConnection().isValid(1000);
+        } catch (SQLException ex) {
+            Exceptions.printStackTrace(ex);
+        }
+        return false;
     }
 
     private class ConnectionErrorListener implements ExceptionListener {

@@ -61,7 +61,7 @@ import org.openide.util.datatransfer.ExClipboard;
 
 @ActionID(id = "org.netbeans.modules.plsql.execution.CopyAsJavaStringAction", category = "PLSQL")
 @ActionRegistration(displayName = "#CTL_CopyAsJavaStringAction")
-@ActionReference(path = "Editors/text/x-plsql/Popup", position = 285)
+@ActionReference(path = "Editors/text/x-plsql/Popup", position = 3995)
 public class CopyAsJavaStringAction extends CookieAction {
 
     @Override
@@ -84,7 +84,7 @@ public class CopyAsJavaStringAction extends CookieAction {
 
         //first check if the user has selected some text
         if ((panes != null) && (panes.length != 0)) {
-            selectedText = panes[0].getSelectedText();            
+            selectedText = panes[0].getSelectedText();
         }
         //if no selection then consider the contents of the whole document
         if (selectedText == null || selectedText.equals("")) {
@@ -102,16 +102,16 @@ public class CopyAsJavaStringAction extends CookieAction {
             String[] lines = selectedText.trim().split("\n");
             for (int i = 0; i < lines.length; i++) {
                 String line = lines[i].replaceAll("\"", "\\\\\""); //escape any " found in the SQL command
-                if(i==0){ //first line
-                   if (i==lines.length-1) //single line SQL command
-                     sb.append("String dbStmt = \"" ).append(line.replaceAll("\\s+$", "")).append("\";");
-                   else
-                     sb.append("String dbStmt = \"" ).append(line.replaceAll("\\s+$", "")).append(" \"\n\t\t");
-                }
-                else if(i == lines.length - 1) { //last line when multiple lines exist
+                if (i == 0) { //first line
+                    if (i == lines.length - 1) //single line SQL command
+                    {
+                        sb.append("String dbStmt = \"").append(line.replaceAll("\\s+$", "")).append("\";");
+                    } else {
+                        sb.append("String dbStmt = \"").append(line.replaceAll("\\s+$", "")).append(" \"\n\t\t");
+                    }
+                } else if (i == lines.length - 1) { //last line when multiple lines exist
                     sb.append(" +\"").append(line.replaceAll("\\s+$", "")).append("\";");
-                }
-                else {
+                } else {
                     sb.append(" +\"").append(line.replaceAll("\\s+$", "")).append(" \"\n\t\t");
                 }
             }
@@ -119,14 +119,14 @@ public class CopyAsJavaStringAction extends CookieAction {
             String formattedText = sb.toString();
             Clipboard clipboard = Lookup.getDefault().lookup(ExClipboard.class);
             //should we check for system clipboard as well?
-            if (clipboard != null) {                
+            if (clipboard != null) {
                 clipboard.setContents(new StringSelection(formattedText), null);
             }
         }
     }
 
     @Override
-    public String getName() {       
+    public String getName() {
         return NbBundle.getMessage(CopyAsJavaStringAction.class, "CTL_CopyAsJavaStringAction");
     }
 

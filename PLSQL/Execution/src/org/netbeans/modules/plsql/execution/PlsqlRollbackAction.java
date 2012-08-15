@@ -44,6 +44,8 @@ package org.netbeans.modules.plsql.execution;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -77,8 +79,9 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
     private DataObject dataObject;
     private DatabaseConnectionManager connectionProvider;
     private JButton button;
-    public boolean autoCommit = true;
     private DatabaseConnection connection;
+    PlsqlCommit commit;
+    private PropertyChangeListener EnableRollback;
 
     public PlsqlRollbackAction() {
         this(Utilities.actionsGlobalContext());
@@ -107,8 +110,8 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
         }
 
         if (dataObject != null) {
-            setEnabled(true);
-            autoCommit = OptionsUtilities.isCommandWindowAutoCommitEnabled();
+            setEnabled(true); 
+            commit = PlsqlCommit.getInstance(dataObject);
         } else {
             setEnabled(false);
         }
@@ -139,31 +142,9 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
             return;
         }
 
-        EditorCookie edCookie = dataObject.getLookup().lookup(EditorCookie.class);
-        Document document = edCookie.getDocument();
         saveIfModified(dataObject);
-
-        InputOutput io = null;
-        DataObject obj = FileExecutionUtil.getDataObject(document);
-        ProgressHandle handle = ProgressHandleFactory.createHandle("Commit database file...", this);
-        handle.start();
-
-        try {
-            io = IOProvider.getDefault().getIO(obj.getPrimaryFile().getNameExt(), false);
-            if (!io.isClosed()) {
-                io.getOut().println((new StringBuilder()).append("> Rollback Statement successfully"));
-            }
-
-            if (connection.getJDBCConnection() != null) {
-                connectionProvider.commitRollbackTransactions(connection, false);
-            }
-
-        } catch (Exception ex) {
-            io.getOut().println((new StringBuilder()).append(">!!! Error Rollback Statement "));
-            Exceptions.printStackTrace(ex);
-        } finally {
-            handle.finish();
-        }
+        commit.rollbackTransaction(dataObject, connection, connectionProvider);
+        commit.setCommit(false);
     }
 
     @Override
@@ -175,8 +156,10 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
                 new ImageIcon(new BufferedImage(32, 32, BufferedImage.TYPE_BYTE_GRAY)), null);
         button.setAction(this);
         button.setSelected(!OptionsUtilities.isCommandWindowAutoCommitEnabled());
-        button.setEnabled(!OptionsUtilities.isCommandWindowAutoCommitEnabled());
+        button.setEnabled(false);
         button.setDisabledIcon(new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/database_rollback_disable.png")));
+        EnableRollback = new EnableRollback();
+        commit.addPropertyChangeListener(EnableRollback);
         return button;
     }
 
@@ -188,6 +171,20 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
             }
         } catch (IOException ex) {
             Exceptions.printStackTrace(ex);
+        }
+    }
+    
+    private class EnableRollback implements PropertyChangeListener {
+
+        public EnableRollback() {}
+
+        @Override
+        public void propertyChange(PropertyChangeEvent event) {
+          if(!OptionsUtilities.isCommandWindowAutoCommitEnabled() && commit.getCommit()){
+              button.setEnabled(true);
+          }
+          else
+              button.setEnabled(false);
         }
     }
 }
