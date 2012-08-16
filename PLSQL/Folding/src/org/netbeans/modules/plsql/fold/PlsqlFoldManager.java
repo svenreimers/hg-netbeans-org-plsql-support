@@ -662,8 +662,9 @@ public class PlsqlFoldManager implements FoldManager, Observer {
    @Override
    public void update(final Observable o, final Object arg) {
       final FoldHierarchyTransaction fhTran = getOperation().openTransaction();
-      updateFolds(fhTran);
-      fhTran.commit();
+      updateFolds(fhTran); 
+      // allready commited at this time
+      //fhTran.commit();
    }
 
    /**
