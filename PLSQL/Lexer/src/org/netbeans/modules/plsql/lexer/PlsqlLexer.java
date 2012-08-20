@@ -143,7 +143,7 @@ public class PlsqlLexer implements Lexer<PlsqlTokenId> {
             case '|':
             case ',':
             case ';':
-            case '%':
+            case '%':            
                return token(PlsqlTokenId.OPERATOR);
 
             case '*':
@@ -172,6 +172,7 @@ public class PlsqlLexer implements Lexer<PlsqlTokenId> {
                      input.backup(1);
                      return token(PlsqlTokenId.OPERATOR);
                }
+            case '@':
             case '$':
             case 'a':
             case 'b':

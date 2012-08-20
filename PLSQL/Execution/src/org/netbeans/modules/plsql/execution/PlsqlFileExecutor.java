@@ -42,6 +42,7 @@
 package org.netbeans.modules.plsql.execution;
 
 import java.awt.Component;
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.*;
@@ -63,12 +64,12 @@ import org.netbeans.modules.db.dataview.api.DataView;
 import org.netbeans.modules.db.sql.execute.SQLExecutionResult;
 import org.netbeans.modules.db.sql.execute.SQLExecutionResults;
 import org.netbeans.modules.db.sql.execute.StatementInfo;
-import org.netbeans.modules.db.sql.history.SQLHistory;
 import org.netbeans.modules.db.sql.history.SQLHistoryEntry;
 import org.netbeans.modules.db.sql.history.SQLHistoryManager;
 import org.netbeans.modules.plsql.filetype.PlsqlEditor;
 import org.netbeans.modules.plsql.filetype.StatementExecutionHistory;
 import org.netbeans.modules.plsql.lexer.PlsqlTokenId;
+import org.netbeans.modules.plsql.utilities.PlsqlFileUtil;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
@@ -78,6 +79,7 @@ import org.openide.NotifyDescriptor;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.loaders.DataObject;
+import org.openide.loaders.DataObjectNotFoundException;
 import org.openide.util.Cancellable;
 import org.openide.util.Exceptions;
 import org.openide.util.Lookup;
@@ -383,7 +385,7 @@ public class PlsqlFileExecutor {
         Object object = doc.getProperty(Document.StreamDescriptionProperty);
         if (object instanceof DataObject) {
             FileObject fo = ((DataObject) object).getPrimaryFile();
-            project = FileOwnerQuery.getOwner(fo);
+            project = FileOwnerQuery.getOwner(fo);            
         }
 
         //store in object history if this is an SQL Command window (*.tdb)
@@ -681,6 +683,10 @@ public class PlsqlFileExecutor {
                             firstWord = tokenizer.nextToken();
                         } else {
                             firstWord = plsqlText;
+                        }
+                        if(firstWord.startsWith("@")||firstWord.startsWith("@@") ||firstWord.equalsIgnoreCase("START")){
+                        executeSqlPlusStart(plsqlText,firstWord,doc,io);
+                         continue;
                         }
                         if (firstWord.equalsIgnoreCase("SELECT")) {
                             //this should really never happen... Unless there are multiple parts of a file and some sections are select statements
@@ -1336,6 +1342,41 @@ public class PlsqlFileExecutor {
         return null;
     }
     
+    private void executeSqlPlusStart(String plsqlText, String firstWord, Document doc, InputOutput io) {
+        try {
+            String fileName = null;
+            if (firstWord.equalsIgnoreCase("START")) {
+                fileName = plsqlText.substring(5).trim();
+            } else if (firstWord.startsWith("@@")) {
+                Object object = doc.getProperty(Document.StreamDescriptionProperty);
+                if (object instanceof DataObject) {
+                    FileObject fo = ((DataObject) object).getPrimaryFile();
+                    fileName = fo.getPath().substring(0, fo.getPath().lastIndexOf("/")) + "/" + plsqlText.substring(2);
+                }
+            } else {
+                fileName = plsqlText.substring(1).trim();
+            }
+            File file = new File(fileName);
+            if (file.exists()) {
+
+                DataObject obj = DataObject.find(FileUtil.toFileObject(file));
+
+                if (obj != null) {
+                    //Load the editor cookier and allow parsing
+                    Document document = PlsqlFileUtil.getDocument(obj);
+                    PlsqlExecutableBlocksMaker blockMaker = new PlsqlExecutableBlocksMaker(document);
+                    final List exeBlocks = blockMaker.makeExceutableObjects();
+                    executePLSQL(exeBlocks, document, true, true);
+
+                }
+            } else {
+                io.getOut().println("!!!Error opening " + fileName);
+            }
+        } catch (DataObjectNotFoundException ex) {
+            Exceptions.printStackTrace(ex);
+        }
+    }
+      
     private final class SQLExecutor implements Runnable, Cancellable {
         
         private static final int DEFAULT_PAGE_SIZE = 100;
