@@ -81,12 +81,12 @@ public class PlsqlAnnotationManager implements Observer {
    public final Map<Integer, String> errorSysCalls;
    public final Map<Integer, Set<String>> allowedTablesOrViews;
    public static Annotation annotation = new GenericPlsqlAnnotations();
-
+  
    public PlsqlAnnotationManager() {
       if (OptionsUtilities.isPlSqlAnnotationsEnabled()) {
          annotation.loadConfiguration();
-      }
-
+                 }
+         
       final PreferenceChangeListener listener = new PreferenceChangeListener() {
 
          @Override
@@ -109,6 +109,10 @@ public class PlsqlAnnotationManager implements Observer {
       plsqlAnnotations = new ConcurrentHashMap<Integer, List<PlsqlAnnotation>>();
       errorSysCalls = new ConcurrentHashMap<Integer, String>();
       allowedTablesOrViews = new ConcurrentHashMap<Integer, Set<String>>();
+   }
+   
+   public String[] getAllAnnotationTypes(){
+       return annotation.getAllAnnotationTypes();
    }
 
    @Override
@@ -150,7 +154,7 @@ public class PlsqlAnnotationManager implements Observer {
       errorSysCalls.clear();
       allowedTablesOrViews.clear();
    }
-
+   
    public void initAnnotations(final DataObject dataObject) {
       clearAllAnnotations();
       final EditorCookie editorCookie = dataObject.getLookup().lookup(EditorCookie.class);

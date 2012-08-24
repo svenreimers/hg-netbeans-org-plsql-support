@@ -41,9 +41,11 @@
  */
 package org.netbeans.modules.plsql.annotation;
 
+import java.util.ArrayList;
 import org.netbeans.modules.plsql.annotation.annotations.PlsqlAnnotation;
 import org.netbeans.modules.plsql.lexer.PlsqlBlock;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -56,10 +58,13 @@ public interface Annotation {
    String TOKEN_ERROR_SYS = "ERROR_SYS";
    String TOKEN_START_KEYWORD = "START_KEYWORD";
    static final Map<String, Set<PlsqlAnnotation>> configuration = new HashMap<String, Set<PlsqlAnnotation>>();
-
+   List<String> allAnnotationTypes = new ArrayList<String>();
+     
    void loadConfiguration();
 
    Map<String, Set<PlsqlAnnotation>> getConfiguration();
 
    String getType(PlsqlBlock block);
+   
+   String[] getAllAnnotationTypes();
 }

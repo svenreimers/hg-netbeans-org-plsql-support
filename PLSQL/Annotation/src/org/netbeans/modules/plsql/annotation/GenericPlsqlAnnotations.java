@@ -54,6 +54,7 @@ import org.netbeans.modules.plsql.annotation.annotations.PlsqlWrongParamOrderAnn
 import org.netbeans.modules.plsql.lexer.PlsqlBlock;
 import org.netbeans.modules.plsql.lexer.PlsqlBlockType;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -82,7 +83,7 @@ public class GenericPlsqlAnnotations implements Annotation{
 
       final Set<PlsqlAnnotation> procDefAnnotations = new HashSet<PlsqlAnnotation>();
       configuration.put(BLOCK_PROCEDURE_DEF, procDefAnnotations);
-
+      
       final Set<PlsqlAnnotation> procImplAnnotations = new HashSet<PlsqlAnnotation>();
       configuration.put(BLOCK_PROCEDURE_IMPL, procImplAnnotations);
 
@@ -94,7 +95,7 @@ public class GenericPlsqlAnnotations implements Annotation{
 
       final Set<PlsqlAnnotation> ifAnnotations = new HashSet<PlsqlAnnotation>();
       configuration.put(BLOCK_IF, ifAnnotations);
-
+      
       final Set<PlsqlAnnotation> cursorAnnotations = new HashSet<PlsqlAnnotation>();
       configuration.put(BLOCK_CURSOR, cursorAnnotations);
 
@@ -167,4 +168,21 @@ public class GenericPlsqlAnnotations implements Annotation{
 
     }
 
+    @Override
+    public String[] getAllAnnotationTypes() {
+        if (!configuration.isEmpty()) {
+            String[] keys = configuration.keySet().toArray(new String[0]);
+            for (String key : keys) {
+                Set<PlsqlAnnotation> allnnotations = configuration.get(key);
+                Iterator<PlsqlAnnotation> iterator = allnnotations.iterator();
+                while (iterator.hasNext()) {
+                    PlsqlAnnotation next = iterator.next();
+                    if (!allAnnotationTypes.contains(next.getAnnotationType())) {
+                        allAnnotationTypes.add(next.getAnnotationType());
+                    }
+                }
+            }
+        }
+        return allAnnotationTypes.toArray(new String[]{});
+    }
 }

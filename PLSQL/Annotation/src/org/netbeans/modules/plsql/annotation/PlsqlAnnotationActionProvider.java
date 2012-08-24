@@ -51,7 +51,10 @@ import org.netbeans.editor.ImplementationProvider;
 
 public final class PlsqlAnnotationActionProvider extends AbstractAction {
 
-   public PlsqlAnnotationActionProvider() { //NOPMD
+   public PlsqlAnnotationActionProvider() { 
+       //From NetBeans 7.2
+       PlsqlAnnotationManager annotationManager = new PlsqlAnnotationManager();
+       putValue("supported-annotation-types",annotationManager.getAllAnnotationTypes());
    }
 
    @Override
