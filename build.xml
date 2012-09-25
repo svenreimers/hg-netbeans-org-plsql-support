@@ -56,7 +56,7 @@
     <target name="check-harness">
         <echo>nbplatform.default.netbeans.dest.dir resolved to ${nbplatform.default.netbeans.dest.dir}</echo>
         <echo>nbplatform.default.harness.dir resolved to ${nbplatform.default.harness.dir}</echo>
-        <fail message="Harness is missing. Specify nbplatform.default.netbeans.dest.dir={path-to-your-sources-root}/ide/netbeans in nbproject/private/platform-private.propetries">
+        <fail message="Harness is missing. Specify nbplatform.default.netbeans.dest.dir={path-to-your-sources-root}/ide/netbeans in nbproject/private/platform-private.properties">
             <condition>
                 <not>
                     <available file="${nbplatform.default.harness.dir}" type="dir"/>
