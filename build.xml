@@ -40,6 +40,7 @@
                 <uptodate targetfile="${timestamp.file}">
                     <srcfiles dir="." includes="*.zip"/>
                 </uptodate>
+                <available file="ide" type="dir"/>
             </and>            
         </condition>
      </target>     
@@ -79,9 +80,8 @@
     <target name="build" depends="netbeans"/>
     
     <target name="clean">
-        <echo>nbplatform.default.netbeans.dest.dir resolved to ${nbplatform.default.netbeans.dest.dir}</echo>
-        <echo>nbplatform.default.harness.dir resolved to ${nbplatform.default.harness.dir}</echo>
         <ant antfile="build-suite.xml" target="clean" inheritAll="false"/>
+        <delete dir="ide"/>
     </target>
     
     <target name="real-clean" depends="clean">
