@@ -2,117 +2,185 @@
 <!-- You may freely edit this file. See harness/README in the NetBeans platform -->
 <!-- for some information on what you could do (e.g. targets to override). -->
 <!-- If you delete this file and reopen the project it will be recreated. -->
-<project name="plsql support" basedir="." default="netbeans">
-    <description>Builds the module suite plsql support.</description>
-    
-    <property file="nbproject/private/platform-private.properties"/>
-    <property file="build.properties"/>
-    <property file="nbproject/platform.properties"/>
-    
-    <property name="use.timestamp" value="true"/>
-    <property name="timestamp.file" value=".lastModified"/>
-    
-    <property environment="env"/>
+<project name="plsql support" basedir="." default="netbeans" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+   <description>Builds the module suite plsql support.</description>
+
+   <property file="nbproject/private/platform-private.properties"/>
+   <property file="build.properties"/>
+   <property file="nbproject/platform.properties"/>
+
+   <property name="use.timestamp" value="true"/>
+   <property name="timestamp.file" value=".lastModified"/>
+
+   <property environment="env"/>
    <property name="env.BUILD_NUMBER" value="0" description="Set a fake value if not run from Jenkins"/>
    <property name="env.next_jira_release_version" value="8.72.0" description="Set a fake value if not run from Jenkins"/>
    <property name="new_version" value="${env.next_jira_release_version}.${env.BUILD_NUMBER}" description="Set a version number based on info from Jenkins"/>
 
-    <condition property="build.id" value="${env.BUILD_ID}" else="dev">
-        <isset property="env.BUILD_ID"/>
-    </condition>
-    
-    <target name="calculate-netbeans-url" unless="skip.calculation">
-        <get src="${netbeans.base.url}" dest="netbeans.html" usetimestamp="${use.timestamp}" verbose="true" ignoreerrors="${offline}"/>
-        <loadfile srcfile="netbeans.html" property="netbeans.binaries.url">
-            <filterchain>
-                <tokenfilter>
-                    <containsregex pattern=".*href=&quot;(netbeans-[a-z0-9-.]*javaee\.zip)&quot;.*" replace="${netbeans.base.url}/\1" flags="im"/>
-                </tokenfilter>
-            </filterchain>
-        </loadfile>
-    </target>
+   <condition property="build.id" value="${env.BUILD_ID}" else="dev">
+      <isset property="env.BUILD_ID"/>
+   </condition>
 
-    <target name="download-binaries" depends="calculate-netbeans-url" unless="skip.download">
-        <parallel>
-            <get src="${netbeans.binaries.url}" dest="netbeans.zip" usetimestamp="${use.timestamp}" verbose="false" ignoreerrors="${offline}"/>
-        </parallel>
-     </target>
-     
-     <target name="check-binaries">
-        <condition property="binaries.uptodate">
-            <and>
-                <uptodate targetfile="${timestamp.file}">
-                    <srcfiles dir="." includes="*.zip"/>
-                </uptodate>
-            </and>            
-        </condition>
-     </target>     
+   <property name="maven_version" value="${env.next_jira_release_version}-SNAPSHOT" description="Set a version number based on info from Jenkins"/>
 
-     <target name="unzip-binaries" unless="binaries.uptodate">
-        <echo message="New binaries downloaded - re-installing."/>
-        <delete dir="ide"/>
-        <unzip src="netbeans.zip" dest="ide"/>
-        <touch file="${timestamp.file}"/>        
-    </target>
-    
-    <target name="update-binaries" depends="download-binaries,check-binaries,unzip-binaries"/>
-    
-    <target name="check-harness">
-        <echo>nbplatform.default.netbeans.dest.dir resolved to ${nbplatform.default.netbeans.dest.dir}</echo>
-        <echo>nbplatform.default.harness.dir resolved to ${nbplatform.default.harness.dir}</echo>
-        <fail message="Harness is missing. Specify nbplatform.default.netbeans.dest.dir={path-to-your-sources-root}/ide/netbeans in nbproject/private/platform-private.properties">
-            <condition>
-                <not>
-                    <available file="${nbplatform.default.harness.dir}" type="dir"/>
-                </not>
-            </condition>
-        </fail>
-    </target>
-    
-    <target name="build-suite" depends="check-harness">
-        <ant antfile="build-suite.xml" target="build" inheritAll="false"/>
-    </target>
-    
-    <target name="printinfo">
+   <path id="maven-ant-tasks.classpath" path="Libraries/ThirdParty/ant/maven-ant-tasks-2.1.3.jar" />
+   <typedef resource="org/apache/maven/artifact/ant/antlib.xml"
+            uri="antlib:org.apache.maven.artifact.ant"
+            classpathref="maven-ant-tasks.classpath" />
+
+
+   <target name="maven-install" description="install jars in local maven repo" depends="nbms">
+      <foreach param="jar.path" target="maven-install-jar" inheritall="true">
+         <path>
+            <fileset dir="build/cluster/modules">
+               <include name="*.jar"/>
+            </fileset>
+         </path>
+      </foreach>
+   </target>
+
+   <target name="maven-install-jar" >
+      <basename property="jar.file.name" file="${jar.path}"/>
+      <basename property="name" file="${jar.path}" suffix=".jar"/>
+      <echo level="info" message="Installing ${jar.file.name} in local maven repo as ${name}"/>
+      <artifact:pom id="mypom" groupId="org.netbeans.api" artifactId="${name}" version="${maven_version}" name="${name} project">
+         <license name="IFS" url="http://www.ifsworld.com"/>
+      </artifact:pom>
+
+      <artifact:writepom pomRefId="mypom" file="build/mypom.xml"/>
+      <artifact:pom id="mypom" file="build/mypom.xml" />
+
+      <artifact:install file="${jar.path}"  >
+         <pom refid="mypom"/>
+         <attach file="${basedir}/build/updates/${name}.nbm" type="nbm"/>
+      </artifact:install>
+   </target>
+
+   <target name="maven-deploy" description="deploy jars in remote internal maven repo" depends="nbms">
+      <foreach param="jar.path" target="maven-deploy-jar" inheritall="true">
+         <path>
+            <fileset dir="build/cluster/modules">
+               <include name="*.jar"/>
+            </fileset>
+         </path>
+      </foreach>
+   </target>
+
+   <target name="maven-deploy-jar" >
+      <artifact:install-provider artifactId="wagon-http" version="2.2"/>
+
+      <basename property="jar.file.name" file="${jar.path}"/>
+      <basename property="name" file="${jar.path}" suffix=".jar"/>
+      <echo level="info" message="Installing ${jar.file.name} in local maven repo as ${name}"/>
+      <artifact:pom id="mypom" groupId="org.netbeans.api" artifactId="${name}" version="${maven_version}" name="${name} project">
+         <license name="IFS" url="http://www.ifsworld.com"/>
+      </artifact:pom>
+
+      <artifact:writepom pomRefId="mypom" file="build/mypom.xml"/>
+      <artifact:pom id="mypom" file="build/mypom.xml" />
+
+      <artifact:deploy file="${jar.path}"  >
+         <remoteRepository url="http://gbglcrd10:8082/nexus/content/repositories/snapshots">
+            <authentication username="${maven.deploy.user}" password="${maven.deploy.password}"/>
+         </remoteRepository>
+         <pom refid="mypom"/>
+         <attach file="${basedir}/build/updates/${name}.nbm" type="nbm"/>
+      </artifact:deploy>
+   </target>
+
+
+   <target name="calculate-netbeans-url" unless="skip.calculation">
+      <get src="${netbeans.base.url}" dest="netbeans.html" usetimestamp="${use.timestamp}" verbose="true" ignoreerrors="${offline}"/>
+      <loadfile srcfile="netbeans.html" property="netbeans.binaries.url">
+         <filterchain>
+            <tokenfilter>
+               <containsregex pattern=".*href=&quot;(netbeans-[a-z0-9-.]*javaee\.zip)&quot;.*" replace="${netbeans.base.url}/\1" flags="im"/>
+            </tokenfilter>
+         </filterchain>
+      </loadfile>
+   </target>
+
+   <target name="download-binaries" depends="calculate-netbeans-url" unless="skip.download">
+      <parallel>
+         <get src="${netbeans.binaries.url}" dest="netbeans.zip" usetimestamp="${use.timestamp}" verbose="false" ignoreerrors="${offline}"/>
+      </parallel>
+   </target>
+
+   <target name="check-binaries">
+      <condition property="binaries.uptodate">
+         <and>
+            <uptodate targetfile="${timestamp.file}">
+               <srcfiles dir="." includes="*.zip"/>
+            </uptodate>
+         </and>
+      </condition>
+   </target>
+
+   <target name="unzip-binaries" unless="binaries.uptodate">
+      <echo message="New binaries downloaded - re-installing."/>
+      <delete dir="ide"/>
+      <unzip src="netbeans.zip" dest="ide"/>
+      <touch file="${timestamp.file}"/>
+   </target>
+
+   <target name="update-binaries" depends="download-binaries,check-binaries,unzip-binaries"/>
+
+   <target name="check-harness">
+      <echo>nbplatform.default.netbeans.dest.dir resolved to ${nbplatform.default.netbeans.dest.dir}</echo>
+      <echo>nbplatform.default.harness.dir resolved to ${nbplatform.default.harness.dir}</echo>
+      <fail message="Harness is missing. Specify nbplatform.default.netbeans.dest.dir={path-to-your-sources-root}/ide/netbeans in nbproject/private/platform-private.properties">
+         <condition>
+            <not>
+               <available file="${nbplatform.default.harness.dir}" type="dir"/>
+            </not>
+         </condition>
+      </fail>
+   </target>
+
+   <target name="build-suite" depends="check-harness">
+      <ant antfile="build-suite.xml" target="build" inheritAll="false"/>
+   </target>
+
+   <target name="printinfo">
       <property environment="env" />
       <echo message="${env.BUILD_TAG}"/>
       <echo message="${env.JAVA_HOME}"/>
-    </target>
-    
-    <target name="netbeans" depends="update-binaries,build-suite"/>
-    <target name="build" depends="netbeans"/>
-    
-    <target name="clean">
-        <echo>nbplatform.default.netbeans.dest.dir resolved to ${nbplatform.default.netbeans.dest.dir}</echo>
-        <echo>nbplatform.default.harness.dir resolved to ${nbplatform.default.harness.dir}</echo>
-        <ant antfile="build-suite.xml" target="clean" inheritAll="false"/>
-    </target>
-    
-    <target name="real-clean" depends="clean">
-        <echo message="Cleaning netbeans IDE"/>
-        <delete dir="build"/>
-        <delete dir="dist"/>
-        <delete dir="ide"/>
-        <delete>
-            <fileset dir="." includes="*.zip"/>
-        </delete>
-        <delete>
-            <fileset dir="." includes="*.html"/>
-        </delete>
-        <delete file="${timestamp.file}"/>
-    </target>
+   </target>
 
-    <target name="nbms" depends="update-binaries">
-        <ant antfile="build-suite.xml" target="nbms" inheritAll="false"/>
-    </target>
-    
-    <target name="daily" depends="update-binaries,build">
-        <mkdir dir="dist"/>
-        <zip destfile="dist/netbeans-trunk-${build.id}-plsql.zip" duplicate="add">
-            <zipfileset dir="build/cluster" prefix="netbeans/extra"/>
-            <zipfileset dir="ide/netbeans" prefix="netbeans"/>
-        </zip>
-    </target>
+   <target name="netbeans" depends="update-binaries,build-suite"/>
+   <target name="build" depends="netbeans"/>
+
+   <target name="clean">
+      <echo>nbplatform.default.netbeans.dest.dir resolved to ${nbplatform.default.netbeans.dest.dir}</echo>
+      <echo>nbplatform.default.harness.dir resolved to ${nbplatform.default.harness.dir}</echo>
+      <ant antfile="build-suite.xml" target="clean" inheritAll="false"/>
+   </target>
+
+   <target name="real-clean" depends="clean">
+      <echo message="Cleaning netbeans IDE"/>
+      <delete dir="build"/>
+      <delete dir="dist"/>
+      <delete dir="ide"/>
+      <delete>
+         <fileset dir="." includes="*.zip"/>
+      </delete>
+      <delete>
+         <fileset dir="." includes="*.html"/>
+      </delete>
+      <delete file="${timestamp.file}"/>
+   </target>
+
+   <target name="nbms" depends="update-binaries">
+      <ant antfile="build-suite.xml" target="nbms" inheritAll="false"/>
+   </target>
+
+   <target name="daily" depends="update-binaries,build">
+      <mkdir dir="dist"/>
+      <zip destfile="dist/netbeans-trunk-${build.id}-plsql.zip" duplicate="add">
+         <zipfileset dir="build/cluster" prefix="netbeans/extra"/>
+         <zipfileset dir="ide/netbeans" prefix="netbeans"/>
+      </zip>
+   </target>
 
    <property name="ant.contrib.jar" value="${basedir}/Libraries/ThirdParty/ant/ant-contrib-1.0b3.jar" />
    <taskdef resource="net/sf/antcontrib/antcontrib.properties">
@@ -124,7 +192,7 @@
    <path id="manifest.file.paths">
       <fileset dir="${basedir}">
          <include name="**/manifest.mf"/>
-<!--            <exclude name="**/Libraries/ThirdParty/**"/>-->
+         <!--            <exclude name="**/Libraries/ThirdParty/**"/>-->
       </fileset>
    </path>
 
@@ -136,7 +204,7 @@
       <echo level="verbose">${modules}</echo>
 
       <foreach param="module.path" target="-vcs-log" list="${modules}" delimiter=":"/>
-<!--        <echoproperties srcfile="build/nbms_update.properties" />-->
+      <!--        <echoproperties srcfile="build/nbms_update.properties" />-->
    </target>
 
    <target name="-add-kit-module" description="add kit module to update" >
@@ -148,7 +216,7 @@
    <target name="-vcs-log" description="use mercurial to check if the last commit was a release commit">
       <echo level="info">module.path: ${module.path}</echo>
 
-        <!-- find out revision number of HEAD, need svn.exe installed on local machine -->
+      <!-- find out revision number of HEAD, need svn.exe installed on local machine -->
       <exec executable="hg" outputproperty="hglog.out" >
          <arg line="log -l 1 --style compact '${module.path}'"/>
       </exec>
