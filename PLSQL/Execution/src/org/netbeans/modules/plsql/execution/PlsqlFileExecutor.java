@@ -496,6 +496,9 @@ public class PlsqlFileExecutor {
                 if ((exeObj.getType() != PlsqlExecutableObjectType.UNKNOWN) && (exeObj.getType() != PlsqlExecutableObjectType.COMMENT)) {
                     //replace aliases since there are aliases in PROMPTS
                     if (!ignoreDefines) {
+                        if(exeObj.getType() == PlsqlExecutableObjectType.TRIGGER){
+                            define = Arrays.asList('&');
+                        }
                         plsqlText = replaceAliases(plsqlText, definesMap, define, io);
                         exeObjName = replaceAliases(exeObjName, definesMap, define, io);
                     }
@@ -1230,8 +1233,8 @@ public class PlsqlFileExecutor {
             } else if (insideComment && Character.toString(c).equals("\n")) {
                 insideComment = false;
             }
-           
-              iter = define.iterator();
+            
+             iter = define.iterator();
              while (iter.hasNext()) {
                 if (c == iter.next()) {
 	defineValue = c;
@@ -1254,8 +1257,8 @@ public class PlsqlFileExecutor {
 
 	        if (j > i + 1) { //substituion variable found
 
-	            String name = plsqlString.substring(i + 1, j);
-	            String value = definesMap.get(name.toUpperCase(Locale.ENGLISH));
+                    String name = plsqlString.substring(i + 1, j);
+                    String value = definesMap.get(name.toUpperCase(Locale.ENGLISH));
 	            if (value == null || value.startsWith(Character.toString(defineValue))) {
 	                PromptDialog prompt = new PromptDialog(null, name, true);
 	                prompt.setVisible(true);
@@ -1272,7 +1275,7 @@ public class PlsqlFileExecutor {
 	            } else {
 	                i = j - 1;
 	            }
-	        } else {
+                    } else {
 	            newString.append(c);
 	        }
 	        break;
