@@ -141,23 +141,36 @@ public class DatabaseContentUtilities {
       return version;
    }
    
-   public static String getFndbasFullVersion(Connection connection, String schema) throws SQLException {
-      String version = null;
-      Statement stmt = connection.createStatement();
-      ResultSet columnSet = null;
-      try {
-         columnSet = stmt.executeQuery("SELECT VERSION FROM " + schema + ".module WHERE module='FNDBAS'");
-         if (columnSet.next()) {
-            version = columnSet.getString(1);
-         }
-      } catch (SQLException ex) {
-         return "4.1.0"; //work around for when the database isn't an IFS database
-      } finally {
-         stmt.close();
-      }
-      return version;
-   }
-
+    public static boolean checkColumnExists(Connection connection, String schema, String view, String column) throws SQLException {
+        boolean exists = false;
+        PreparedStatement stmt = null;
+        ResultSet rs = null;
+        try {
+            String dbStmt = "SELECT count(*) "
+                    + "FROM  all_views v,all_tab_columns c "
+                    + "WHERE v.owner = ? "
+                    + "AND v.view_name = ? "
+                    + "AND c.owner = v.owner "
+                    + "AND c.table_name = v.view_name "
+                    + "AND c.column_name = ? ";
+            stmt = connection.prepareStatement(dbStmt);
+            stmt.setString(1, schema);
+            stmt.setString(2, view);
+            stmt.setString(3, column);
+            rs = stmt.executeQuery();
+            if(rs.next()) {
+                if (rs.getInt(1) > 0) {
+                    exists = true;
+                }
+            }
+            stmt.close();
+        } catch (SQLException ex) {
+            Exceptions.printStackTrace(ex);
+        } finally {
+            stmt.close();
+            return exists;
+        }
+    }
    /**
     * Get the current database time
     * @return
