@@ -140,6 +140,23 @@ public class DatabaseContentUtilities {
       }
       return version;
    }
+   
+   public static String getFndbasFullVersion(Connection connection, String schema) throws SQLException {
+      String version = null;
+      Statement stmt = connection.createStatement();
+      ResultSet columnSet = null;
+      try {
+         columnSet = stmt.executeQuery("SELECT VERSION FROM " + schema + ".module WHERE module='FNDBAS'");
+         if (columnSet.next()) {
+            version = columnSet.getString(1);
+         }
+      } catch (SQLException ex) {
+         return "4.1.0"; //work around for when the database isn't an IFS database
+      } finally {
+         stmt.close();
+      }
+      return version;
+   }
 
    /**
     * Get the current database time
