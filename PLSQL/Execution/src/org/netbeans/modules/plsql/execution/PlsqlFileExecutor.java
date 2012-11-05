@@ -718,8 +718,7 @@ public class PlsqlFileExecutor {
                                             String token = tokenizer.nextToken();
                                             ignoreDefines = "OFF".equalsIgnoreCase(token);
                                             if (!ignoreDefines && token.length() == 1) {
-                                                 define.clear();
-                                                 define.add(token.charAt(0));
+                                               define = Arrays.asList(token.charAt(0)); 
                                             }
                                         }
                                     }
