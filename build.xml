@@ -21,72 +21,6 @@
       <isset property="env.BUILD_ID"/>
    </condition>
 
-   <path id="maven-ant-tasks.classpath" path="Libraries/ThirdParty/ant/maven-ant-tasks-2.1.3.jar" />
-   <typedef resource="org/apache/maven/artifact/ant/antlib.xml"
-            uri="antlib:org.apache.maven.artifact.ant"
-            classpathref="maven-ant-tasks.classpath" />
-
-
-   <target name="maven-install" description="install jars in local maven repo" depends="nbms">
-      <foreach param="jar.path" target="maven-install-jar" inheritall="true">
-         <path>
-            <fileset dir="build/cluster/modules">
-               <include name="*.jar"/>
-            </fileset>
-         </path>
-      </foreach>
-   </target>
-
-   <target name="maven-install-jar" >
-      <basename property="jar.file.name" file="${jar.path}"/>
-      <basename property="name" file="${jar.path}" suffix=".jar"/>
-      <echo level="info" message="Installing ${jar.file.name} in local maven repo as ${name}"/>
-      <artifact:pom id="mypom" groupId="org.netbeans.api" artifactId="${name}" version="${new_version}" name="${name} project">
-         <license name="IFS" url="http://www.ifsworld.com"/>
-      </artifact:pom>
-
-      <artifact:writepom pomRefId="mypom" file="build/mypom.xml"/>
-      <artifact:pom id="mypom" file="build/mypom.xml" />
-
-      <artifact:install file="${jar.path}"  >
-         <pom refid="mypom"/>
-         <attach file="${basedir}/build/updates/${name}.nbm" type="nbm"/>
-      </artifact:install>
-   </target>
-
-   <target name="maven-deploy" description="deploy jars in remote internal maven repo" depends="nbms">
-      <foreach param="jar.path" target="maven-deploy-jar" inheritall="true">
-         <path>
-            <fileset dir="build/cluster/modules">
-               <include name="*.jar"/>
-            </fileset>
-         </path>
-      </foreach>
-   </target>
-
-   <target name="maven-deploy-jar" >
-      <artifact:install-provider artifactId="wagon-http" version="2.2"/>
-
-      <basename property="jar.file.name" file="${jar.path}"/>
-      <basename property="name" file="${jar.path}" suffix=".jar"/>
-      <echo level="info" message="Installing ${jar.file.name} in local maven repo as ${name}"/>
-      <artifact:pom id="mypom" groupId="org.netbeans.api" artifactId="${name}" version="${new_version}" name="${name} project">
-         <license name="IFS" url="http://www.ifsworld.com"/>
-      </artifact:pom>
-
-      <artifact:writepom pomRefId="mypom" file="build/mypom.xml"/>
-      <artifact:pom id="mypom" file="build/mypom.xml" />
-
-      <artifact:deploy file="${jar.path}"  >
-         <remoteRepository url="http://gbglcrd10:8082/nexus/content/repositories/snapshots">
-            <authentication username="${maven.deploy.user}" password="${maven.deploy.password}"/>
-         </remoteRepository>
-         <pom refid="mypom"/>
-         <attach file="${basedir}/build/updates/${name}.nbm" type="nbm"/>
-      </artifact:deploy>
-   </target>
-
-
    <target name="calculate-netbeans-url" unless="skip.calculation">
       <get src="${netbeans.base.url}" dest="netbeans.html" usetimestamp="${use.timestamp}" verbose="true" ignoreerrors="${offline}"/>
       <loadfile srcfile="netbeans.html" property="netbeans.binaries.url">
@@ -287,5 +221,77 @@
    <target name="echo-manifest" description="echo kit version that is found in manifest. Used by hudson" >
       <echoproperties srcfile="plsql-support.kit/manifest.mf"/>
    </target>
+
+   <path id="maven-ant-tasks.classpath" path="Libraries/ThirdParty/ant/maven-ant-tasks-2.1.3.jar" />
+   <typedef resource="org/apache/maven/artifact/ant/antlib.xml"
+            uri="antlib:org.apache.maven.artifact.ant"
+            classpathref="maven-ant-tasks.classpath" />
+
+   <condition property="nbm.update.exists">
+      <available file="${basedir}/build/updates" />
+   </condition>
+
+
+   <target name="maven-install" description="install jars in local maven repo" >
+      <fail unless="nbm.update.exists" message="need to build nbms first" />
+      <foreach param="jar.path" target="-maven-install-jar" inheritall="true">
+         <path>
+            <fileset dir="build/cluster/modules">
+               <include name="*.jar"/>
+            </fileset>
+         </path>
+      </foreach>
+   </target>
+
+   <target name="-maven-install-jar" >
+      <basename property="jar.file.name" file="${jar.path}"/>
+      <basename property="name" file="${jar.path}" suffix=".jar"/>
+      <echo level="info" message="Installing ${jar.file.name} in local maven repo as ${name}"/>
+      <artifact:pom id="mypom" groupId="org.netbeans.api" artifactId="${name}" version="${new_version}" name="${name} project">
+         <license name="IFS" url="http://www.ifsworld.com"/>
+      </artifact:pom>
+
+      <artifact:writepom pomRefId="mypom" file="build/mypom.xml"/>
+      <artifact:pom id="mypom" file="build/mypom.xml" />
+
+      <artifact:install file="${jar.path}"  >
+         <pom refid="mypom"/>
+         <attach file="${basedir}/build/updates/${name}.nbm" type="nbm"/>
+      </artifact:install>
+   </target>
+
+   <target name="maven-deploy" description="deploy jars in remote internal maven repo" >
+      <fail unless="nbm.update.exists" message="need to build nbms first" />
+      <foreach param="jar.path" target="-maven-deploy-jar" inheritall="true">
+         <path>
+            <fileset dir="build/cluster/modules">
+               <include name="*.jar"/>
+            </fileset>
+         </path>
+      </foreach>
+   </target>
+
+   <target name="-maven-deploy-jar" >
+      <artifact:install-provider artifactId="wagon-http" version="2.2"/>
+
+      <basename property="jar.file.name" file="${jar.path}"/>
+      <basename property="name" file="${jar.path}" suffix=".jar"/>
+      <echo level="info" message="Installing ${jar.file.name} in local maven repo as ${name}"/>
+      <artifact:pom id="mypom" groupId="org.netbeans.api" artifactId="${name}" version="${new_version}" name="${name} project">
+         <license name="IFS" url="http://www.ifsworld.com"/>
+      </artifact:pom>
+
+      <artifact:writepom pomRefId="mypom" file="build/mypom.xml"/>
+      <artifact:pom id="mypom" file="build/mypom.xml" />
+
+      <artifact:deploy file="${jar.path}"  >
+         <remoteRepository url="http://localhost:8082/nexus/content/repositories/releases">
+            <authentication username="${maven.deploy.user}" password="${maven.deploy.password}"/>
+         </remoteRepository>
+         <pom refid="mypom"/>
+         <attach file="${basedir}/build/updates/${name}.nbm" type="nbm"/>
+      </artifact:deploy>
+   </target>
+
 
 </project>
