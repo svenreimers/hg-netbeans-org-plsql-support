@@ -227,12 +227,11 @@
             uri="antlib:org.apache.maven.artifact.ant"
             classpathref="maven-ant-tasks.classpath" />
 
-   <condition property="nbm.update.exists">
-      <available file="${basedir}/build/updates" />
-   </condition>
-
-
    <target name="maven-install" description="install jars in local maven repo" >
+      <condition property="nbm.update.exists">
+         <available file="${basedir}/build/updates" />
+      </condition>
+
       <fail unless="nbm.update.exists" message="need to build nbms first" />
       <foreach param="jar.path" target="-maven-install-jar" inheritall="true">
          <path>
@@ -261,6 +260,9 @@
    </target>
 
    <target name="maven-deploy" description="deploy jars in remote internal maven repo" >
+      <condition property="nbm.update.exists">
+         <available file="${basedir}/build/updates" />
+      </condition>
       <fail unless="nbm.update.exists" message="need to build nbms first" />
       <foreach param="jar.path" target="-maven-deploy-jar" inheritall="true">
          <path>
