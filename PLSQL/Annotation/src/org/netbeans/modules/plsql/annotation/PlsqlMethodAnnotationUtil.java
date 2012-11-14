@@ -444,21 +444,25 @@ private static final int NO_RETURNS = 2;
       @SuppressWarnings("unchecked")
       final TokenSequence<PlsqlTokenId> ts = tokenHierarchy.tokenSequence(PlsqlTokenId.language());
       int endLineCount = 0;
-
+      
       if (ts != null) {
          ts.move(startOffset);
          Token<PlsqlTokenId> token = ts.token();
          boolean isException = false;
+         boolean isRaised=false;
 
          while (ts.moveNext() && ts.offset() < endOffset) {
             token = ts.token();
 
-            if (token.toString().equalsIgnoreCase("RETURN")
-                  || token.toString().equalsIgnoreCase("RAISE")) {
+            if (token.toString().equalsIgnoreCase("RETURN")) {
                if (moveToReturnEnd(ts, endOffset)) {
                   isReturn = true;
                }
-            } else if (token.toString().equalsIgnoreCase("ERROR_SYS")) {
+            }else if (token.toString().equalsIgnoreCase("RAISE")) {
+               if (moveToReturnEnd(ts, endOffset)) {
+                  isRaised = true;
+               }
+            }else if (token.toString().equalsIgnoreCase("ERROR_SYS")) {
                if (ts.moveNext()) {
                   token = ts.token();
                   if (token.id() == PlsqlTokenId.DOT) {
@@ -467,6 +471,7 @@ private static final int NO_RETURNS = 2;
                         if (!token.toString().toLowerCase(Locale.ENGLISH).startsWith("check")) {
                            if (moveToReturnEnd(ts, endOffset)) {
                               isReturn = true;
+                              isRaised = true;
                            }
                         }
                      }
@@ -480,15 +485,16 @@ private static final int NO_RETURNS = 2;
                      token = ts.token();
                      if (token.toString().equalsIgnoreCase("THEN")) {
                         isReturn = false;
+                        isRaised = true;
                         endLineCount = 0;
                      }
                   }
                }
-            } else if (isReturn && token.toString().contains("\n")) {
+            } else if ((isReturn || isRaised) && token.toString().contains("\n")) {
                endLineCount++;
             } else if (endLineCount > 0 && token.toString().contains("END")
-                  && NbEditorUtilities.getLine(doc, ts.offset(), false).getLineNumber()
-                  == NbEditorUtilities.getLine(doc, endOffset, false).getLineNumber()) {
+                  && (NbEditorUtilities.getLine(doc, ts.offset(), false).getLineNumber()
+                  == NbEditorUtilities.getLine(doc, endOffset, false).getLineNumber() || isRaised)) {
                //avoid END of blocks being unreachable statements
                endLineCount = 0;
             } else if (endLineCount > 0 && token.toString().contains(";")) {
