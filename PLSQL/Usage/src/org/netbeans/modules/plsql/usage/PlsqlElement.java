@@ -91,7 +91,7 @@ public class PlsqlElement {
    }
 
    public int getModifiedLine() {
-      return modifiedLine;
+      return modifiedLine == 0 ? line : modifiedLine;
    }
 
    public void setModifiedLine(final int modifiedLine) {
