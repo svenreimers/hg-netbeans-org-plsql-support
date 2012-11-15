@@ -110,54 +110,53 @@ public final class FindUsagesAction extends CookieAction implements Runnable {
       RP.post(this);
    }
 
-    @Override
-    public void run() {
-        final DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
+   @Override
+   public void run() {
+      final DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
 
-        final ProgressHandle progressHandle = ProgressHandleFactory.createHandle("Searching for usages...");
+      final ProgressHandle progressHandle = ProgressHandleFactory.createHandle("Searching for usages...");
 
-        if (dataObject != null) {
+      if (dataObject != null) {
 
-            final Project project = FileOwnerQuery.getOwner(dataObject.getPrimaryFile());
-            if (project != null) {
-                final DatabaseConnectionManager provider = DatabaseConnectionManager.getInstance(dataObject);
-                final DatabaseConnection connection = provider.getPooledDatabaseConnection(false, true);
+         final Project project = FileOwnerQuery.getOwner(dataObject.getPrimaryFile());
+         if (project != null) {
+            final DatabaseConnectionManager provider = DatabaseConnectionManager.getInstance(dataObject);
+            final DatabaseConnection connection = provider.getPooledDatabaseConnection(false, true);
 
-                if (connection == null || connection.getJDBCConnection() == null) {
-                    return;
-                }
-
-                    try {
-                        progressHandle.start();
-
-                        signature = getSignature(connection, packageName, object_type, context, false);
-
-                        final List<PlsqlElement> list = getUsageList(connection, project);
-                        SwingUtilities.invokeLater(new Runnable() {
-
-                            @Override
-                            public void run() {
-                                PlsqlUsagePanel up = new PlsqlUsagePanel(list, selectedName, usageCount, project);
-                            }
-                        });
-
-                    } catch (SQLException ex) {
-                        if (provider.testConnection(connection)) {
-                            final NotifyDescriptor d = new NotifyDescriptor.Message("Find usages not supported in this database. Please refer to the documentation for details.",
-                                    NotifyDescriptor.INFORMATION_MESSAGE);
-                            DialogDisplayer.getDefault().notify(d);
-                        } else {
-                            final NotifyDescriptor d = new NotifyDescriptor.Message("You are not connected to a database.",
-                                    NotifyDescriptor.INFORMATION_MESSAGE);
-                            DialogDisplayer.getDefault().notify(d);
-                        }
-                    } finally {
-                        provider.releaseDatabaseConnection(connection);
-                        progressHandle.finish();
-                    }
+            if (connection == null || connection.getJDBCConnection() == null) {
+               return;
             }
-        }
-    }
+
+            try {
+               progressHandle.start();
+
+               signature = getSignature(connection, packageName, object_type, context, false);
+
+               final List<PlsqlElement> list = getUsageList(connection, project);
+               SwingUtilities.invokeLater(new Runnable() {
+                  @Override
+                  public void run() {
+                     PlsqlUsagePanel up = new PlsqlUsagePanel(list, selectedName, usageCount, project);
+                  }
+               });
+
+            } catch (SQLException ex) {
+               if (provider.testConnection(connection)) {
+                  final NotifyDescriptor d = new NotifyDescriptor.Message("Find usages not supported in this database. Please refer to the documentation for details.",
+                        NotifyDescriptor.INFORMATION_MESSAGE);
+                  DialogDisplayer.getDefault().notify(d);
+               } else {
+                  final NotifyDescriptor d = new NotifyDescriptor.Message("You are not connected to a database.",
+                        NotifyDescriptor.INFORMATION_MESSAGE);
+                  DialogDisplayer.getDefault().notify(d);
+               }
+            } finally {
+               provider.releaseDatabaseConnection(connection);
+               progressHandle.finish();
+            }
+         }
+      }
+   }
 
    @Override
    protected int mode() {
@@ -236,11 +235,16 @@ public final class FindUsagesAction extends CookieAction implements Runnable {
                if ((panes != null) && (panes.length != 0)) {
                   Caret caret = panes[0].getCaret();
                   offset = caret.getDot();
-                  if (offset == caret.getMark()) {
-                     return false;
-                  } else {
-                     selectedName = panes[0].getSelectedText();
+                  String candidateText = panes[0].getText(offset - 30, 60);
+                  int fromIndex = 30;
+                  int toIndex = 30;
+                  while (fromIndex > 0 && candidateText.substring(fromIndex - 1, fromIndex).compareTo("A") >= 0) {
+                     fromIndex--;
                   }
+                  while (toIndex < 60 && candidateText.substring(toIndex, toIndex + 1).compareTo("A") >= 0) {
+                     toIndex++;
+                  }
+                  selectedName = candidateText.substring(fromIndex, toIndex);
 
 
                   if (offset != -1) {
@@ -366,67 +370,67 @@ public final class FindUsagesAction extends CookieAction implements Runnable {
       return list;
    }
 
-    protected String getSignature(final DatabaseConnection connection, final String packageName, final String object_type, final String context, final boolean typeKnown) throws SQLException {
-        ResultSet rs = null;
-        PreparedStatement stmt = null;
-        String sqlSelect = null;
-        try {
-            sqlSelect = "select a.signature, a.type from all_identifiers a, all_identifiers b "
-                    + "where a.USAGE_CONTEXT_ID = b.USAGE_ID "
-                    + "AND a.name='" + selectedName.toUpperCase(Locale.ENGLISH) + "' "
-                    + "AND a.Object_Name='" + packageName.toUpperCase(Locale.ENGLISH) + "' "
-                    + "AND a.OBJECT_NAME = b.OBJECT_NAME "
-                    + "AND a.object_type='" + object_type.toUpperCase(Locale.ENGLISH) + "' "
-                    + "AND a.OBJECT_TYPE =  b.OBJECT_TYPE "
-                    + "AND (b.usage = 'DEFINITION' OR b.usage = 'DECLARATION') "
-                    + ((isFunctionOrProcedure) ? "AND (a.type ='FUNCTION' OR a.type='PROCEDURE')" : "AND b.name = '" + context.toUpperCase(Locale.ENGLISH) + "'");
+   protected String getSignature(final DatabaseConnection connection, final String packageName, final String object_type, final String context, final boolean typeKnown) throws SQLException {
+      ResultSet rs = null;
+      PreparedStatement stmt = null;
+      String sqlSelect = null;
+      try {
+         sqlSelect = "select a.signature, a.type from all_identifiers a, all_identifiers b "
+               + "where a.USAGE_CONTEXT_ID = b.USAGE_ID "
+               + "AND a.name='" + selectedName.toUpperCase(Locale.ENGLISH) + "' "
+               + "AND a.Object_Name='" + packageName.toUpperCase(Locale.ENGLISH) + "' "
+               + "AND a.OBJECT_NAME = b.OBJECT_NAME "
+               + "AND a.object_type='" + object_type.toUpperCase(Locale.ENGLISH) + "' "
+               + "AND a.OBJECT_TYPE =  b.OBJECT_TYPE "
+               + "AND (b.usage = 'DEFINITION' OR b.usage = 'DECLARATION') "
+               + ((isFunctionOrProcedure) ? "AND (a.type ='FUNCTION' OR a.type='PROCEDURE')" : "AND b.name = '" + context.toUpperCase(Locale.ENGLISH) + "'");
 
-            stmt = connection.getJDBCConnection().prepareStatement(sqlSelect);
-            rs = stmt.executeQuery();
-            if (rs.next()) {
-                return rs.getString("SIGNATURE");
-            } else if (!isFindUsagesEnabled(connection)) {
-                final NotifyDescriptor d = new NotifyDescriptor.Message("Find usages disabled. The database setting PLSCOPE_SETTINGS must be set to 'IDENTIFIERS:ALL' to enable the functionality.",
-                        NotifyDescriptor.INFORMATION_MESSAGE);
-                DialogDisplayer.getDefault().notify(d);
-            }
-        } finally {
-            if (stmt != null) {
-                stmt.close();
-            }
-        }
-        return null;
-    }
-   
-    private boolean isFindUsagesEnabled(DatabaseConnection connection) {
-        ResultSet rs = null;
-        PreparedStatement stmt = null;
-        String setting = null;
+         stmt = connection.getJDBCConnection().prepareStatement(sqlSelect);
+         rs = stmt.executeQuery();
+         if (rs.next()) {
+            return rs.getString("SIGNATURE");
+         } else if (!isFindUsagesEnabled(connection)) {
+            final NotifyDescriptor d = new NotifyDescriptor.Message("Find usages disabled. The database setting PLSCOPE_SETTINGS must be set to 'IDENTIFIERS:ALL' to enable the functionality.",
+                  NotifyDescriptor.INFORMATION_MESSAGE);
+            DialogDisplayer.getDefault().notify(d);
+         }
+      } finally {
+         if (stmt != null) {
+            stmt.close();
+         }
+      }
+      return null;
+   }
 
-        try {
-            String sqlSelect = "SELECT PLSCOPE_SETTINGS FROM ALL_PLSQL_OBJECT_SETTINGS WHERE NAME = \'SECURITY_SYS\' AND TYPE = \'PACKAGE\'";
-            stmt = connection.getJDBCConnection().prepareStatement(sqlSelect);
-            rs = stmt.executeQuery();
-            if (rs.next()) {
-                setting = rs.getString(1);
-            }
+   private boolean isFindUsagesEnabled(DatabaseConnection connection) {
+      ResultSet rs = null;
+      PreparedStatement stmt = null;
+      String setting = null;
 
-            if (setting != null && setting.equalsIgnoreCase("IDENTIFIERS:ALL")) {
-                return true;
+      try {
+         String sqlSelect = "SELECT PLSCOPE_SETTINGS FROM ALL_PLSQL_OBJECT_SETTINGS WHERE NAME = \'SECURITY_SYS\' AND TYPE = \'PACKAGE\'";
+         stmt = connection.getJDBCConnection().prepareStatement(sqlSelect);
+         rs = stmt.executeQuery();
+         if (rs.next()) {
+            setting = rs.getString(1);
+         }
+
+         if (setting != null && setting.equalsIgnoreCase("IDENTIFIERS:ALL")) {
+            return true;
+         }
+      } catch (SQLException ex) {
+         // do nothing
+      } finally {
+         if (stmt != null) {
+            try {
+               stmt.close();
+            } catch (SQLException ex) {
+               // do nothing
             }
-        } catch (SQLException ex) {
-            // do nothing
-        } finally {
-            if (stmt != null) {
-                try {
-                    stmt.close();
-                } catch (SQLException ex) {
-                       // do nothing
-                }
-            }
-        }
-        return false;
-    }
+         }
+      }
+      return false;
+   }
 
    private String getPackageName(final DataObject dataObject) {
       String packName = "";
@@ -628,7 +632,7 @@ public final class FindUsagesAction extends CookieAction implements Runnable {
    private boolean isValidParent(final PlsqlBlock parent) {
       final PlsqlBlockType type = parent.getType();
       if (type == PlsqlBlockType.PACKAGE || type == PlsqlBlockType.PACKAGE_BODY || type == PlsqlBlockType.FUNCTION_DEF
-              || type == PlsqlBlockType.FUNCTION_IMPL || type == PlsqlBlockType.PROCEDURE_DEF || type == PlsqlBlockType.PROCEDURE_IMPL) {
+            || type == PlsqlBlockType.FUNCTION_IMPL || type == PlsqlBlockType.PROCEDURE_DEF || type == PlsqlBlockType.PROCEDURE_IMPL) {
          return true;
       } else {
          return false;
@@ -698,9 +702,9 @@ public final class FindUsagesAction extends CookieAction implements Runnable {
             if (tokenID == PlsqlTokenId.SQL_PLUS) {
                String image = readLine(ts, token);
                if ((image.startsWith("DEF "))
-                       || (image.startsWith("DEFI "))
-                       || (image.startsWith("DEFIN "))
-                       || (image.startsWith("DEFINE "))) {
+                     || (image.startsWith("DEFI "))
+                     || (image.startsWith("DEFIN "))
+                     || (image.startsWith("DEFINE "))) {
                   final int defOffset = token.offset(tokenHierarchy);
 
                   final StringTokenizer tokenizer = new StringTokenizer(image);
@@ -742,6 +746,7 @@ public final class FindUsagesAction extends CookieAction implements Runnable {
 
    /**
     * Method that will return the relevant block factory for the dataobject
+    *
     * @param obj
     * @return
     */
