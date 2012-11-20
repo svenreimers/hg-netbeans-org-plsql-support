@@ -129,7 +129,7 @@ public abstract class PlsqlAnnotation extends Annotation {
       @Override
       public String toString() {
          if (getIgnoreKey().startsWith("Approve")) {
-            return "Add an " + getIgnoreKey() + "(user, date)";
+            return "Add an " + getIgnoreKey() + "(date, user)";
          } else {
             return "Add an Ignore" + getIgnoreKey();
          }
@@ -159,12 +159,18 @@ public abstract class PlsqlAnnotation extends Annotation {
       }
 
       private boolean addApproveMarker(Document doc, int ignoreOffset) {
-         String key = "--@" + getIgnoreKey() + "(" + System.getProperty("user.name") + "," + getDateTime() + ")\n";
+         String key = "--@" + getIgnoreKey() + "(" + getDate() + "," + System.getProperty("user.name") + ")\n";
          return addMarker(doc, key, ignoreOffset);
       }
 
       private String getDateTime() {
          DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+         Date date = new Date();
+         return dateFormat.format(date);
+      }
+      
+      private String getDate() {
+         DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
          Date date = new Date();
          return dateFormat.format(date);
       }
