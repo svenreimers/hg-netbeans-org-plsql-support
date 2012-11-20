@@ -473,10 +473,10 @@ public final class FindUsagesAction extends CookieAction implements Runnable {
          final DatabaseConnectionManager dbConnectionProvider = DatabaseConnectionManager.getInstance(project);
          final DatabaseConnection dbConnection = dbConnectionProvider != null ? dbConnectionProvider.getPooledDatabaseConnection(true) : null;
          try {
-            DataObject data = PlsqlFileUtil.openExistingFile(null, packageName, PACKAGE, project);
+            DataObject data = PlsqlFileUtil.openExistingFile(null, packageName, PACKAGE_BODY, project);
             if (data == null) //check to see if the user has a local version of this file...
             {
-               data = PlsqlFileUtil.openExistingFile(null, packageName, PACKAGE, project);
+               data = PlsqlFileUtil.openExistingFile(null, packageName, PACKAGE_BODY, project);
             }
             if (data == null) //fetch file from database (or cache)
             {
