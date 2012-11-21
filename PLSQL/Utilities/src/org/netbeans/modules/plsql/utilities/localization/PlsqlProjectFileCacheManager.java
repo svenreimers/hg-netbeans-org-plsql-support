@@ -53,6 +53,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.SwingUtilities;
 import org.openide.filesystems.FileChangeAdapter;
 import org.openide.filesystems.FileEvent;
 import org.openide.filesystems.FileObject;
@@ -87,7 +88,13 @@ class PlsqlProjectFileCacheManager extends FileChangeAdapter implements Serializ
       if (cache == null) {
          cache = new PlsqlFileCache(fileParser);
          cache.addListener(this);
-         buildCache();
+         SwingUtilities.invokeLater(new Runnable() {
+
+              @Override
+              public void run() {
+                  buildCache();
+              }
+          });
       }
    }
 
