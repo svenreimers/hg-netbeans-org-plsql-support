@@ -303,7 +303,7 @@ public final class FindUsagesAction extends CookieAction implements Runnable {
       PreparedStatement stmt = null;
       final List<PlsqlElement> list = new ArrayList<PlsqlElement>();
       try {
-         String sqlSelect = "SELECT t.name, t.object_name, t.object_type , t.col, t.line, u.text FROM all_identifiers t, user_source u WHERE t.line = u.line AND t.object_name = u.name AND t.object_type = u.type AND t.signature='" + signature + "' AND t.usage !='DEFINITION' AND t.usage !='DECLARATION' ORDER BY t.line,t.col";
+         String sqlSelect = "SELECT t.name, t.object_name, t.object_type , t.col, t.line, u.text FROM all_identifiers t, user_source u WHERE t.line = u.line AND t.object_name = u.name AND t.object_type = u.type AND t.signature='" + signature + "' AND t.usage !='DECLARATION' ORDER BY t.line,t.col";
          stmt = connection.getJDBCConnection().prepareStatement(sqlSelect);
          rs = stmt.executeQuery();
          while (rs.next()) {
