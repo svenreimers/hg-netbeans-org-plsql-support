@@ -55,6 +55,7 @@ import java.math.BigDecimal;
 import java.sql.*;
 import java.util.Date;
 import java.util.*;
+import javax.swing.JButton;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
@@ -70,7 +71,6 @@ import org.netbeans.api.progress.ProgressHandleFactory;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
 import org.netbeans.modules.db.dataview.api.DataView;
-import org.netbeans.modules.db.dataview.meta.DBTable;
 import org.netbeans.modules.db.sql.execute.SQLExecutionResult;
 import org.netbeans.modules.db.sql.execute.SQLExecutionResults;
 import org.netbeans.modules.db.sql.execute.StatementInfo;
@@ -1323,7 +1323,9 @@ public class PlsqlFileExecutor {
                                 }
                                 components.add(component);
                                 toolTips.add("<html>" + result.getStatementInfo().getSQL().replaceAll("\n", "<br>"));
-                                fixDataTablePopupMenu(result.getDataView());
+                                if ("IFSAPP".equals(connection.getSchema())) {
+                                    fixDataTablePopupMenu(result.getDataView());
+                                }
                             }
                         }
 
@@ -1563,11 +1565,26 @@ public class PlsqlFileExecutor {
             field = tableUI.getClass().getDeclaredField("tablePopupMenu");
             field.setAccessible(true);
             JPopupMenu menu = (JPopupMenu) field.get(tableUI);
-            // Change the "Truncate Table" menu item
+            // Change the "Truncate Table" icon to do nothing
+            field = dataViewUI.getClass().getDeclaredField("truncateButton");
+            field.setAccessible(true);
+            final JButton truncateButton = (JButton) field.get(dataViewUI);
+            for (ActionListener listener : truncateButton.getActionListeners()) {
+                truncateButton.removeActionListener(listener);
+            }
+            truncateButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    final NotifyDescriptor d = new NotifyDescriptor.Message("Truncate table is disabled for IFS Applications databases (schema IFSAPP).",
+                            NotifyDescriptor.INFORMATION_MESSAGE);
+                    DialogDisplayer.getDefault().notify(d);
+                }
+            });
+            // Change the "Truncate Table" menu item to "Copy insert block ..."
             for (Component menuItem : menu.getComponents()) {
                 if (menuItem instanceof JMenuItem) {
                     JMenuItem item = (JMenuItem) menuItem;
-                    if (item.getText().equals("Truncate Table")) {
+                    if (item.getText().startsWith("Truncate")) {
                         item.setText("Copy insert block to clipboard");
                         for (ActionListener listener : item.getActionListeners()) {
                             item.removeActionListener(listener);
@@ -1655,7 +1672,7 @@ public class PlsqlFileExecutor {
                                         insertSQL.append("   INSERT INTO ").append(tableName.toLowerCase()).append(" VALUES rec_;\n");
                                     }
                                     //Format end of statement
-                                    insertSQL.append("END;");
+                                    insertSQL.append("END;\n");
                                     //Copy to clipboard
                                     Clipboard clipboard = Lookup.getDefault().lookup(ExClipboard.class);
                                     if (clipboard != null) {
