@@ -42,13 +42,22 @@
 package org.netbeans.modules.plsql.execution;
 
 import java.awt.Component;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.Date;
 import java.util.*;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
@@ -61,6 +70,7 @@ import org.netbeans.api.progress.ProgressHandleFactory;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
 import org.netbeans.modules.db.dataview.api.DataView;
+import org.netbeans.modules.db.dataview.meta.DBTable;
 import org.netbeans.modules.db.sql.execute.SQLExecutionResult;
 import org.netbeans.modules.db.sql.execute.SQLExecutionResults;
 import org.netbeans.modules.db.sql.execute.StatementInfo;
@@ -84,13 +94,14 @@ import org.openide.util.Cancellable;
 import org.openide.util.Exceptions;
 import org.openide.util.Lookup;
 import org.openide.util.RequestProcessor;
+import org.openide.util.datatransfer.ExClipboard;
 import org.openide.windows.IOProvider;
 import org.openide.windows.InputOutput;
 import org.openide.windows.OutputWriter;
 import org.openide.windows.TopComponent;
 
 public class PlsqlFileExecutor {
-    
+
     private boolean cancel = false;
     private final RequestProcessor rp = new RequestProcessor("SQLExecution", 1, true);
     // execution results. Not synchronized since accessed only from rp of throughput 1.
@@ -102,14 +113,14 @@ public class PlsqlFileExecutor {
     private final InputOutput preparedIO;
     private final DatabaseConnectionManager connectionProvider;
     private Savepoint firstSavepoint = null;
-    
+
     public PlsqlFileExecutor(DatabaseConnectionManager connectionProvider, DatabaseConnection connection) {
         this.connection = connection;
         this.preparedIO = null;
         this.connectionProvider = connectionProvider;
         this.cache = DatabaseContentManager.getInstance(connection);
     }
-    
+
     public PlsqlFileExecutor(DatabaseConnectionManager connectionProvider, Connection debugConnection, InputOutput io) {
         this.connection = null;
         this.debugConnection = debugConnection;
@@ -117,13 +128,14 @@ public class PlsqlFileExecutor {
         this.connectionProvider = connectionProvider;
         this.cache = DatabaseContentManager.getInstance(connection);
     }
-    
+
     public void cancel() {
         cancel = true;
     }
 
     /**
      * Method that will execute Dbmb_Output.Enable();
+     *
      * @param con
      */
     private void enableDbmsOut(Connection con) {
@@ -144,7 +156,7 @@ public class PlsqlFileExecutor {
             }
         }
     }
-    
+
     private boolean executeSelect(String query, DatabaseConnection con, Document doc, String label) throws SQLException {
         String formattedQuery = formatQuery(query, con);
         DataObject obj = FileExecutionUtil.getDataObject(doc);
@@ -157,7 +169,7 @@ public class PlsqlFileExecutor {
     final static int NORMAL = 0;
     final static int IN_LITERAL = 1;
     final static int COMMENT_CANDIDATE = 3;
-    
+
     private String formatQuery(final String query, DatabaseConnection databaseConnection) {
         StringBuilder nonCommentQuery = new StringBuilder();
         String[] lines = query.split("\\n");
@@ -199,29 +211,29 @@ public class PlsqlFileExecutor {
             }
             if (state == NORMAL) {
                 nonCommentQuery.append(line).append("\n");
-             }
+            }
         }
-         
+
         String querryString = nonCommentQuery.toString().trim();
-        if(querryString.endsWith(";")){
-           querryString = querryString.substring(0, querryString.lastIndexOf(";"));
+        if (querryString.endsWith(";")) {
+            querryString = querryString.substring(0, querryString.lastIndexOf(";"));
         }
-                  
+
         String newQuery = "";
         String token;
         boolean format = false;
-        
+
         StringTokenizer tokenizer = new StringTokenizer(querryString, " \t\n");
         while (tokenizer.hasMoreTokens()) {
             token = tokenizer.nextToken();
-            
+
             if (token.equalsIgnoreCase("FROM")) {
                 format = true;
             } else if (token.equalsIgnoreCase("WHERE") || token.equalsIgnoreCase("ORDER")
                     || token.equalsIgnoreCase("GROUP") || token.equalsIgnoreCase("HAVING")) {
                 format = false;
             }
-            
+
             if (format) {
                 boolean isUpper = false;
                 //Tokenize with '.'
@@ -234,7 +246,7 @@ public class PlsqlFileExecutor {
                         isUpper = true;
                     }
                 }
-                
+
                 if (!isUpper) {
                     //Tokenize with ','
                     StringTokenizer otherTokenizer = new StringTokenizer(token, ",");
@@ -248,18 +260,18 @@ public class PlsqlFileExecutor {
                         }
                     }
                 }
-                
+
                 if (isUpper) {
                     token = token.toUpperCase(Locale.ENGLISH);
                 }
             }
-            
+
             newQuery = newQuery + token + " ";
         }
-        
+
         return newQuery;
     }
-    
+
     private boolean describeObject(DatabaseConnection con, Document doc, StringTokenizer tokenizer, InputOutput io) throws SQLException {
         if (!tokenizer.hasMoreTokens()) {
             io.getErr().println("Syntax: DESCRIBE [object]");
@@ -267,7 +279,7 @@ public class PlsqlFileExecutor {
         }
         String objectName = tokenizer.nextToken().toUpperCase(Locale.ENGLISH);
         String objectOwner = null;
-        
+
         if (objectName.contains(".")) { //handle schema.object format e.g. ifsapp.customer
             final String[] result = objectName.split("\\.");
             if (result != null && result.length == 2) {
@@ -275,7 +287,7 @@ public class PlsqlFileExecutor {
                 objectName = result[1];
             }
         }
-        
+
         String query = "SELECT t.COLUMN_NAME \"Name\", "
                 + "t.data_type||decode(t.data_type,'VARCHAR2','('||t.char_length||')', "
                 + "'DATE','','NUMBER',decode(t.data_precision,null,'','('||t.data_precision||"
@@ -293,7 +305,7 @@ public class PlsqlFileExecutor {
         executeSelect(query, con, doc, objectName);
         return true;
     }
-    
+
     private void processDbmsOutputMessages(Connection con, OutputWriter out) {
         String text = "BEGIN DBMS_OUTPUT.GET_LINE(?, ?); END;";
         CallableStatement stmt = null;
@@ -323,7 +335,7 @@ public class PlsqlFileExecutor {
             }
         }
     }
-    
+
     private InputOutput initializeIO(String fileName, String displayName, DataObject dataObj) {
         if (this.preparedIO != null) {
             return this.preparedIO;
@@ -376,16 +388,16 @@ public class PlsqlFileExecutor {
                 Exceptions.printStackTrace(ex);
             }
         }
-        
+
     }
-    
+
     public InputOutput executePLSQL(List executableObjs, Document doc, boolean hidden, boolean autoCommit) {
         final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
         Project project = null;
         Object object = doc.getProperty(Document.StreamDescriptionProperty);
         if (object instanceof DataObject) {
             FileObject fo = ((DataObject) object).getPrimaryFile();
-            project = FileOwnerQuery.getOwner(fo);            
+            project = FileOwnerQuery.getOwner(fo);
         }
 
         //store in object history if this is an SQL Command window (*.tdb)
@@ -401,7 +413,7 @@ public class PlsqlFileExecutor {
 
         //Defines and define
         HashMap<String, String> definesMap = new HashMap<String, String>();
-        List<Character> define = Arrays.asList('&',':');
+        List<Character> define = Arrays.asList('&', ':');
         DataObject dataObj = FileExecutionUtil.getDataObject(doc);
         plsqlEditor = getPlsqlEditor(dataObj);
         String endMsg = "Done deploying " + FileExecutionUtil.getActivatedFileName(dataObj);
@@ -414,9 +426,9 @@ public class PlsqlFileExecutor {
         }
         Connection con;
         Statement stm = null;
-        String firstWord = null;             
-        PlsqlCommit commit = PlsqlCommit.getInstance((DataObject)object);
-        
+        String firstWord = null;
+        PlsqlCommit commit = PlsqlCommit.getInstance((DataObject) object);
+
         //quick & dirty fix to avoid having output tabs for the SQL Execution window (unless there's an exception)
         //first check to see if this is a simple select statement and if so treat it separately.
         if (executableObjs.size() == 1) {
@@ -444,10 +456,10 @@ public class PlsqlFileExecutor {
                         describeObject(connection, doc, tokenizer, io);
                         return null;
                     }
-                    
+
                 } catch (SQLException sqlEx) {
                     try {
-                        io = initializeIO(fileName,getIOTabName(executableObjs, fileName, dataObj.getNodeDelegate().getDisplayName()), dataObj);
+                        io = initializeIO(fileName, getIOTabName(executableObjs, fileName, dataObj.getNodeDelegate().getDisplayName()), dataObj);
                         int errLine = getLineNumberFromMsg(sqlEx.getMessage());
                         int outLine = executionObject.getStartLineNo() + errLine - 1;
                         String msg = getmodifiedErorrMsg(sqlEx.getMessage(), outLine);
@@ -469,9 +481,9 @@ public class PlsqlFileExecutor {
             }
         }
         try {
-            
-            
-            io = initializeIO(fileName, getIOTabName(executableObjs, fileName,dataObj.getNodeDelegate().getDisplayName()), dataObj);
+
+
+            io = initializeIO(fileName, getIOTabName(executableObjs, fileName, dataObj.getNodeDelegate().getDisplayName()), dataObj);
             con = debugConnection != null ? debugConnection : connection.getJDBCConnection();
             con.setAutoCommit(false);
             enableDbmsOut(con);
@@ -491,12 +503,12 @@ public class PlsqlFileExecutor {
                 PlsqlExecutableObject exeObj = (PlsqlExecutableObject) executableObjs.get(i);
                 int lineNumber = exeObj.getStartLineNo();
                 String plsqlText = exeObj.getPlsqlString();
-                
+
                 String exeObjName = exeObj.getExecutableObjName().toUpperCase(Locale.ENGLISH);
                 if ((exeObj.getType() != PlsqlExecutableObjectType.UNKNOWN) && (exeObj.getType() != PlsqlExecutableObjectType.COMMENT)) {
                     //replace aliases since there are aliases in PROMPTS
                     if (!ignoreDefines) {
-                        if(exeObj.getType() == PlsqlExecutableObjectType.TRIGGER){
+                        if (exeObj.getType() == PlsqlExecutableObjectType.TRIGGER) {
                             define = Arrays.asList('&');
                         }
                         plsqlText = replaceAliases(plsqlText, definesMap, define, io);
@@ -532,7 +544,7 @@ public class PlsqlFileExecutor {
                         } else {
                             firstWord = plsqlText;
                         }
-                                           
+
                         if (firstWord.equalsIgnoreCase("SELECT")) {
                             //this should really never happen... Unless there are multiple parts of a file and some sections are select statements
                             if (plsqlEditor != null && firstSelectStatement) {
@@ -687,9 +699,9 @@ public class PlsqlFileExecutor {
                         } else {
                             firstWord = plsqlText;
                         }
-                        if(firstWord.startsWith("@")||firstWord.startsWith("@@") ||firstWord.equalsIgnoreCase("START")){
-                        executeSqlPlusStart(plsqlText,firstWord,doc,io);
-                         continue;
+                        if (firstWord.startsWith("@") || firstWord.startsWith("@@") || firstWord.equalsIgnoreCase("START")) {
+                            executeSqlPlusStart(plsqlText, firstWord, doc, io);
+                            continue;
                         }
                         if (firstWord.equalsIgnoreCase("SELECT")) {
                             //this should really never happen... Unless there are multiple parts of a file and some sections are select statements
@@ -718,11 +730,11 @@ public class PlsqlFileExecutor {
                                             String token = tokenizer.nextToken();
                                             ignoreDefines = "OFF".equalsIgnoreCase(token);
                                             if (!ignoreDefines && token.length() == 1) {
-                                               define = Arrays.asList(token.charAt(0)); 
+                                                define = Arrays.asList(token.charAt(0));
                                             }
                                         }
                                     }
-                                    
+
                                 }
                                 continue;
                             } else if (firstWord.equalsIgnoreCase("DEFINE") || firstWord.equalsIgnoreCase("DEF") || firstWord.equalsIgnoreCase("DEFI") || firstWord.equalsIgnoreCase("DEFIN")) {
@@ -974,22 +986,22 @@ public class PlsqlFileExecutor {
                     break;
                 }
             }
-            
+
             if (fileName.endsWith(".tdb") && !autoCommit) {
                 if (!deploymentOk && !(firstWord != null
                         && (firstWord.equalsIgnoreCase("INSERT") || firstWord.equalsIgnoreCase("UPDATE") || firstWord.equalsIgnoreCase("DELETE")))) {
                     con.commit();
-                }else{
-                    if(deploymentOk && (firstWord != null
-                        && (firstWord.equalsIgnoreCase("INSERT") || firstWord.equalsIgnoreCase("UPDATE") || firstWord.equalsIgnoreCase("DELETE")))){
-                    commit.setCommit(true);
+                } else {
+                    if (deploymentOk && (firstWord != null
+                            && (firstWord.equalsIgnoreCase("INSERT") || firstWord.equalsIgnoreCase("UPDATE") || firstWord.equalsIgnoreCase("DELETE")))) {
+                        commit.setCommit(true);
                     }
                 }
-                
+
             } else {
                 con.commit();
             }
-            
+
             if (!moreRowsToBeFetched) {
                 long endTime = System.currentTimeMillis();
                 long duration = endTime - startTime;
@@ -1025,7 +1037,7 @@ public class PlsqlFileExecutor {
         }
         return deploymentOk ? null : io;
     }
-    
+
     public String getmodifiedErorrMsg(String msg, int lineNumber) {
         int index = msg.indexOf("\n");
         if (index >= 0) {
@@ -1034,7 +1046,7 @@ public class PlsqlFileExecutor {
         msg = (new StringBuilder()).append(msg).append(" error at line no :").append(lineNumber).toString();
         return msg;
     }
-    
+
     private List getPackageerrors(String packageName, String packageType) {
         List<PlsqlErrorObject> lst = new ArrayList<PlsqlErrorObject>();
         Connection con = debugConnection != null ? debugConnection : connection.getJDBCConnection();
@@ -1072,6 +1084,7 @@ public class PlsqlFileExecutor {
 
     /**
      * Method that will return the error line number in the given SQL error message
+     *
      * @param message
      * @return
      */
@@ -1089,6 +1102,7 @@ public class PlsqlFileExecutor {
 
     /**
      * Method that will parse the document and initialize the aliases
+     *
      * @param definesMap
      * @param doc
      * @param start
@@ -1103,12 +1117,12 @@ public class PlsqlFileExecutor {
         TokenSequence<PlsqlTokenId> ts = tokenHierarchy.tokenSequence(PlsqlTokenId.language());
         ts.move(start);
         boolean moveNext = ts.moveNext();
-        
+
         Token<PlsqlTokenId> token = ts.token();
 
         //Get the difine by the name
         while (moveNext) {
-            
+
             if (token.offset(tokenHierarchy) >= end) {
                 break;         //Check whether this is DEFINE
 
@@ -1124,7 +1138,7 @@ public class PlsqlFileExecutor {
                     if (!tokenTxt.contains(" = ") && tokenTxt.contains("=")) {
                         tokenTxt = tokenTxt.substring(0, tokenTxt.indexOf("=")) + " = " + tokenTxt.substring(tokenTxt.indexOf("=") + 1);
                     }
-                    
+
                     StringTokenizer tokenizer = new StringTokenizer(tokenTxt);
                     tokenizer.nextToken();
                     String alias;
@@ -1137,9 +1151,9 @@ public class PlsqlFileExecutor {
                     } else {
                         break;
                     }
-                    
+
                     isNext = tokenizer.hasMoreTokens();
-                    
+
                     if ((isNext) && (tokenizer.nextToken().equals("="))) {
                         boolean isComment = false;
                         while (tokenizer.hasMoreTokens() && !isComment) {
@@ -1150,26 +1164,26 @@ public class PlsqlFileExecutor {
                                 value = value + " " + temp;
                             }
                         }
-                        
+
                         value = value.trim();
-                        
+
                         if ((value.startsWith("\"") && value.endsWith("\""))
                                 || (value.startsWith("\'") && value.endsWith("\'"))) {
                             value = value.substring(1, value.length() - 1);
                         }
-                        
-	    Iterator<Character> itre = define.iterator();
-	    while (itre.hasNext()) {
-	        if (value.indexOf(itre.next()) >= 0) {
-	            value = replaceAliases(value, definesMap, define, io);
-	            break;
-	        }
-	    }
+
+                        Iterator<Character> itre = define.iterator();
+                        while (itre.hasNext()) {
+                            if (value.indexOf(itre.next()) >= 0) {
+                                value = replaceAliases(value, definesMap, define, io);
+                                break;
+                            }
+                        }
 
                         definesMap.put(alias.toUpperCase(Locale.ENGLISH), value);
                     }
                 } else if (tokenTxt.toUpperCase(Locale.ENGLISH).startsWith("SET ")) {
-                    StringTokenizer tokenizer = new StringTokenizer(tokenTxt);                   
+                    StringTokenizer tokenizer = new StringTokenizer(tokenTxt);
                     tokenizer.nextToken();
                     String alias;
                     boolean isNext = tokenizer.hasMoreTokens();
@@ -1186,12 +1200,13 @@ public class PlsqlFileExecutor {
             moveNext = ts.moveNext();
             token = ts.token();
         }
-        
+
         return define;
     }
 
     /**
      * Replace aliases in the given string
+     *
      * @param plsqlString
      * @param definesMap
      * @param define
@@ -1199,87 +1214,87 @@ public class PlsqlFileExecutor {
      * @return
      */
     public String replaceAliases(String plsqlString, HashMap<String, String> definesMap, Collection<Character> define, InputOutput io) {
-        boolean exists=false;
+        boolean exists = false;
         Iterator<Character> iter = define.iterator();
-        while(iter.hasNext()){
+        while (iter.hasNext()) {
             if (plsqlString.indexOf(iter.next()) >= 0) {
-                exists= true;
-                break;               
-            }         
+                exists = true;
+                break;
+            }
         }
-        if(!exists){
+        if (!exists) {
             return plsqlString;
         }
-        
+
         boolean insideString = false;
         boolean insideComment = false;
-        
+
         StringBuilder newString = new StringBuilder();
         for (int i = 0; i < plsqlString.length(); i++) {
             char c = plsqlString.charAt(i);
             char defineValue = 0;
-            
+
             //check for - inside strings
             if (Character.toString(c).equals("'") || Character.toString(c).equals("\"")) {
                 if (!insideString && !Character.toString(plsqlString.charAt(i + 1)).equals("'")) {
-	insideString = !insideString;
+                    insideString = !insideString;
                 }
             }
-          
+
             //Check for - Comments           
             if (!insideComment && Character.toString(c).equals("-") && Character.toString(plsqlString.charAt(i + 1)).equals("-")) {
                 insideComment = true;
             } else if (insideComment && Character.toString(c).equals("\n")) {
                 insideComment = false;
             }
-            
-             iter = define.iterator();
-             while (iter.hasNext()) {
+
+            iter = define.iterator();
+            while (iter.hasNext()) {
                 if (c == iter.next()) {
-	defineValue = c;
-	break;
+                    defineValue = c;
+                    break;
                 }
-            }                     
-             if (defineValue != 0 && !insideComment) {
+            }
+            if (defineValue != 0 && !insideComment) {
                 if (insideString && !Character.toString(defineValue).equals("&")) {
-	newString.append(c);
+                    newString.append(c);
                 } else {
-	for (int j = i + 1; j < plsqlString.length(); j++) {
-	    char nextChar = plsqlString.charAt(j);
-	    if (Character.isJavaIdentifierPart(nextChar) && j == plsqlString.length() - 1) { //we have reached the end of the text
+                    for (int j = i + 1; j < plsqlString.length(); j++) {
+                        char nextChar = plsqlString.charAt(j);
+                        if (Character.isJavaIdentifierPart(nextChar) && j == plsqlString.length() - 1) { //we have reached the end of the text
 
-	        nextChar = '.'; //this will make sure that the correct sustitution is made below by emulating an additional character
+                            nextChar = '.'; //this will make sure that the correct sustitution is made below by emulating an additional character
 
-	        j = j + 1;
-	    }
-	    if (!Character.isJavaIdentifierPart(nextChar)) { //potential end of substitutionvariable
+                            j = j + 1;
+                        }
+                        if (!Character.isJavaIdentifierPart(nextChar)) { //potential end of substitutionvariable
 
-	        if (j > i + 1) { //substituion variable found
+                            if (j > i + 1) { //substituion variable found
 
-                    String name = plsqlString.substring(i + 1, j);
-                    String value = definesMap.get(name.toUpperCase(Locale.ENGLISH));
-	            if (value == null || value.startsWith(Character.toString(defineValue))) {
-	                PromptDialog prompt = new PromptDialog(null, name, true);
-	                prompt.setVisible(true);
-	                value = prompt.getValue();
-	                definesMap.put(name.toUpperCase(Locale.ENGLISH), value);
-	                if (io != null) {
-		io.getOut().println((new StringBuilder()).append("> Variable ").append(name).append(" = \"").append(value).append("\"").toString());
-	                }
-	            }
-	            value = replaceAliases(value, definesMap, define, io);
-	            newString.append(value);
-	            if (nextChar == '.') {
-	                i = j;
-	            } else {
-	                i = j - 1;
-	            }
-                    } else {
-	            newString.append(c);
-	        }
-	        break;
-	    }
-	}
+                                String name = plsqlString.substring(i + 1, j);
+                                String value = definesMap.get(name.toUpperCase(Locale.ENGLISH));
+                                if (value == null || value.startsWith(Character.toString(defineValue))) {
+                                    PromptDialog prompt = new PromptDialog(null, name, true);
+                                    prompt.setVisible(true);
+                                    value = prompt.getValue();
+                                    definesMap.put(name.toUpperCase(Locale.ENGLISH), value);
+                                    if (io != null) {
+                                        io.getOut().println((new StringBuilder()).append("> Variable ").append(name).append(" = \"").append(value).append("\"").toString());
+                                    }
+                                }
+                                value = replaceAliases(value, definesMap, define, io);
+                                newString.append(value);
+                                if (nextChar == '.') {
+                                    i = j;
+                                } else {
+                                    i = j - 1;
+                                }
+                            } else {
+                                newString.append(c);
+                            }
+                            break;
+                        }
+                    }
                 }
             } else {
                 newString.append(c);
@@ -1287,19 +1302,18 @@ public class PlsqlFileExecutor {
         }
         return newString.toString();
     }
-    
+
     private void setExecutionResults(SQLExecutionResults executionResults) {
         this.executionResults = executionResults;
     }
-    
+
     private void setResultsToEditors(final SQLExecutionResults results, final DataObject obj, final String label) {
         if (results != null) {
             final List<Component> components = new ArrayList<Component>();
             final List<String> toolTips = new ArrayList<String>();
-            
+
             try {
                 SwingUtilities.invokeAndWait(new Runnable() {
-                    
                     @Override
                     public void run() {
                         for (SQLExecutionResult result : results.getResults()) {
@@ -1309,9 +1323,10 @@ public class PlsqlFileExecutor {
                                 }
                                 components.add(component);
                                 toolTips.add("<html>" + result.getStatementInfo().getSQL().replaceAll("\n", "<br>"));
+                                fixDataTablePopupMenu(result.getDataView());
                             }
                         }
-                        
+
                         if (plsqlEditor != null) {
                             plsqlEditor.setResults(components, toolTips);
                         }
@@ -1322,10 +1337,10 @@ public class PlsqlFileExecutor {
             } catch (InvocationTargetException ex) {
                 Exceptions.printStackTrace(ex);
             }
-            
+
         }
     }
-    
+
     public PlsqlEditor getPlsqlEditor(DataObject dataObj) {
         //Get all the data objects and save dataObjects that require auto Save
         TopComponent.Registry registry = TopComponent.getRegistry();
@@ -1340,10 +1355,10 @@ public class PlsqlFileExecutor {
                 }
             }
         }
-        
+
         return null;
     }
-    
+
     private void executeSqlPlusStart(String plsqlText, String firstWord, Document doc, InputOutput io) {
         try {
             String fileName = null;
@@ -1378,27 +1393,27 @@ public class PlsqlFileExecutor {
             Exceptions.printStackTrace(ex);
         }
     }
-      
+
     private final class SQLExecutor implements Runnable, Cancellable {
-        
+
         private static final int DEFAULT_PAGE_SIZE = 100;
         private final DatabaseConnection dbconn;
         private final String sqlStmt;
         private String label;
         private RequestProcessor.Task task;
         private DataObject parent;
-        
+
         public SQLExecutor(DataObject dataObj, DatabaseConnection dbconn, String sqlStmt, String label) {
             this.dbconn = dbconn;
             this.sqlStmt = sqlStmt + ";";
             this.parent = dataObj;
             this.label = label;
         }
-        
+
         public void setTask(RequestProcessor.Task task) {
             this.task = task;
         }
-        
+
         @Override
         public void run() {
             assert task != null : "Should have called setTask()"; // NOI18N
@@ -1417,6 +1432,7 @@ public class PlsqlFileExecutor {
 
         /**
          * Execute the sql
+         *
          * @param sql
          * @param i
          * @param i0
@@ -1429,16 +1445,16 @@ public class PlsqlFileExecutor {
             List<StatementInfo> statements = getStatements(sqlScript, startOffset, endOffset);
             List<SQLExecutionResult> results = new ArrayList<SQLExecutionResult>();
             String url = conn.getDatabaseURL();
-            
+
             for (Iterator i = statements.iterator(); i.hasNext();) {
                 cancelled = Thread.currentThread().isInterrupted();
                 if (cancelled) {
                     break;
                 }
-                
+
                 StatementInfo info = (StatementInfo) i.next();
                 String sql = info.getSQL();
-                
+
                 SQLExecutionResult result = null;
                 DataView view = DataView.create(conn, sql, DEFAULT_PAGE_SIZE);
 
@@ -1450,14 +1466,14 @@ public class PlsqlFileExecutor {
 
             // Persist SQL executed
             SQLHistoryManager.getInstance().save();
-            
+
             if (!cancelled) {
                 return new SQLExecutionResults(results);
             } else {
                 return null;
             }
         }
-        
+
         private List<StatementInfo> getStatements(String script, int startOffset, int endOffset) {
             List<StatementInfo> allStatements = new ArrayList<StatementInfo>();
             if (script.endsWith(";")) {
@@ -1466,20 +1482,20 @@ public class PlsqlFileExecutor {
             allStatements.add(new StatementInfo(script, startOffset, startOffset, startOffset, startOffset, endOffset, script.length()));
             return allStatements;
         }
-        
+
         private void handleExecutionResults(SQLExecutionResults executionResults) {
             if (executionResults == null) {
                 // execution cancelled
                 return;
             }
-            
+
             setExecutionResults(executionResults);
-            
+
             if (executionResults.size() <= 0) {
                 // no results, but successfull
                 return;
             }
-            
+
             if (executionResults.hasExceptions()) {
                 // there was at least one exception
                 displayErrors(executionResults);
@@ -1490,6 +1506,7 @@ public class PlsqlFileExecutor {
 
         /**
          * Display the exceptions
+         *
          * @param results
          */
         private void displayErrors(SQLExecutionResults results) {
@@ -1504,7 +1521,7 @@ public class PlsqlFileExecutor {
                 }
             }
         }
-        
+
         @Override
         public boolean cancel() {
             return task.cancel();
@@ -1526,5 +1543,148 @@ public class PlsqlFileExecutor {
             fileName = displayName;
         }
         return fileName;
+    }
+
+    private void fixDataTablePopupMenu(DataView view) {
+        try {
+            // Find the popup menu
+            Field field = view.getClass().getDeclaredField("delegate");
+            field.setAccessible(true);
+            final org.netbeans.modules.db.dataview.output.DataView delegate = (org.netbeans.modules.db.dataview.output.DataView) field.get(view);
+            field = delegate.getClass().getDeclaredField("dataViewUI");
+            field.setAccessible(true);
+            final Object dataViewUI = field.get(delegate);
+            field = dataViewUI.getClass().getDeclaredField("dataPanel");
+            field.setAccessible(true);
+            final Object dataPanel = field.get(dataViewUI);
+            field = dataPanel.getClass().getDeclaredField("tableUI");
+            field.setAccessible(true);
+            final Object tableUI = field.get(dataPanel);
+            field = tableUI.getClass().getDeclaredField("tablePopupMenu");
+            field.setAccessible(true);
+            JPopupMenu menu = (JPopupMenu) field.get(tableUI);
+            // Change the "Truncate Table" menu item
+            for (Component menuItem : menu.getComponents()) {
+                if (menuItem instanceof JMenuItem) {
+                    JMenuItem item = (JMenuItem) menuItem;
+                    if (item.getText().equals("Truncate Table")) {
+                        item.setText("Copy insert block to clipboard");
+                        for (ActionListener listener : item.getActionListeners()) {
+                            item.removeActionListener(listener);
+                        }
+                        item.addActionListener(new ActionListener() {
+                            @Override
+                            public void actionPerformed(ActionEvent e) {
+                                try {
+                                    //Get table name
+                                    Method method = delegate.getClass().getMethod("getDataViewDBTable");
+                                    method.setAccessible(true);
+                                    Object dataViewTable = method.invoke(delegate);
+                                    method = dataViewTable.getClass().getMethod("geTable", Integer.TYPE);
+                                    method.setAccessible(true);
+                                    Object table = method.invoke(dataViewTable, 0);
+                                    method = table.getClass().getMethod("getName");
+                                    method.setAccessible(true);
+                                    String tableName = (String) method.invoke(table);
+                                    //Get column names and initial NULL value
+                                    method = dataViewTable.getClass().getMethod("getColumnCount");
+                                    method.setAccessible(true);
+                                    int columnCount = (Integer) method.invoke(dataViewTable);
+                                    method = dataViewTable.getClass().getMethod("getColumnName", Integer.TYPE);
+                                    method.setAccessible(true);
+                                    int maxColumnNameSize = 0;
+                                    for (int i = 0; i < columnCount; i++) {
+                                        String columnName = ((String) method.invoke(dataViewTable, i)).toLowerCase(Locale.ENGLISH);
+                                        maxColumnNameSize = Math.max(maxColumnNameSize, columnName.length());
+                                    }
+                                    if (maxColumnNameSize > 30) {
+                                        maxColumnNameSize = 30;
+                                    }
+                                    List<String> columnNames = new ArrayList<String>();
+                                    Map<String, String> columnValues = new TreeMap<String, String>();
+                                    for (int i = 0; i < columnCount; i++) {
+                                        String columnName = ((String) method.invoke(dataViewTable, i)).toLowerCase(Locale.ENGLISH);
+                                        if (maxColumnNameSize - columnName.length() > 0) {
+                                            columnName = columnName + "                             ".substring(0, maxColumnNameSize - columnName.length());
+                                        }
+                                        columnNames.add(columnName);
+                                        columnValues.put(columnName, "NULL");
+                                    }
+                                    //Format declare section
+                                    StringBuilder insertSQL = new StringBuilder();
+                                    insertSQL.append("DECLARE\n");
+                                    insertSQL.append("   rec_ ").append(tableName.toLowerCase()).append("%ROWTYPE;\n");
+                                    insertSQL.append("BEGIN\n");
+                                    //Get all rows
+                                    method = delegate.getClass().getDeclaredMethod("getDataViewPageContext");
+                                    method.setAccessible(true);
+                                    Object pageContext = method.invoke(delegate);
+                                    method = pageContext.getClass().getDeclaredMethod("getCurrentRows");
+                                    method.setAccessible(true);
+                                    List<Object[]> currentRows = (List<Object[]>) method.invoke(pageContext);
+                                    //Get selected row numbers
+                                    method = tableUI.getClass().getMethod("getSelectedRows");
+                                    method.setAccessible(true);
+                                    int[] rows = (int[]) method.invoke(tableUI);
+                                    for (int j = 0; j < rows.length; j++) {
+                                        Object[] insertRow = currentRows.get(rows[j]);
+                                        for (int i = 0; i < insertRow.length; i++) {
+                                            Object object = insertRow[i];
+                                            String columnName = columnNames.get(i);
+                                            String value;
+                                            if (object == null) {
+                                                value = "NULL";
+                                            } else if (object instanceof BigDecimal) {
+                                                value = object.toString();
+                                            } else if (object instanceof Timestamp) {
+                                                String temp = object.toString();
+                                                if (temp.endsWith("00:00:00.0")) {
+                                                    value = "to_date('" + temp.substring(0, 10) + "', 'YYYY-MM-DD')";
+                                                } else {
+                                                    value = "to_date('" + temp.substring(0, 19) + "', 'YYYY-MM-DD HH24:MI:SS')";
+                                                }
+                                            } else {
+                                                value = "'" + object.toString().replace("'", "''") + "'";
+                                            }
+                                            String oldValue = columnValues.put(columnName, value);
+                                            if ((oldValue == null && value != null) || (oldValue != null && !oldValue.equals(value))) {
+                                                insertSQL.append("   rec_.").append(columnName).append(" := ");
+                                                insertSQL.append(value).append(";\n");
+                                            }
+                                        }
+                                        insertSQL.append("   INSERT INTO ").append(tableName.toLowerCase()).append(" VALUES rec_;\n");
+                                    }
+                                    //Format end of statement
+                                    insertSQL.append("END;");
+                                    //Copy to clipboard
+                                    Clipboard clipboard = Lookup.getDefault().lookup(ExClipboard.class);
+                                    if (clipboard != null) {
+                                        clipboard.setContents(new StringSelection(insertSQL.toString()), null);
+                                    }
+                                } catch (IllegalAccessException ex) {
+                                    Exceptions.printStackTrace(ex);
+                                } catch (IllegalArgumentException ex) {
+                                    Exceptions.printStackTrace(ex);
+                                } catch (InvocationTargetException ex) {
+                                    Exceptions.printStackTrace(ex);
+                                } catch (NoSuchMethodException ex) {
+                                    Exceptions.printStackTrace(ex);
+                                } catch (SecurityException ex) {
+                                    Exceptions.printStackTrace(ex);
+                                }
+                            }
+                        });
+                    }
+                }
+            }
+        } catch (IllegalArgumentException ex) {
+            Exceptions.printStackTrace(ex);
+        } catch (IllegalAccessException ex) {
+            Exceptions.printStackTrace(ex);
+        } catch (NoSuchFieldException ex) {
+            Exceptions.printStackTrace(ex);
+        } catch (SecurityException ex) {
+            Exceptions.printStackTrace(ex);
+        }
     }
 }
