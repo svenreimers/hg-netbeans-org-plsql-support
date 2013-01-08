@@ -1235,14 +1235,14 @@ public class PlsqlFileExecutor {
             char defineValue = 0;
 
             //check for - inside strings
-            if (Character.toString(c).equals("'") || Character.toString(c).equals("\"")) {
+            if (!insideString && i + 1 < plsqlString.length() && !Character.toString(plsqlString.charAt(i + 1)).equals("'")) {
                 if (!insideString && !Character.toString(plsqlString.charAt(i + 1)).equals("'")) {
                     insideString = !insideString;
                 }
             }
 
             //Check for - Comments           
-            if (!insideComment && Character.toString(c).equals("-") && Character.toString(plsqlString.charAt(i + 1)).equals("-")) {
+            if (!insideComment && Character.toString(c).equals("-") && i + 1 < plsqlString.length() && Character.toString(plsqlString.charAt(i + 1)).equals("-")) {
                 insideComment = true;
             } else if (insideComment && Character.toString(c).equals("\n")) {
                 insideComment = false;
