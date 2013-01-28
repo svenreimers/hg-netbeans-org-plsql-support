@@ -97,7 +97,7 @@ import org.openide.windows.InputOutput;
 import org.openide.windows.OutputWriter;
 
 @ActionID(id = "org.netbeans.modules.plsql.debug.PlsqlDebugAction", category = "PLSQL")
-@ActionRegistration(displayName = "#CTL_PlsqlDebugAction", iconBase = "org/netbeans/modules/plsql/debug/debug.png")
+@ActionRegistration(displayName = "#CTL_PlsqlDebugAction", iconBase = "org/netbeans/modules/plsql/debug/debug.png", lazy = true)
 @ActionReferences({
    @ActionReference(path = "Shortcuts", name = "DS-D"),
    @ActionReference(path = "Shortcuts", name = "OS-D"),
@@ -108,6 +108,11 @@ public final class PlsqlDebugAction extends CookieAction {
 
    private static final RequestProcessor RP = new RequestProcessor(PlsqlDebugAction.class.getName());
    private static final Logger log = Logger.getLogger(PlsqlDebugAction.class.getName());
+
+   public PlsqlDebugAction() {
+      super();
+      putValue(SHORT_DESCRIPTION, NbBundle.getMessage(PlsqlDebugAction.class, "CTL_PlsqlDebugActionDesc"));
+   }
 
    @Override
    protected void performAction(Node[] activatedNodes) {

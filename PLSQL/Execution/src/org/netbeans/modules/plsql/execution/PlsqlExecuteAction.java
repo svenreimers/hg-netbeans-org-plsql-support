@@ -55,6 +55,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.*;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
@@ -75,15 +77,18 @@ import org.openide.util.*;
 import org.openide.util.actions.Presenter;
 
 @ActionID(id = "org.netbeans.modules.plsql.execution.PlsqlExecuteAction", category = "PLSQL")
-@ActionRegistration(displayName = "#CTL_Execution", iconBase = "org/netbeans/modules/plsql/execution/execute.png")
+@ActionRegistration(displayName = "#CTL_PlsqlExecute", lazy = false)
 @ActionReferences({
     @ActionReference(path = "Shortcuts", name = "DS-E"),
     @ActionReference(path = "Shortcuts", name = "OS-E"),
     @ActionReference(path = "Editors/text/x-plsql/Popup", name = "org-netbeans-modules-plsql-execution-PlsqlExecuteAction",
-    position = 405, separatorBefore = 404)
+    position = 405, separatorBefore = 404),
+    @ActionReference(path = "Editors/text/x-plsql/Toolbars/Default", name = "org-netbeans-modules-plsql-execution-PlsqlExecuteAction",
+    position = 19500, separatorBefore = 19400)
 })
 public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAction, Presenter.Toolbar {
 
+    private static final Logger LOG = Logger.getLogger(PlsqlExecuteAction.class.getName());
     private static final String ICON_PATH = "org/netbeans/modules/plsql/execution/execute.png";
     private static final RequestProcessor RP = new RequestProcessor(PlsqlExecuteAction.class);
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
@@ -105,9 +110,8 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
     }
 
     public PlsqlExecuteAction(Lookup context) {
-        putValue(NAME, NbBundle.getMessage(PlsqlExecuteAction.class, "CTL_Execution"));
-        putValue(SHORT_DESCRIPTION, NbBundle.getMessage(PlsqlExecuteAction.class, "CTL_ExecutionDescription"));
-//        putValue(LONG_DESCRIPTION, NbBundle.getMessage(PlsqlExecuteAction.class, "CTL_ExecutionDescription"));
+        putValue(NAME, NbBundle.getMessage(PlsqlExecuteAction.class, "CTL_PlsqlExecute"));
+        putValue(SHORT_DESCRIPTION, NbBundle.getMessage(PlsqlExecuteAction.class, "CTL_PlsqlExecuteDescription"));
         putValue(SMALL_ICON, new ImageIcon(ImageUtilities.loadImage(ICON_PATH)));
 
         dataObject = context.lookup(DataObject.class);
@@ -193,7 +197,6 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
                 new ImageIcon(new BufferedImage(32, 32, BufferedImage.TYPE_BYTE_GRAY)), popup);
         button.setAction(this);
         button.addItemListener(new ItemListener() {
-
             @Override
             public void itemStateChanged(ItemEvent e) {
                 if (e.getStateChange() == ItemEvent.SELECTED) {
@@ -203,7 +206,6 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
         });
 
         popup.addPopupMenuListener(new PopupMenuListener() {
-
             @Override
             public void popupMenuCanceled(PopupMenuEvent e) {
                 button.setSelected(false);
@@ -288,7 +290,7 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
                             return;
                         }
                     } catch (SQLException ex) {
-                        return;
+                        LOG.log(Level.INFO, connection.toString(), ex);
                     }
                 }
             } else {
@@ -305,7 +307,6 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
         EditorCookie edCookie = dataObject.getLookup().lookup(EditorCookie.class);
         Document document = edCookie.getDocument();
         saveIfModified(dataObject);
-        List<PlsqlExecutableObject> blocks = null;
 
         DataObject obj = FileExecutionUtil.getDataObject(document);
         FileObject file = obj.getPrimaryFile();
@@ -318,8 +319,8 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
         }
 
         PlsqlExecutableBlocksMaker blockMaker = new PlsqlExecutableBlocksMaker(document);
-        blocks = blockMaker.makeExceutableObjects();
-                
+        List<PlsqlExecutableObject> blocks = blockMaker.makeExceutableObjects();
+
         //if the user has selected any text in the window, create exec block using selected text only
         if (validator.isValidTDB(dataObject)) {
             JEditorPane[] panes = edCookie.getOpenedPanes();
@@ -337,11 +338,11 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
                     }
                     if (!newblocks.isEmpty()) {
                         blocks = newblocks;
-                    }else {
+                    } else {
                         blocks = new ArrayList<PlsqlExecutableObject>();
                         blocks.add(new PlsqlExecutableObject(0, selectedSql, "SQL", PlsqlExecutableObjectType.STATEMENT, 0, selectedSql.length() - 1));
                     }
-                }else if (OptionsUtilities.isCommandWindowAutoSelectEnabled()) {
+                } else if (OptionsUtilities.isCommandWindowAutoSelectEnabled()) {
                     List<PlsqlExecutableObject> newblocks = new ArrayList<PlsqlExecutableObject>();
 
                     int caretPos = 0;
@@ -372,7 +373,7 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
 
     private void saveIfModified(DataObject dataObj) {
         try {
-            SaveCookie saveCookie = dataObj.getCookie(SaveCookie.class);
+            SaveCookie saveCookie = dataObj.getLookup().lookup(SaveCookie.class);
             if (saveCookie != null) {
                 saveCookie.save();
             }
@@ -400,7 +401,6 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
         @Override
         public void run() {
             ProgressHandle handle = ProgressHandleFactory.createHandle("Executing database file...", this);
-            DataObject obj = null;
             try {
                 handle.start();
                 if (connection == connectionProvider.getTemplateConnection()) {
@@ -409,8 +409,7 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
                         return;
                     }
                 }
-
-                obj = FileExecutionUtil.getDataObject(document);
+                final DataObject obj = FileExecutionUtil.getDataObject(document);
                 FileObject file = obj.getPrimaryFile();
                 if (file == null) {
                     return;

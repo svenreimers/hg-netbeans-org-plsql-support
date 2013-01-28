@@ -28,6 +28,13 @@
     <folder name="Editors">
         <folder name="text">
             <folder name="x-plsql">
+                <folder name="Keybindings">
+                    <folder name="NetBeans">
+                        <folder name="Defaults">
+                            <file name="org-netbeans-modules-plsql-execution-keybindings.xml" url="keybindings.xml"/>
+                        </folder>
+                    </folder>
+                </folder>
                 <folder name="Popup">
                     <file name="org-netbeans-modules-plsql-execution-separatorBefore.instance">
                         <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
@@ -44,17 +51,6 @@
                 </folder>
                 <folder name="Toolbars">
                     <folder name="Default">
-                        <file name="Separator1.instance">
-                            <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
-                            <attr name="position" intvalue="19400"/>
-                        </file>
-                        <file name="org-netbeans-modules-plsql-execution-PlsqlExecuteAction.instance">
-                            <attr bundlevalue="org.netbeans.modules.plsql.execution.Bundle#CTL_ExecutionDescription" name="displayName"/>
-                            <attr name="position" intvalue="19500"/>
-                        </file>
-                <!-- <file name="org-netbeans-modules-plsql-execution-PlsqlCommitAction.instance">
-                     <attr name="position" intvalue="19600"/>
-                  </file>-->
                   <!--Commit and Rollback-->
                         <file name="Separator2.instance">
                             <attr name="instanceClass" stringvalue="javax.swing.JSeparator"/>
