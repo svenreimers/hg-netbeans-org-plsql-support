@@ -47,6 +47,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import org.openide.awt.ActionID;
@@ -90,6 +91,14 @@ public final class PlsqlSaveCommandAction extends CookieAction {
                 selected = fc.getSelectedFile();
             } else {
                 return;
+            }
+            
+            if (selected.exists()) {
+                String msg = selected.getName() + " already exists.\nOverwrite the file ?";
+                int confirm = JOptionPane.showConfirmDialog(null, msg, "Save Script", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                if (confirm != JOptionPane.YES_OPTION) {
+                    return;
+                }
             }
 
             //Write the contents to the new file
