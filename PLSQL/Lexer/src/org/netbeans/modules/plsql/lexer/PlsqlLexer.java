@@ -154,7 +154,7 @@ public class PlsqlLexer implements Lexer<PlsqlTokenId> {
                switch (input.read()) {
                   case '-': // in single-line comment
                      final String line = readLine();
-                     if (line.startsWith("@Ignore") || line.startsWith("@Approve") || line.startsWith("@Allow")) {
+                     if (line.startsWith("@Ignore") || line.startsWith("@Approve") || line.startsWith("@Allow") || line.startsWith("@Over")) {
                         return token(PlsqlTokenId.IGNORE_MARKER);
                      } else {
                         return token(PlsqlTokenId.LINE_COMMENT);
