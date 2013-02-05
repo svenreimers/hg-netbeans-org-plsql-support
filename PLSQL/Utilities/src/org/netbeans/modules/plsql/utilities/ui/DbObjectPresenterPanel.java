@@ -36,7 +36,7 @@
  * made subject to such option by the copyright holder.
  *
  * Contributor(s):
- *  Rifki Razick
+ * 
  *
  * Portions Copyrighted 2011 Sun Microsystems, Inc.
  */
@@ -59,19 +59,19 @@ import org.openide.filesystems.FileUtil;
 import org.openide.loaders.DataObject;
 import org.openide.util.Exceptions;
 
-public class PlSqlMethodPresenterPanel {
+public class DbObjectPresenterPanel {
 
    private JPanel panel;
    private JTextComponent editorPane;
-   private String method;
+   private String defaultValue;
    private static String mimeType = "text/x-plsql";
    private Project project;
    private String label;
 
-   public PlSqlMethodPresenterPanel(Project project, String method, String label) {
-      this.method = method;
+   public DbObjectPresenterPanel(final Project project, String label, String defaultValue) {      
       this.project = project;
       this.label = label;
+      this.defaultValue = defaultValue;
    }
 
    public JComponent getPanel() {
@@ -108,7 +108,7 @@ public class PlSqlMethodPresenterPanel {
       }      
 
       panel.add(BorderLayout.CENTER, sp);      
-      editorPane.setText(method);
+      editorPane.setText(defaultValue);
       editorPane.selectAll();
       textLabel.setLabelFor(editorPane);
       editorPane.requestFocus();
@@ -116,9 +116,9 @@ public class PlSqlMethodPresenterPanel {
    }
 
    /*
-    * returns the pl/sql method selected by the user
+    * returns the object selected by the user
     */
-   public String getMethod() {
+   public String getInputText() {
       return editorPane.getText().trim();
    }
 }

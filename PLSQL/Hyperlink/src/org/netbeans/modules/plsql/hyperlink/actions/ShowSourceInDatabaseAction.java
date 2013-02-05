@@ -60,6 +60,9 @@ import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.project.Project;
 import org.netbeans.editor.BaseDocument;
 import org.netbeans.editor.Utilities;
+import org.netbeans.modules.plsql.utilities.ui.DbObjectPresenterPanel;
+import org.openide.DialogDescriptor;
+import org.openide.DialogDisplayer;
 import org.openide.cookies.EditorCookie;
 import org.openide.loaders.DataObject;
 import org.openide.nodes.Node;
@@ -101,16 +104,13 @@ public class ShowSourceInDatabaseAction extends CookieAction {
          @Override
          public void run() {
             DataObject dataObj = null;
-            Frame mainWindow = WindowManager.getDefault().getMainWindow();
-            ShowDbObjectDialog findDlg = new ShowDbObjectDialog(mainWindow, project, "", true);
-            findDlg.setLocationRelativeTo(mainWindow);
-            findDlg.setTitle(NbBundle.getMessage(ShowDatabaseObjectAction.class, "LBL_ShowSourceInDatabaseTitle"));
-            findDlg.setLable("Database View or Package Name:");
-            findDlg.setVisible(true);
-            if (!findDlg.isCancelled()) {
+           
+            DbObjectPresenterPanel dbObjPanel = new DbObjectPresenterPanel(project, "Database View or Package Name:", "");
+            DialogDescriptor dbObjDlg = new DialogDescriptor(dbObjPanel.getPanel(), NbBundle.getMessage(ShowDatabaseObjectAction.class, "LBL_ShowSourceInDatabaseTitle"));
+            if (DialogDescriptor.OK_OPTION == DialogDisplayer.getDefault().notify(dbObjDlg)) {            
                DatabaseConnection databaseConnection = connectionProvider.getPooledDatabaseConnection(false);
                try {
-                  objName = findDlg.getInputText();
+                  objName = dbObjPanel.getInputText();
                   if (cache.isView(objName, databaseConnection)) {
                      try {
                         PlsqlHyperlinkUtil.openAsTempFile(objName, VIEW, databaseConnection, project, null);

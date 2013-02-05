@@ -7,36 +7,6 @@
             <suite-component/>
             <module-dependencies>
                 <dependency>
-                    <code-name-base>org.netbeans.modules.plsqlsupport.db</code-name-base>
-                    <build-prerequisite/>
-                    <compile-dependency/>
-                    <run-dependency/>
-                </dependency>
-                <dependency>
-                    <code-name-base>org.netbeans.modules.plsql.filetype</code-name-base>
-                    <build-prerequisite/>
-                    <compile-dependency/>
-                    <run-dependency>
-                        <specification-version>1.8.0</specification-version>
-                    </run-dependency>
-                </dependency>
-                <dependency>
-                    <code-name-base>org.netbeans.modules.plsql.lexer</code-name-base>
-                    <build-prerequisite/>
-                    <compile-dependency/>
-                    <run-dependency>
-                        <specification-version>1.0</specification-version>
-                    </run-dependency>
-                </dependency>
-                <dependency>
-                    <code-name-base>org.netbeans.modules.plsql.utilities</code-name-base>
-                    <build-prerequisite/>
-                    <compile-dependency/>
-                    <run-dependency>
-                        <specification-version>1.0</specification-version>
-                    </run-dependency>
-                </dependency>
-                <dependency>
                     <code-name-base>org.netbeans.modules.db</code-name-base>
                     <build-prerequisite/>
                     <compile-dependency/>
@@ -72,6 +42,36 @@
                     </run-dependency>
                 </dependency>
                 <dependency>
+                    <code-name-base>org.netbeans.modules.plsql.filetype</code-name-base>
+                    <build-prerequisite/>
+                    <compile-dependency/>
+                    <run-dependency>
+                        <specification-version>1.8.0</specification-version>
+                    </run-dependency>
+                </dependency>
+                <dependency>
+                    <code-name-base>org.netbeans.modules.plsql.lexer</code-name-base>
+                    <build-prerequisite/>
+                    <compile-dependency/>
+                    <run-dependency>
+                        <specification-version>1.0</specification-version>
+                    </run-dependency>
+                </dependency>
+                <dependency>
+                    <code-name-base>org.netbeans.modules.plsql.utilities</code-name-base>
+                    <build-prerequisite/>
+                    <compile-dependency/>
+                    <run-dependency>
+                        <specification-version>1.0</specification-version>
+                    </run-dependency>
+                </dependency>
+                <dependency>
+                    <code-name-base>org.netbeans.modules.plsqlsupport.db</code-name-base>
+                    <build-prerequisite/>
+                    <compile-dependency/>
+                    <run-dependency/>
+                </dependency>
+                <dependency>
                     <code-name-base>org.netbeans.modules.projectapi</code-name-base>
                     <build-prerequisite/>
                     <compile-dependency/>
@@ -86,6 +86,14 @@
                     <compile-dependency/>
                     <run-dependency>
                         <specification-version>7.19.1.1</specification-version>
+                    </run-dependency>
+                </dependency>
+                <dependency>
+                    <code-name-base>org.openide.dialogs</code-name-base>
+                    <build-prerequisite/>
+                    <compile-dependency/>
+                    <run-dependency>
+                        <specification-version>7.25.1</specification-version>
                     </run-dependency>
                 </dependency>
                 <dependency>

@@ -53,6 +53,9 @@ import java.awt.Frame;
 import javax.swing.JOptionPane;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.project.Project;
+import org.netbeans.modules.plsql.utilities.ui.DbObjectPresenterPanel;
+import org.openide.DialogDescriptor;
+import org.openide.DialogDisplayer;
 import org.openide.cookies.EditorCookie;
 import org.openide.loaders.DataObject;
 import org.openide.nodes.Node;
@@ -94,15 +97,11 @@ public class ShowDatabaseObjectAction extends CookieAction {
       EventQueue.invokeLater(new Runnable() {
 
          @Override
-         public void run() {
-            Frame mainWindow = WindowManager.getDefault().getMainWindow();
-            ShowDbObjectDialog findDlg = new ShowDbObjectDialog(mainWindow, project, "", true);
-            findDlg.setLocationRelativeTo(mainWindow);
-            findDlg.setTitle(NbBundle.getMessage(ShowDatabaseObjectAction.class, "LBL_ShowDatabaseDialogTitle"));
-            findDlg.setLable("Database Table, View or Package Name:");
-            findDlg.setVisible(true);
-            if (!findDlg.isCancelled()) {
-               objName = findDlg.getInputText();
+         public void run() {            
+            DbObjectPresenterPanel dbObjPanel = new DbObjectPresenterPanel(project, "Database Table, View or Package Name:", "");
+            DialogDescriptor dbObjDlg = new DialogDescriptor(dbObjPanel.getPanel(), NbBundle.getMessage(ShowDatabaseObjectAction.class, "LBL_ShowDatabaseDialogTitle"));
+            if (DialogDescriptor.OK_OPTION == DialogDisplayer.getDefault().notify(dbObjDlg)) {
+               objName = dbObjPanel.getInputText();
                DatabaseConnection databaseConnection = connectionProvider.getPooledDatabaseConnection(false);
                try {
                   if (cache.isView(objName, databaseConnection)) {
