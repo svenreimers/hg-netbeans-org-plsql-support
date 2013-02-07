@@ -29,6 +29,7 @@
             <file name="wrong-end-name-annotation.xml" url="resources/wrong-end-name-annotation.xml"/>
             <file name="if-null-annotation.xml" url="resources/if-null-annotation.xml"/>
             <file name="cursor-where-clause-annotation.xml" url="resources/cursor-where-clause-annotation.xml"/>
+            <file name="wrong-ignore-marker-annotation.xml" url="resources/wrong-ignore-marker-annotation.xml"/>
         </folder>
         <folder name="GlyphGutterActions">
             <file name="org-netbeans-modules-plsql-annotation-PlsqlAnnotationActionProvider.instance">
