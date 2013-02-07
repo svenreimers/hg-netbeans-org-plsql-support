@@ -57,12 +57,13 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import org.netbeans.modules.plsql.annotation.annotations.PlsqlWrongIgnoreMarkerAnnotation;
 
 /**
  *
  * @author subslk
  */
-public class GenericPlsqlAnnotations implements Annotation{
+public class GenericPlsqlAnnotations implements Annotation {
 
    public static final String BLOCK_FUNCTION_IMPL = "FUNCTION_IMPL";
    public static final String BLOCK_FUNCTION_DEF = "FUNCTION_DEF";
@@ -73,8 +74,8 @@ public class GenericPlsqlAnnotations implements Annotation{
    public static final String DEFAULT_ANNOTATIONS = " DEFAULT_ANNOTATIONS";
    public static final String BLOCK_STATEMENT = "STATEMENT";
 
-    @Override
-    public void loadConfiguration() {
+   @Override
+   public void loadConfiguration() {
 
       final PlsqlWrongFunctionParamAnnotation wrongParamAnnotation = PlsqlWrongFunctionParamAnnotation.getDummyInstance();
       final PlsqlWrongParamOrderAnnotation wrongOrderAnnotation = PlsqlWrongParamOrderAnnotation.getDummyInstance();
@@ -83,7 +84,7 @@ public class GenericPlsqlAnnotations implements Annotation{
 
       final Set<PlsqlAnnotation> procDefAnnotations = new HashSet<PlsqlAnnotation>();
       configuration.put(BLOCK_PROCEDURE_DEF, procDefAnnotations);
-      
+
       final Set<PlsqlAnnotation> procImplAnnotations = new HashSet<PlsqlAnnotation>();
       configuration.put(BLOCK_PROCEDURE_IMPL, procImplAnnotations);
 
@@ -95,7 +96,7 @@ public class GenericPlsqlAnnotations implements Annotation{
 
       final Set<PlsqlAnnotation> ifAnnotations = new HashSet<PlsqlAnnotation>();
       configuration.put(BLOCK_IF, ifAnnotations);
-      
+
       final Set<PlsqlAnnotation> cursorAnnotations = new HashSet<PlsqlAnnotation>();
       configuration.put(BLOCK_CURSOR, cursorAnnotations);
 
@@ -138,51 +139,54 @@ public class GenericPlsqlAnnotations implements Annotation{
       }
    }
 
-    @Override
-    public Map<String, Set<PlsqlAnnotation>> getConfiguration() {
-        return configuration;
-    }
+   @Override
+   public Map<String, Set<PlsqlAnnotation>> getConfiguration() {
+      return configuration;
+   }
 
-    @Override
-    public String getType(PlsqlBlock block) {
-        if (block == null) {
-            return TOKEN_ERROR_SYS;
-        }
-        if (block.getType() == PlsqlBlockType.PROCEDURE_DEF) {
-            return BLOCK_PROCEDURE_DEF;
-        } else if (block.getType() == PlsqlBlockType.PROCEDURE_IMPL) {
-            return BLOCK_PROCEDURE_IMPL;
-        } else if (block.getType() == PlsqlBlockType.FUNCTION_DEF) {
-            return BLOCK_FUNCTION_DEF;
-        } else if (block.getType() == PlsqlBlockType.FUNCTION_IMPL) {
-            return BLOCK_FUNCTION_IMPL;
-        } else if (block.getType() == PlsqlBlockType.IF) {
-            return BLOCK_IF;
-        } else if (block.getType() == PlsqlBlockType.CURSOR) {
-            return BLOCK_CURSOR;
-        } else if (block.getType() == PlsqlBlockType.STATEMENT) {
-            return BLOCK_STATEMENT;
-        } else {
-            return TOKEN_ERROR_SYS;
-        }
+   @Override
+   public String getType(PlsqlBlock block) {
+      if (block == null) {
+         return TOKEN_ERROR_SYS;
+      }
+      if (block.getType() == PlsqlBlockType.PROCEDURE_DEF) {
+         return BLOCK_PROCEDURE_DEF;
+      } else if (block.getType() == PlsqlBlockType.PROCEDURE_IMPL) {
+         return BLOCK_PROCEDURE_IMPL;
+      } else if (block.getType() == PlsqlBlockType.FUNCTION_DEF) {
+         return BLOCK_FUNCTION_DEF;
+      } else if (block.getType() == PlsqlBlockType.FUNCTION_IMPL) {
+         return BLOCK_FUNCTION_IMPL;
+      } else if (block.getType() == PlsqlBlockType.IF) {
+         return BLOCK_IF;
+      } else if (block.getType() == PlsqlBlockType.CURSOR) {
+         return BLOCK_CURSOR;
+      } else if (block.getType() == PlsqlBlockType.STATEMENT) {
+         return BLOCK_STATEMENT;
+      } else {
+         return TOKEN_ERROR_SYS;
+      }
 
-    }
+   }
 
-    @Override
-    public String[] getAllAnnotationTypes() {
-        if (!configuration.isEmpty()) {
-            String[] keys = configuration.keySet().toArray(new String[0]);
-            for (String key : keys) {
-                Set<PlsqlAnnotation> allnnotations = configuration.get(key);
-                Iterator<PlsqlAnnotation> iterator = allnnotations.iterator();
-                while (iterator.hasNext()) {
-                    PlsqlAnnotation next = iterator.next();
-                    if (!allAnnotationTypes.contains(next.getAnnotationType())) {
-                        allAnnotationTypes.add(next.getAnnotationType());
-                    }
-                }
+   @Override
+   public String[] getAllAnnotationTypes() {
+      if (!configuration.isEmpty()) {
+         String[] keys = configuration.keySet().toArray(new String[0]);
+         for (String key : keys) {
+            Set<PlsqlAnnotation> allnnotations = configuration.get(key);
+            Iterator<PlsqlAnnotation> iterator = allnnotations.iterator();
+            while (iterator.hasNext()) {
+               PlsqlAnnotation next = iterator.next();
+               if (!allAnnotationTypes.contains(next.getAnnotationType())) {
+                  allAnnotationTypes.add(next.getAnnotationType());
+               }
             }
-        }
-        return allAnnotationTypes.toArray(new String[]{});
-    }
+         }
+         if (!allAnnotationTypes.contains("Plsql-wrong-ignore-marker-annotation")) {
+            allAnnotationTypes.add("Plsql-wrong-ignore-marker-annotation");
+         }
+      }
+      return allAnnotationTypes.toArray(new String[]{});
+   }
 }
