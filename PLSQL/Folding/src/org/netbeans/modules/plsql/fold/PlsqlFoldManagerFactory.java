@@ -52,12 +52,12 @@ public class PlsqlFoldManagerFactory implements FoldManagerFactory {
 
    @Override
    public FoldManager createFoldManager() {
-      if (System.getProperty("plsql.fold.manager").equals("new")) {
-         return new NewPlsqlFoldManager();
-      }
       if (System.getProperty("plsql.fold.manager").equals("custom")) {
          return new CustomFoldManager();
       }
-      return new PlsqlFoldManager();
+      if (System.getProperty("plsql.fold.manager").equals("old")) {
+         return new PlsqlFoldManager();
+      }
+      return new NewPlsqlFoldManager();
    }
 }

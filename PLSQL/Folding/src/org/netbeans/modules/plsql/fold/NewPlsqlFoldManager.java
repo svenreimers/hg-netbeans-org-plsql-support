@@ -42,8 +42,6 @@
 package org.netbeans.modules.plsql.fold;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +49,6 @@ import java.util.Observable;
 import java.util.Observer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import javax.swing.event.DocumentEvent;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
@@ -77,19 +74,19 @@ import org.openide.util.RequestProcessor;
 public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
 
    private static final Logger LOG = Logger.getLogger(NewPlsqlFoldManager.class.getName());
-//   public static final FoldType CUSTOM_FOLD_TYPE = new FoldType("custom-fold"); // NOI18N
    private FoldOperation operation;
    private Document doc;
+   // XXX replace with Map to be able to test if mark already exist before adding new fold.
+//   private Map<Integer, FoldMarkInfo> markArray = new HashMap<Integer, FoldMarkInfo>();
    private org.netbeans.editor.GapObjectArray markArray = new org.netbeans.editor.GapObjectArray();
    private int minUpdateMarkOffset = Integer.MAX_VALUE;
    private int maxUpdateMarkOffset = -1;
    private List<Fold> removedFoldList;
    private Map<String, Boolean> customFoldId = new HashMap<String, Boolean>();
-   private static final RequestProcessor RP = new RequestProcessor(NewPlsqlFoldManager.class.getName(),
-           1, false, false);
+   private static final RequestProcessor RP = new RequestProcessor(NewPlsqlFoldManager.class.getName(), 1, false, false);
    private final RequestProcessor.Task task = RP.create(this);
-//   private NewPlsqlFoldManager observer;
    private boolean initial = true;
+   private PlsqlBlockFactory blockFactory;
 
    @Override
    public void init(FoldOperation operation) {
@@ -106,31 +103,22 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
    @Override
    public void initFolds(FoldHierarchyTransaction transaction) {
       doc = getOperation().getHierarchy().getComponent().getDocument();
-      final PlsqlBlockFactory blockFactory = getBlockFactory();
+      blockFactory = getBlockFactory();
       if (blockFactory != null) {
-//         if (observer != null) {
-//            blockFactory.deleteObserver(observer);
-//         }
          blockFactory.addObserver(this);
-//         observer = this;
       }
       task.schedule(300);
    }
 
-   //XXX: seems NewPlsqlFoldManager needs to listen to PlsqlBlockFactory changes, instead of directly to document through FoldManager interface 
    @Override
    public void insertUpdate(DocumentEvent evt, FoldHierarchyTransaction transaction) {
       processRemovedFolds(transaction);
-//      myRemoveFolds(transaction);
-//      task.schedule(300);
    }
 
    @Override
    public void removeUpdate(DocumentEvent evt, FoldHierarchyTransaction transaction) {
       processRemovedFolds(transaction);
-//      myRemoveFolds(transaction);
       removeAffectedMarks(evt, transaction);
-//      task.schedule(300);
    }
 
    @Override
@@ -174,7 +162,6 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
       ((BaseDocument) doc).readLock();
       try {
 
-         final PlsqlBlockFactory blockFactory = getBlockFactory();
          if (blockFactory != null) {
             FoldHierarchy hierarchy = getOperation().getHierarchy();
             hierarchy.lock();
@@ -187,25 +174,18 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
                }
                if (LOG.isLoggable(Level.FINE)) {
                   LOG.log(Level.FINE, "Updating: {0}", System.identityHashCode(this));
+                  LOG.log(Level.FINE, "blockFactory.getBlockHierarchy().size(): {0}", blockFactory.getBlockHierarchy().size());
+                  LOG.log(Level.FINE, "blockFactory.getNewBlocks().size(): {0}", blockFactory.getNewBlocks().size());
+                  LOG.log(Level.FINE, "blockFactory.getRemovedBlocks().size(): {0}", blockFactory.getRemovedBlocks().size());
                }
                FoldHierarchyTransaction transaction = getOperation().openTransaction();
                try {
-                  //Initialize document hierarchy
-                  blockFactory.initHierarchy(doc);
                   //Add new blocks to the hierarchy
-                  List<PlsqlBlock> blocks = blockFactory.getBlockHierarchy();
-//                  List<PlsqlBlock> blocks = blockFactory.getNewBlocks();
-//                  if (initial) {
-//                     blocks = blockFactory.getBlockHierarchy();
-//                     initial = false;
-//                  }
-//                  List<PlsqlBlock> removedBlocks = blockFactory.getRemovedBlocks();
-
-//                  final Fold root = hierarchy.getRootFold();
-//                  final List<FoldInfo> collapsedFolds = new ArrayList<FoldInfo>();
-//                  getCollapsedFolds(root, collapsedFolds);
-//                  addFolds(newBlocks, transaction, collapsedFolds);
-//                  addFolds(blockFactory.getCustomFolds(), transaction, collapsedFolds);
+                  List<PlsqlBlock> blocks = blockFactory.getNewBlocks();
+                  if (initial) {
+                     blocks = blockFactory.getBlockHierarchy();
+                     initial = false;
+                  }
 
                   updateFolds(blocks, transaction);
                   //Add custom fold blocks
@@ -277,23 +257,27 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
 
    private FoldMarkInfo getMark(int index) {
       return (FoldMarkInfo) markArray.getItem(index);
+//      return markArray.get(index);
    }
 
    private int getMarkCount() {
       return markArray.getItemCount();
+//      return markArray.size();
    }
 
    private void removeMark(int index) {
-      if (LOG.isLoggable(Level.FINE)) {
-         LOG.log(Level.FINE, "Removing mark from ind={0}: {1}", new Object[]{index, getMark(index)}); // NOI18N
+      if (LOG.isLoggable(Level.FINER)) {
+         LOG.log(Level.FINER, "Removing mark from ind={0}: {1}", new Object[]{index, getMark(index)}); // NOI18N
       }
       markArray.remove(index, 1);
+//      markArray.remove(index);
    }
 
    private void insertMark(int index, FoldMarkInfo mark) {
+//      markArray.put(index, mark);
       markArray.insertItem(index, mark);
-      if (LOG.isLoggable(Level.FINE)) {
-         LOG.log(Level.FINE, "Inserted mark at ind={0}: {1}", new Object[]{index, mark}); // NOI18N
+      if (LOG.isLoggable(Level.FINER)) {
+         LOG.log(Level.FINER, "Inserted mark at ind={0}: {1}", new Object[]{index, mark}); // NOI18N
       }
    }
 
@@ -326,28 +310,15 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
 
    private List<FoldMarkInfo> getMarkList(List<PlsqlBlock> blocks) {
       List<FoldMarkInfo> markList = new ArrayList<FoldMarkInfo>();
-//      for (PlsqlBlock block : blocks) {
-//         Token token = blocks.token();
-//         List<FoldMarkInfo> info;
       try {
-         scanToken(markList, blocks);
+         scanBlocks(markList, blocks);
       } catch (BadLocationException e) {
          LOG.log(Level.WARNING, null, e);
-//            info = null;
       }
-
-//         if (info != null) {
-//            if (markList == null) {
-//               markList = new ArrayList<FoldMarkInfo>();
-//            }
-//            markList.addAll(info);
-//         }
-//      }
-
       return markList;
    }
 
-   private void processTokenList(List<PlsqlBlock> blocks, FoldHierarchyTransaction transaction) {
+   private void processBlocks(List<PlsqlBlock> blocks, FoldHierarchyTransaction transaction) {
       List<FoldMarkInfo> markList = getMarkList(blocks);
       int markListSize;
       if (markList != null && ((markListSize = markList.size()) > 0)) {
@@ -382,8 +353,8 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
                   arrayMark.release(false, transaction);
                }
                removeMark(arrayMarkIndex);
-               if (LOG.isLoggable(Level.FINE)) {
-                  LOG.log(Level.FINE, "Removed dup mark from ind={0}: {1}", new Object[]{arrayMarkIndex, arrayMark}); // NOI18N
+               if (LOG.isLoggable(Level.FINER)) {
+                  LOG.log(Level.FINER, "Removed dup mark from ind={0}: {1}", new Object[]{arrayMarkIndex, arrayMark}); // NOI18N
                }
                if (arrayMarkIndex < getMarkCount()) {
                   arrayMark = getMark(arrayMarkIndex);
@@ -395,8 +366,8 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
             }
             // Insert the listmark
             insertMark(arrayMarkIndex, listMark);
-            if (LOG.isLoggable(Level.FINE)) {
-               LOG.log(Level.FINE, "Inserted mark at ind={0}: {1}", new Object[]{arrayMarkIndex, listMark}); // NOI18N
+            if (LOG.isLoggable(Level.FINER)) {
+               LOG.log(Level.FINER, "Inserted mark at ind={0}: {1}", new Object[]{arrayMarkIndex, listMark}); // NOI18N
             }
             arrayMarkIndex++;
          }
@@ -406,7 +377,7 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
    private void updateFolds(List<PlsqlBlock> blocks, FoldHierarchyTransaction transaction) {
 
       if (blocks != null && !blocks.isEmpty()) {
-         processTokenList(blocks, transaction);
+         processBlocks(blocks, transaction);
       }
 
       if (maxUpdateMarkOffset == -1) { // no updates
@@ -518,40 +489,8 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
          sb.append(' ');
       }
    }
-   private static Pattern pattern = Pattern.compile(
-           "(<\\s*editor-fold"
-           + // id="x"[opt] defaultstate="y"[opt] desc="z"[opt] defaultstate="a"[opt]
-           // id must be first, the rest of attributes in random order
-           "(?:(?:\\s+id=\"(\\S*)\")?(?:\\s+defaultstate=\"(\\S*?)\")?(?:\\s+desc=\"([\\S \\t]*?)\")?(?:\\s+defaultstate=\"(\\S*?)\")?)"
-           + "\\s*>)|(?:</\\s*editor-fold\\s*>)"); // NOI18N
 
-   private void scanToken(List<FoldMarkInfo> list, List<PlsqlBlock> blocks) throws BadLocationException {
-      // ignore any token that is not comment
-//      if (token.id().primaryCategory() != null && token.id().primaryCategory().startsWith("comment")) { //NOI18N
-//         Matcher matcher = pattern.matcher(token.text());
-//         if (matcher.find()) {
-//            if (matcher.group(1) != null) { // fold's start mark found
-//               boolean state;
-//               if (matcher.group(3) != null) {
-//                  state = "collapsed".equals(matcher.group(3)); // remember the defaultstate // NOI18N
-//               } else {
-//                  state = "collapsed".equals(matcher.group(5));
-//               }
-//
-//               if (matcher.group(2) != null) { // fold's id exists
-//                  Boolean collapsed = (Boolean) customFoldId.get(matcher.group(2));
-//                  if (collapsed != null) {
-//                     state = collapsed.booleanValue(); // fold's state is already known from the past
-//                  } else {
-//                     customFoldId.put(matcher.group(2), Boolean.valueOf(state));
-//                  }
-//               }
-//               return new FoldMarkInfo(true, token.offset(null), matcher.end(0), matcher.group(2), state, matcher.group(4)); // NOI18N
-//            } else { // fold's end mark found
-//               return new FoldMarkInfo(false, token.offset(null), matcher.end(0), null, false, null);
-//            }
-//         }
-//      }
+   private void scanBlocks(List<FoldMarkInfo> list, List<PlsqlBlock> blocks) throws BadLocationException {
       for (PlsqlBlock block : blocks) {
 
          FoldType foldType = null;
@@ -626,36 +565,14 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
                foldType = PlsqlFoldTypes.JAVASOURCE;
                description = block.getPrefix() + "JAVA SOURCE";
             }
-            final int length = block.getPrefix().length() + block.getName().length();
-//         List<FoldMarkInfo> list = new ArrayList<FoldMarkInfo>();
             //XXX: find out what offsets are needed (check CustomFoldManager when .php is run):
-            list.add(new FoldMarkInfo(foldType, true, block.getStartOffset(), length, block.getName(), false, description));
+            final FoldMarkInfo foldMarkInfo = new FoldMarkInfo(foldType, true, block.getStartOffset(), 0, block.getName(), isCollapsed(foldType), description);
+            // XXX: check if mark exist
+            list.add(foldMarkInfo);
             list.add(new FoldMarkInfo(foldType, false, block.getEndOffset(), 0, null, false, null));
-            scanToken(list, block.getChildBlocks());
-//         return list;
+            scanBlocks(list, block.getChildBlocks());
          }
       }
-//      return null;
-   }
-
-   private boolean myRemoveFolds(FoldHierarchyTransaction transaction) {
-      final PlsqlBlockFactory blockFactory = getBlockFactory();
-      if (blockFactory == null) {
-         return true;
-      }
-      final FoldHierarchy fh = getOperation().getHierarchy();
-      //Get folds from Block maker
-      final Fold root = fh.getRootFold();
-      final List<PlsqlBlock> oldBlocks = blockFactory.getRemovedBlocks();
-      //Remove non existing blocks
-      final int childCount = root.getFoldCount();
-      if (!oldBlocks.isEmpty()) {
-         for (int i = (childCount - 1); i >= 0; i--) {
-            final Fold child = root.getFold(i);
-            removeWithChildren(child, oldBlocks, transaction);
-         }
-      }
-      return false;
    }
 
    private final class FoldMarkInfo {
@@ -841,6 +758,7 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
                int startGuardedLength = getLength();
                int endGuardedLength = pairMark.getLength();
                int endOffset = pairMark.getOffset() + endGuardedLength;
+               // XXX: check if Fold exist before adding
                fold = getOperation().addToHierarchy(
                        foldType, getDescription(), collapsed,
                        startOffset, endOffset,
@@ -896,161 +814,6 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
          return sb.toString();
       }
    }
-//   @Override
-//   public void initFolds(final FoldHierarchyTransaction foldHierarchyTransaction) {
-//      final Document doc = getDocument();
-//      if (!(doc instanceof BaseDocument)) {
-//         return;
-//      }
-//
-//      final PlsqlBlockFactory blockFactory = getBlockFactory();
-//      if (blockFactory != null) {
-//         try {
-//
-//            //Initialize document hierarchy
-//            blockFactory.initHierarchy(doc);
-//            //Add new blocks to the hierarchy
-//            List<PlsqlBlock> newBlocks;
-//            if (initial) {
-//               newBlocks = blockFactory.getBlockHierarchy();
-//               initial = false;
-//            } else {
-//               newBlocks = blockFactory.getNewBlocks();
-//            }
-//            addFolds(newBlocks, foldHierarchyTransaction, null);
-//            //Add custom fold blocks
-//            addFolds(blockFactory.getCustomFolds(), foldHierarchyTransaction, null);
-//         } catch (BadLocationException ex) {
-//            Exceptions.printStackTrace(ex);
-//         }
-//      }
-//   }
-//
-
-   /**
-    * Add folds to the folder hierarchy (initial)
-    *
-    * @param blockHier
-    * @param fhTransaction
-    */
-   private void addFolds(final List<PlsqlBlock> blockHier, final FoldHierarchyTransaction fhTransaction, final List<FoldInfo> collapsedFolds) {
-      final int count = blockHier.size();
-      for (int i = 0; i < count; i++) {
-         try {
-            final PlsqlBlock temp = blockHier.get(i);
-            FoldType foldType = null;
-            final PlsqlBlockType type = temp.getType();
-            String description = "";
-
-            if (!(type == PlsqlBlockType.COMMENT && doc.getText(temp.getStartOffset(), temp.getEndOffset() - temp.getStartOffset()).indexOf("\n") == -1)) { // check for single line comments
-               if (type == PlsqlBlockType.VIEW) {
-                  foldType = PlsqlFoldTypes.VIEW;
-                  description = temp.getPrefix() + "VIEW " + temp.getName();
-               } else if (type == PlsqlBlockType.TABLE_COMMENT) {
-                  foldType = PlsqlFoldTypes.TABLECOMMENT;
-                  description = "COMMENT ON TABLE " + temp.getName();
-               } else if (type == PlsqlBlockType.COLUMN_COMMENT) {
-                  foldType = PlsqlFoldTypes.COLUMNCOMMENT;
-                  description = "COLUMN COMMENTS ON TABLE " + temp.getName();
-               } else if (type == PlsqlBlockType.COMMENT) {
-                  foldType = PlsqlFoldTypes.COMMENT;
-                  description = temp.getName();
-               } else if (type == PlsqlBlockType.PACKAGE) {
-                  foldType = PlsqlFoldTypes.PACKAGE;
-                  description = temp.getPrefix() + "PACKAGE " + temp.getName();
-               } else if (type == PlsqlBlockType.PACKAGE_BODY) {
-                  foldType = PlsqlFoldTypes.PACKAGEBODY;
-                  description = temp.getPrefix() + "PACKAGE BODY " + temp.getName();
-               } else if (type == PlsqlBlockType.PROCEDURE_IMPL) {
-                  foldType = PlsqlFoldTypes.PROCEDUREIMPL;
-                  description = temp.getPrefix() + "PROCEDURE IMPLEMENTATION " + temp.getName();
-               } else if (type == PlsqlBlockType.FUNCTION_IMPL) {
-                  foldType = PlsqlFoldTypes.FUNCTIONIMPL;
-                  description = temp.getPrefix() + "FUNCTION IMPLEMENTATION " + temp.getName();
-               } else if (type == PlsqlBlockType.PROCEDURE_DEF) {
-                  foldType = PlsqlFoldTypes.PROCEDUREDEF;
-                  description = "PROCEDURE DEFINITION " + temp.getName();
-               } else if (type == PlsqlBlockType.FUNCTION_DEF) {
-                  foldType = PlsqlFoldTypes.FUNCTIONDEF;
-                  description = "FUNCTION DEFINITION " + temp.getName();
-               } else if (type == PlsqlBlockType.DECLARE_END) {
-                  foldType = PlsqlFoldTypes.DECLAREEND;
-                  description = "DECLARE BLOCK";
-               } else if (type == PlsqlBlockType.BEGIN_END) {
-                  foldType = PlsqlFoldTypes.BEGINEND;
-                  description = "BEGIN BLOCK";
-               } else if (type == PlsqlBlockType.TRIGGER) {
-                  foldType = PlsqlFoldTypes.TRIGGER;
-                  description = temp.getPrefix() + "TRIGGER " + temp.getName();
-               } else if (type == PlsqlBlockType.IF) {
-                  foldType = PlsqlFoldTypes.IF;
-                  description = temp.getName();
-               } else if (type == PlsqlBlockType.CASE) {
-                  foldType = PlsqlFoldTypes.CASE;
-                  description = temp.getName();
-               } else if (type == PlsqlBlockType.WHILE_LOOP) {
-                  foldType = PlsqlFoldTypes.WHILELOOP;
-                  description = "WHILE " + temp.getName();
-               } else if (type == PlsqlBlockType.FOR_LOOP) {
-                  foldType = PlsqlFoldTypes.FORLOOP;
-                  description = "FOR " + temp.getName();
-               } else if (type == PlsqlBlockType.LOOP) {
-                  foldType = PlsqlFoldTypes.LOOP;
-                  description = "LOOP ";
-               } else if (type == PlsqlBlockType.CUSTOM_FOLD) {
-                  foldType = PlsqlFoldTypes.CUSTOM;
-                  description = temp.getName();
-               } else if (type == PlsqlBlockType.STATEMENT) {
-                  foldType = PlsqlFoldTypes.STATEMENT;
-                  description = temp.getPrefix() + temp.getName();
-               } else if (type == PlsqlBlockType.CURSOR) {
-                  foldType = PlsqlFoldTypes.CURSOR;
-                  description = "CURSOR " + temp.getName();
-               } else if (type == PlsqlBlockType.JAVA_SOURCE) {
-                  foldType = PlsqlFoldTypes.JAVASOURCE;
-                  description = temp.getPrefix() + "JAVA SOURCE";
-               }
-
-               if (doc.getEndPosition().getOffset() >= temp.getEndOffset()) {
-                  operation.addToHierarchy(foldType, description, isCollapsed(temp, foldType, collapsedFolds),
-                          temp.getStartOffset(), temp.getEndOffset(), 0, 0, null, fhTransaction);
-
-                  //check for any child folds and add them also
-                  addFolds(temp.getChildBlocks(), fhTransaction, collapsedFolds);
-               }
-            }
-         } catch (BadLocationException ex) {
-            LOG.log(Level.FINE, "BadLocationException thrown in addFolds", ex);
-         }
-      }
-   }
-
-   private void getBlockMap(final Map<String, PlsqlBlock> blockMap, final List<PlsqlBlock> blockHierarchy) {
-      for (int i = 0; i < blockHierarchy.size(); i++) {
-         final PlsqlBlock temp = blockHierarchy.get(i);
-         blockMap.put(temp.getStartOffset() + "_" + temp.getEndOffset(), temp);
-
-         getBlockMap(blockMap, temp.getChildBlocks());
-      }
-   }
-
-   /**
-    * Method that will add collapsed folds (FoldInfo objects) in the fold hierarchy to the given list
-    *
-    * @param parent
-    * @param foldInfoLst
-    */
-   private void getCollapsedFolds(final Fold parent, final List<FoldInfo> foldInfoLst) {
-      if (parent.isCollapsed()) {
-         final FoldInfo tempInfo = new FoldInfo(parent.getStartOffset(), parent.getEndOffset(), parent.getType());
-         foldInfoLst.add(tempInfo);
-      }
-      final int count = parent.getFoldCount();
-      for (int i = 0; i < count; i++) {
-         final Fold temp = parent.getFold(i);
-         getCollapsedFolds(temp, foldInfoLst);
-      }
-   }
 
    /**
     * Method that will select and return the corresponding fold to parent from oldRoot fold hierarchy
@@ -1059,344 +822,11 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
     * @param foldInfoLst
     * @return
     */
-   private boolean isCollapsed(final PlsqlBlock block, final FoldType foldType, final List<FoldInfo> foldInfoLst) {
-      if (foldInfoLst == null) {
-         if (OptionsUtilities.isPlSqlExpandFolds()) {
-            return false;
-         } else {
-            return foldType == PlsqlFoldTypes.COMMENT;
-         }
-      }
-      final int size = foldInfoLst.size();
-      for (int i = 0; i < size; i++) {
-         final FoldInfo temp = foldInfoLst.get(i);
-
-         if ((temp.foldType == foldType)
-                 && (temp.startOffset == block.getPreviousStart())
-                 && (temp.endOffset == block.getPreviousEnd())) {
-            return true;
-         }
-      }
-
-      return false;
-   }
-
-//   /**
-//    * Method that will update the folds based on the changes to the document
-//    *
-//    * @param fhTran
-//    */
-//   private synchronized void updateFolds(final FoldHierarchyTransaction fhTran) {
-//      try {
-//         final PlsqlBlockFactory blockFactory = getBlockFactory();
-//         if (blockFactory == null) {
-//            return;
-//         }
-//
-//         final FoldHierarchy fh = getOperation().getHierarchy();
-//         try {
-//            //lock the hierarchy
-//            fh.lock();
-//
-//            final Fold root = fh.getRootFold();
-//            final List<FoldInfo> collapsedFolds = new ArrayList<FoldInfo>();
-//            getCollapsedFolds(root, collapsedFolds);
-//
-//            //Get folds from Block maker
-//            final List<PlsqlBlock> oldBlocks = blockFactory.getRemovedBlocks();
-//
-//            //Remove non existing blocks
-//            final int childCount = root.getFoldCount();
-//            if (!oldBlocks.isEmpty()) {
-//               for (int i = (childCount - 1); i >= 0; i--) {
-//                  final Fold child = root.getFold(i);
-//                  removeWithChildren(child, oldBlocks, fhTran);
-//               }
-//            }
-//
-//            //Add new blocks to the hierarchy
-//            final List<PlsqlBlock> newBlocks = blockFactory.getNewBlocks();
-//            addFolds(newBlocks, fhTran, collapsedFolds);
-//            //Add custom folds
-//            addFolds(blockFactory.getCustomFolds(), fhTran, collapsedFolds);
-//
-//            if (blockFactory.isAliasesChanged()) {
-//               final Map<String, PlsqlBlock> blockMap = new HashMap<String, PlsqlBlock>();
-//               getBlockMap(blockMap, blockFactory.getBlockHierarchy());
-//               final int rootChildren = root.getFoldCount();
-//               for (int i = (rootChildren - 1); i >= 0; i--) {
-//                  final Fold child = root.getFold(i);
-//                  changeDescriptions(child, blockMap, fhTran);
-//               }
-//            }
-//
-//            //compareFoldHierarchies(root, collapsedFolds, fhTran);
-//         } finally {
-//            fh.unlock();
-//         }
-//      } catch (Exception e) {
-//         ErrorManager.getDefault().notify(e);
-//      }
-//   }
-//
-//   /**
-//    * Method that will change the fold descriptions if changed
-//    *
-//    * @param parent
-//    * @param blockMap
-//    * @param fhTran
-//    */
-//   private void changeDescriptions(final Fold parent, final Map<String, PlsqlBlock> blockMap, final FoldHierarchyTransaction fhTran) throws BadLocationException {
-//      final PlsqlBlock block = getCorrespondingBlock(parent, blockMap);
-//
-//      //check whether block name is an alias
-//      if ((block != null) && (!block.getAlias().equals(""))) {  //Aliases wont be there for COMMENT & DECLARE
-//         final String description = getFoldDescription(block);
-//         //check whether description is different
-//         if (!parent.getDescription().equals(description)) {
-//            operation.removeFromHierarchy(parent, fhTran);
-//            operation.addToHierarchy(parent.getType(), description, parent.isCollapsed(),
-//                    block.getStartOffset(), block.getEndOffset(), 0, 0, null, fhTran);
-//         }
-//      }
-//
-//      final int childCount = parent.getFoldCount();
-//      for (int i = (childCount - 1); i >= 0; i--) {
-//         final Fold child = parent.getFold(i);
-//         //Ignore types that cannot have the name as an alias
-//         if ((child.getType() != PlsqlFoldTypes.BEGINEND)
-//                 && (child.getType() != PlsqlFoldTypes.COMMENT)
-//                 && (child.getType() != PlsqlFoldTypes.DECLAREEND)
-//                 && (child.getType() != PlsqlFoldTypes.IF)
-//                 && (child.getType() != PlsqlFoldTypes.CUSTOM)
-//                 && (child.getType() != PlsqlFoldTypes.FORLOOP)
-//                 && (child.getType() != PlsqlFoldTypes.LOOP)
-//                 && (child.getType() != PlsqlFoldTypes.WHILELOOP)) {
-//
-//            changeDescriptions(child, blockMap, fhTran);
-//         }
-//      }
-//   }
-//
-   /**
-    * Get the matching block to the fold. Consider the type, start & end offset
-    *
-    * @param fold
-    * @param blockMap
-    * @return
-    */
-   private PlsqlBlock getCorrespondingBlock(final Fold fold, final Map<String, PlsqlBlock> blockMap) {
-
-      final PlsqlBlock temp = blockMap.get(fold.getStartOffset() + "_" + fold.getEndOffset());
-      if (temp != null && isCorrespondingType(temp.getType(), fold.getType())) {
-         return temp;
-      }
-
-      return null;
-   }
-
-   /**
-    * Method that will check whether the block type and the fold type are matching
-    *
-    * @param blockType
-    * @param foldType
-    * @return
-    */
-   private boolean isCorrespondingType(final PlsqlBlockType blockType, final FoldType foldType) {
-      switch (blockType) {
-         case VIEW:
-            return foldType == PlsqlFoldTypes.VIEW;
-         case TABLE_COMMENT:
-            return foldType == PlsqlFoldTypes.TABLECOMMENT;
-         case COLUMN_COMMENT:
-            return foldType == PlsqlFoldTypes.COLUMNCOMMENT;
-         case COMMENT:
-            return foldType == PlsqlFoldTypes.COMMENT;
-         case PACKAGE:
-            return foldType == PlsqlFoldTypes.PACKAGE;
-         case PACKAGE_BODY:
-            return foldType == PlsqlFoldTypes.PACKAGEBODY;
-         case PROCEDURE_IMPL:
-            return foldType == PlsqlFoldTypes.PROCEDUREIMPL;
-         case FUNCTION_IMPL:
-            return foldType == PlsqlFoldTypes.FUNCTIONIMPL;
-         case PROCEDURE_DEF:
-            return foldType == PlsqlFoldTypes.PROCEDUREDEF;
-         case FUNCTION_DEF:
-            return foldType == PlsqlFoldTypes.FUNCTIONDEF;
-         case DECLARE_END:
-            return foldType == PlsqlFoldTypes.DECLAREEND;
-         case BEGIN_END:
-            return foldType == PlsqlFoldTypes.BEGINEND;
-         case TRIGGER:
-            return foldType == PlsqlFoldTypes.TRIGGER;
-         case IF:
-            return foldType == PlsqlFoldTypes.IF;
-         case CASE:
-            return foldType == PlsqlFoldTypes.CASE;
-         case WHILE_LOOP:
-            return foldType == PlsqlFoldTypes.WHILELOOP;
-         case FOR_LOOP:
-            return foldType == PlsqlFoldTypes.FORLOOP;
-         case LOOP:
-            return foldType == PlsqlFoldTypes.LOOP;
-         case CUSTOM_FOLD:
-            return foldType == PlsqlFoldTypes.CUSTOM;
-         case STATEMENT:
-            return foldType == PlsqlFoldTypes.STATEMENT;
-         case CURSOR:
-            return foldType == PlsqlFoldTypes.CURSOR;
-         case JAVA_SOURCE:
-            return foldType == PlsqlFoldTypes.JAVASOURCE;
-         default:
-            return false;
-      }
-   }
-
-   /**
-    * Method that will return the fold description given the Plsql block Used when changing the descriptions only.
-    *
-    * @param block
-    * @return
-    */
-   private String getFoldDescription(final PlsqlBlock block) {
-      switch (block.getType()) {
-         case VIEW:
-            return block.getPrefix() + "VIEW " + block.getName();
-         case TABLE_COMMENT:
-            return "COMMENT ON TABLE " + block.getName();
-         case COLUMN_COMMENT:
-            return "COLUMN COMMENTS ON TABLE " + block.getName();
-         case COMMENT:
-            return block.getName();
-         case PACKAGE:
-            return block.getPrefix() + "PACKAGE " + block.getName();
-         case PACKAGE_BODY:
-            return block.getPrefix() + "PACKAGE BODY " + block.getName();
-         case PROCEDURE_IMPL:
-            return block.getPrefix() + "PROCEDURE IMPLEMENTATION " + block.getName();
-         case FUNCTION_IMPL:
-            return block.getPrefix() + "FUNCTION IMPLEMENTATION " + block.getName();
-         case PROCEDURE_DEF:
-            return "PROCEDURE DEFINITION " + block.getName();
-         case FUNCTION_DEF:
-            return "FUNCTION DEFINITION " + block.getName();
-         case DECLARE_END:
-            return "DECLARE BLOCK";
-         case BEGIN_END:
-            return "BEGIN BLOCK";
-         case TRIGGER:
-            return block.getPrefix() + "TRIGGER " + block.getName();
-         case IF:
-            return block.getName();
-         case CASE:
-            return block.getName();
-         case WHILE_LOOP:
-            return "WHILE " + block.getName();
-         case FOR_LOOP:
-            return "FOR " + block.getName();
-         case LOOP:
-            return "LOOP ";
-         case CUSTOM_FOLD:
-            return block.getName();
-         case STATEMENT:
-            return block.getPrefix() + block.getName();
-         case CURSOR:
-            return "CURSOR " + block.getName();
-         case JAVA_SOURCE:
-            return block.getPrefix() + "JAVA SOURCE";
-         default:
-            return "";
-      }
-   }
-
-   /**
-    * Remove fold with its children
-    *
-    * @param fold
-    * @param blockHier
-    * @param fhTran
-    * @return true if removed all the children
-    */
-   private void removeWithChildren(final Fold fold, final List<PlsqlBlock> blockHier, final FoldHierarchyTransaction fhTran) {
-
-      final int childCount = fold.getFoldCount();
-      for (int i = (childCount - 1); i >= 0; i--) {
-         final Fold child = fold.getFold(i);
-         removeWithChildren(child, blockHier, fhTran);
-      }
-
-      //If a custom fold remove
-      if (fold.getType() == PlsqlFoldTypes.CUSTOM || checkExists(fold, blockHier)) {
-         operation.removeFromHierarchy(fold, fhTran);
-      }
-   }
-
-   /**
-    * Method that will check whether given fold exists in block hier
-    *
-    * @param fold
-    * @param blockHier
-    * @return
-    */
-   private boolean checkExists(final Fold fold, final List<PlsqlBlock> blockHier) {
-      final Comparator<PlsqlBlock> comparator = new Comparator<PlsqlBlock>() {
-         @Override
-         public int compare(final PlsqlBlock o1, final PlsqlBlock o2) {
-            Integer o1pos, o2pos;
-            if (o1.getStartOffset() > -1 && o2.getStartOffset() > -1) {
-               o1pos = Integer.valueOf(o1.getStartOffset());
-               o2pos = Integer.valueOf(o2.getStartOffset());
-            } else {
-               o1pos = Integer.valueOf(o1.getEndOffset());
-               o2pos = Integer.valueOf(o2.getEndOffset());
-            }
-            return o1pos.compareTo(o2pos);
-         }
-      };
-      return checkExists(fold, blockHier, comparator);
-   }
-
-   /**
-    * Method that will check whether given fold exists in block hier
-    *
-    * @param fold
-    * @param blockHier
-    * @param comparator
-    * @return
-    */
-   private boolean checkExists(final Fold fold, final List<PlsqlBlock> blockHier, final Comparator<PlsqlBlock> comparator) {
-      final int size = blockHier.size();
-      Collections.sort(blockHier, comparator);
-      if (size == 0) {
+   private boolean isCollapsed(final FoldType foldType) {
+      if (OptionsUtilities.isPlSqlExpandFolds()) {
          return false;
       }
-      //make sure that the fold isn't before the first block or after the last block in the hierarchy.
-      if (fold.getStartOffset() > blockHier.get(size - 1).getEndOffset()
-              || fold.getEndOffset() < blockHier.get(0).getStartOffset()) {
-         return false;
-      }
-      for (int i = 0; i < size; i++) {
-         final PlsqlBlock tmp = blockHier.get(i);
-         if (tmp.getStartOffset() <= fold.getStartOffset() && tmp.getEndOffset() >= fold.getEndOffset()) {
-            return true;
-         }
-         if (tmp.getPreviousStart() <= fold.getStartOffset() && tmp.getPreviousEnd() >= fold.getEndOffset()) {
-            return true;
-         }
-         if ((tmp.getEndOffset() == fold.getEndOffset() || fold.getEndOffset() == tmp.getPreviousEnd()
-                 || tmp.getStartOffset() == fold.getStartOffset() || tmp.getPreviousStart() == fold.getStartOffset())
-                 && (isCorrespondingType(tmp.getType(), fold.getType()))
-                 && (getFoldDescription(tmp).equals(fold.getDescription()))) {
-            return true;
-         }
-
-         if (checkExists(fold, tmp.getChildBlocks(), comparator)) {
-            return true;
-         }
-      }
-
-      return false;
+      return foldType == PlsqlFoldTypes.COMMENT;
    }
 
    /**
@@ -1410,34 +840,5 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
          return ((Lookup.Provider) obj).getLookup().lookup(PlsqlBlockFactory.class);
       }
       return null;
-   }
-//
-//   /**
-//    * Document event has occurred
-//    *
-//    * @param o
-//    * @param arg
-//    */
-//   public void update(final Observable o, final Object arg) {
-//      final FoldHierarchyTransaction fhTran = getOperation().openTransaction();
-//      updateFolds(fhTran);
-//      // allready commited at this time
-//      //fhTran.commit();
-//   }
-
-   /**
-    * Private class that holds some fold info This is used to collapse folds after a change
-    */
-   private class FoldInfo {
-
-      public FoldType foldType;
-      public int startOffset;
-      public int endOffset;
-
-      private FoldInfo(final int start, final int end, final FoldType type) {
-         this.startOffset = start;
-         this.endOffset = end;
-         this.foldType = type;
-      }
    }
 }
