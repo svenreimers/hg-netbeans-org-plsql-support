@@ -472,7 +472,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
     }
 
     /**
-     * Check whether the given token offest is inlcuded in any existing block
+     * Check whether the given token offset is included in any existing block
      * @param token
      * @param immediateBlockHier
      * @param parent
@@ -1052,7 +1052,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
     }
 
     /**
-     * Check whether the given block is already there in block hierachy
+     * Check whether the given block is already there in block hierarchy
      * @param block
      * @param childList
      * @return
@@ -1291,7 +1291,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
     }
 
     /**
-     * trigged when opening a different document
+     * triggered when opening a different document
      * @param e
      */
     @Override
