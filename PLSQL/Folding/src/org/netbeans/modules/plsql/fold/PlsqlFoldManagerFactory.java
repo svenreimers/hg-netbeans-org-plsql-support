@@ -47,15 +47,17 @@ import org.netbeans.spi.editor.fold.FoldManagerFactory;
 /**
  *
  * @author chawlk
+ * @author chrlse
  */
 public class PlsqlFoldManagerFactory implements FoldManagerFactory {
 
    @Override
    public FoldManager createFoldManager() {
-      if (System.getProperty("plsql.fold.manager").equals("custom")) {
+      final String property = System.getProperty("plsql.fold.manager", "new");
+      if ("custom".equals(property)) {
          return new CustomFoldManager();
       }
-      if (System.getProperty("plsql.fold.manager").equals("old")) {
+      if ("old".equals(property)) {
          return new PlsqlFoldManager();
       }
       return new NewPlsqlFoldManager();
