@@ -5,6 +5,6 @@ OpenIDE-Module: org.netbeans.modules.plsql.fold
 OpenIDE-Module-Layer: org/netbeans/modules/plsql/fold/layer.xml
 OpenIDE-Module-Localizing-Bundle: org/netbeans/modules/plsql/fold/Bund
  le.properties
-OpenIDE-Module-Specification-Version: 8.72.1.13
+OpenIDE-Module-Specification-Version: 8.72.36.85
 AutoUpdate-Show-In-Client: false
 
