@@ -187,3 +187,5 @@ derby\.log
 ^netbeans\.html$
 ^Libraries/ThirdParty/libs\.commons/release/modules/ext$
 .lastModified
+syntax: glob
+Libraries/ThirdParty/mockito-all/release/modules/ext/mockito-all-1.9.5.jar
