@@ -53,6 +53,7 @@ import javax.swing.text.Document;
 import org.netbeans.api.editor.fold.Fold;
 import org.netbeans.api.editor.fold.FoldHierarchy;
 import org.netbeans.api.editor.fold.FoldType;
+import org.netbeans.api.editor.fold.FoldUtilities;
 import org.netbeans.editor.BaseDocument;
 import org.netbeans.modules.plsql.lexer.PlsqlBlock;
 import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
@@ -68,18 +69,14 @@ import org.openide.util.RequestProcessor;
  *
  * @author chrlse
  */
-public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
+public class SimplePlsqlFoldManager implements FoldManager, Runnable, Observer {
 
-   private static final Logger LOG = Logger.getLogger(NewPlsqlFoldManager.class.getName());
-   private static final RequestProcessor RP = new RequestProcessor(NewPlsqlFoldManager.class.getName(), 1, false, false);
-   private static final int TASK_DELAY = 300;
-   private final RequestProcessor.Task task = RP.create(this);
+   private static final Logger LOG = Logger.getLogger(SimplePlsqlFoldManager.class.getName());
+   private static final int TASK_DELAY = 500;
    private FoldOperation operation;
    private Document doc;
-   // Note: FoldSearchObject need to be in a List, otherwise contains doesn't work. Seems HashSet keeps internal list of hash.
-   private final List<FoldSearchObject> foldSearchObjects = new ArrayList<FoldSearchObject>();
-   private List<Fold> removedFoldList = new ArrayList<Fold>(3);
-   private boolean initial = true;
+   private static final RequestProcessor RP = new RequestProcessor(SimplePlsqlFoldManager.class.getName(), 1, false, false);
+   private final RequestProcessor.Task task = RP.create(this);
    private PlsqlBlockFactory blockFactory;
 
    @Override
@@ -106,38 +103,39 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
 
    @Override
    public void insertUpdate(DocumentEvent evt, FoldHierarchyTransaction transaction) {
-      if (LOG.isLoggable(Level.FINER)) {
-         LOG.log(Level.FINER, "insertUpdate: {0}", System.identityHashCode(this));
+//      task.schedule(300);
+//      processRemovedFolds(transaction);
+      if (LOG.isLoggable(Level.FINE)) {
+         LOG.log(Level.FINE, "insertUpdate: {0}", System.identityHashCode(this));
       }
-      processRemovedFolds(transaction);
    }
 
    @Override
    public void removeUpdate(DocumentEvent evt, FoldHierarchyTransaction transaction) {
-      if (LOG.isLoggable(Level.FINER)) {
-         LOG.log(Level.FINER, "removeUpdate: {0}", System.identityHashCode(this));
+      if (LOG.isLoggable(Level.FINE)) {
+         LOG.log(Level.FINE, "removeUpdate: {0}", System.identityHashCode(this));
       }
-      processRemovedFolds(transaction);
+      task.schedule(TASK_DELAY);
+//      processRemovedFolds(transaction);
+//      removeAffectedMarks(evt, transaction);
    }
 
    @Override
    public void changedUpdate(DocumentEvent evt, FoldHierarchyTransaction transaction) {
+      if (LOG.isLoggable(Level.FINE)) {
+         LOG.log(Level.FINE, "changedUpdate: {0}", System.identityHashCode(this));
+      }
+//      task.schedule(300);
    }
 
    @Override
    public void removeEmptyNotify(Fold emptyFold) {
-      if (LOG.isLoggable(Level.FINER)) {
-         LOG.log(Level.FINER, "removeEmptyNotify: {0}", System.identityHashCode(this));
-      }
-      removeFoldNotify(emptyFold);
+//      removeFoldNotify(emptyFold);
    }
 
    @Override
    public void removeDamagedNotify(Fold damagedFold) {
-      if (LOG.isLoggable(Level.FINER)) {
-         LOG.log(Level.FINER, "removeDamagedNotify: {0}", System.identityHashCode(this));
-      }
-      removeFoldNotify(damagedFold);
+//      removeFoldNotify(damagedFold);
    }
 
    @Override
@@ -153,8 +151,8 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
 
    @Override
    public void update(Observable o, Object arg) {
-      if (LOG.isLoggable(Level.FINER)) {
-         LOG.log(Level.FINER, "update: {0}", System.identityHashCode(this));
+      if (LOG.isLoggable(Level.FINE)) {
+         LOG.log(Level.FINE, "update: {0}", System.identityHashCode(this));
       }
       task.schedule(TASK_DELAY);
    }
@@ -189,15 +187,13 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
                FoldHierarchyTransaction transaction = getOperation().openTransaction();
                try {
                   //Add new blocks to the hierarchy
-                  List<PlsqlBlock> blocks = blockFactory.getNewBlocks();
-                  if (initial) {
-                     blocks = blockFactory.getBlockHierarchy();
-                     initial = false;
+                  ArrayList<Fold> existingFolds = new ArrayList<Fold>();
+                  collectExistingFolds(hierarchy.getRootFold(), existingFolds);
+                  for (Fold f : existingFolds) {
+                     getOperation().removeFromHierarchy(f, transaction);
                   }
-
-                  updateFolds(blocks, transaction);
-                  //Add custom fold blocks
-                  updateFolds(blockFactory.getCustomFolds(), transaction);
+                  List<PlsqlBlock> blocks = blockFactory.getBlockHierarchy();
+                  createFolds(blocks, transaction);
                } finally {
                   transaction.commit();
                }
@@ -210,21 +206,46 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
       }
    }
 
-   private void removeFoldNotify(Fold removedFold) {
-      removedFoldList.add(removedFold);
-   }
-
-   private void processRemovedFolds(FoldHierarchyTransaction transaction) {
-      for (Fold removedFold : removedFoldList) {
-         boolean remove = foldSearchObjects.remove(new FoldSearchObject(new FoldAdapter(removedFold)));
-         if (LOG.isLoggable(Level.FINE)) {
-            LOG.log(Level.FINE, "Fold={0} removed={1}", new Object[]{removedFold, remove});
-         }
+   /**
+    * Collects all folds from the hierarchy that were created by this manager and are not the root fold.
+    *
+    * @param fold
+    * @param list
+    */
+   private void collectExistingFolds(Fold fold, List<Fold> list) {
+      for (int i = 0; i < fold.getFoldCount(); i++) {
+         collectExistingFolds(fold.getFold(i), list);
       }
-      removedFoldList.clear();
+      if (!FoldUtilities.isRootFold(fold) && getOperation().owns(fold)) {
+         list.add(fold);
+      }
    }
 
-   private void updateFolds(List<PlsqlBlock> blocks, FoldHierarchyTransaction transaction) {
+   /**
+    * Creates a new fold and adds to the fold hierarchy.
+    */
+//    private Fold createFold(FoldType type, String description, boolean collapsed,
+//            int startOffset, int endOffset, FoldHierarchyTransaction transaction)
+//                throws BadLocationException {
+//        Fold fold = null;
+//        if ( startOffset >= 0 &&
+//             endOffset >= 0 &&
+//             startOffset < endOffset &&
+//             endOffset <= getDocument().getLength() ) {
+//            fold = getOperation().addToHierarchy(
+//                    type,
+//                    description.intern(), //save some memory
+//                    collapsed,
+//                    startOffset,
+//                    endOffset,
+//                    description.length(),
+//                    0,
+//                    null,
+//                    transaction);
+//        }
+//        return fold;
+//    }
+   private void createFolds(List<PlsqlBlock> blocks, FoldHierarchyTransaction transaction) {
       for (PlsqlBlock block : blocks) {
 
          FoldType foldType = null;
@@ -299,19 +320,14 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
                   foldType = PlsqlFoldTypes.JAVASOURCE;
                   description = block.getPrefix() + "JAVA SOURCE";
                }
-
-               final FoldSearchObject foldSearchObject = new FoldSearchObject(block.getStartOffset(), block.getEndOffset());
-               if (!foldSearchObjects.contains(foldSearchObject)) {
-                  try {
-                     final Fold fold = operation.addToHierarchy(foldType, description, isCollapsed(foldType), block.getStartOffset(), block.getEndOffset(), 0, 0, null, transaction);
-                     foldSearchObjects.add(new FoldSearchObject(new FoldAdapter(fold)));
-                  } catch (BadLocationException ex) {
-                     if (LOG.isLoggable(Level.FINE)) {
-                        LOG.log(Level.FINE, "Ignore BadLocationException", ex);
-                     }
+               try {
+                  operation.addToHierarchy(foldType, description, isCollapsed(foldType), block.getStartOffset(), block.getEndOffset(), 0, 0, null, transaction);
+               } catch (BadLocationException ex) {
+                  if (LOG.isLoggable(Level.FINE)) {
+                     LOG.log(Level.FINE, "Ignore BadLocationException", ex);
                   }
                }
-               updateFolds(block.getChildBlocks(), transaction);
+               createFolds(block.getChildBlocks(), transaction);
             }
          } catch (BadLocationException ex) {
             if (LOG.isLoggable(Level.FINE)) {

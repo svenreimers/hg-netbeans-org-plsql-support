@@ -60,6 +60,9 @@ public class PlsqlFoldManagerFactory implements FoldManagerFactory {
       if ("old".equals(property)) {
          return new PlsqlFoldManager();
       }
+      if ("simple".equals(property)) {
+         return new SimplePlsqlFoldManager();
+      }
       return new NewPlsqlFoldManager();
    }
 }
