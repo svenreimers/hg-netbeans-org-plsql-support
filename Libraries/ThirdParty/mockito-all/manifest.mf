@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+OpenIDE-Module: org.mockito.all
+OpenIDE-Module-Localizing-Bundle: org/mockito/all/Bundle.properties
+OpenIDE-Module-Specification-Version: 1.9.5
+
