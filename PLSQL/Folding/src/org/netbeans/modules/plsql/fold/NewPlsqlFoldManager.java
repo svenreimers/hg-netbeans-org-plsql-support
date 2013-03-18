@@ -72,7 +72,7 @@ public class NewPlsqlFoldManager implements FoldManager, Runnable, Observer {
 
    private static final Logger LOG = Logger.getLogger(NewPlsqlFoldManager.class.getName());
    private static final RequestProcessor RP = new RequestProcessor(NewPlsqlFoldManager.class.getName(), 1, false, false);
-   private static final int TASK_DELAY = 300;
+   private static final int TASK_DELAY = 1000;
    private final RequestProcessor.Task task = RP.create(this);
    private FoldOperation operation;
    private Document doc;

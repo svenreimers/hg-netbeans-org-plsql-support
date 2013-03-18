@@ -51,6 +51,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Observable;
 import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -65,10 +67,12 @@ import org.openide.util.RequestProcessor;
 
 /**
  * Class that will maintain code blocks of the file.
+ *
  * @author YaDhLK
  */
 public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
+    private static final Logger LOG = Logger.getLogger(PlsqlBlockFactory.class.getName());
     private List<PlsqlBlock> blockHierarchy;
     private List<PlsqlBlock> customFoldBlocks;
     private List<PlsqlBlock> newBlocks;
@@ -104,6 +108,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method used to reparse the whole document
+     *
      * @param doc
      */
     public void reParse(Document doc) {
@@ -126,6 +131,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Return new blocks that were recognized by the latest change
+     *
      * @return
      */
     public List<PlsqlBlock> getNewBlocks() {
@@ -134,6 +140,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Return the blocks who's offsets have changed
+     *
      * @return
      */
     public List<PlsqlBlock> getChangedBlocks() {
@@ -142,6 +149,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Return the custom fold blocks that are there
+     *
      * @return
      */
     public List<PlsqlBlock> getCustomFolds() {
@@ -150,6 +158,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Return block hierarchy
+     *
      * @return
      */
     public List<PlsqlBlock> getBlockHierarchy() {
@@ -158,6 +167,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method that will return the blocks that are removed
+     *
      * @return
      */
     public List<PlsqlBlock> getRemovedBlocks() {
@@ -166,6 +176,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Check whether there are childrean of this fold here, if so add them
+     *
      * @param block
      * @param immediateBlockHier
      */
@@ -187,6 +198,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method that will look for custom start or end token based on the given type
+     *
      * @param customEndToken
      * @param ts
      * @param immediateBlockHier
@@ -265,6 +277,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method that will check for a Java Source block
+     *
      * @param tempToken
      * @param ts
      * @param immediateBlockHier
@@ -285,7 +298,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
             String image = tmp.text().toString();
             PlsqlTokenId tokenID = tmp.id();
 
-            if ((tmp != null) && (!image.equals("/")) && (tmp.offset(tokenHierarchy) > endParse)) {
+            if ((!image.equals("/")) && (tmp.offset(tokenHierarchy) > endParse)) {
                 break;
             }
 
@@ -309,6 +322,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Check whether this current token is the only token in this line
+     *
      * @param ts
      * @param offset
      * @return
@@ -358,26 +372,24 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method that will check for statement blocks other than the CURSOR and VIEW
+     *
      * @param tempToken
      * @param ts
      * @param immediateBlockHier
      * @return
      */
     private PlsqlBlock checkStatementBlock(Token<PlsqlTokenId> current, TokenSequence<PlsqlTokenId> ts, List<PlsqlBlock> parentBlocks) {
-        Token<PlsqlTokenId> stmtBegin = null;
-        Token<PlsqlTokenId> token = null;
         List<PlsqlBlock> lstChild = new ArrayList<PlsqlBlock>();
         PlsqlBlock block = null;
-        boolean moveNext = false;
 
         //Check whether the beginning is in a SQL Plus command
         if (sqlPlusLine(ts)) {
             return null;
         }
 
-        moveNext = ts.moveNext();
-        token = ts.token();
-        stmtBegin = current;
+        boolean moveNext = ts.moveNext();
+        Token<PlsqlTokenId> token = ts.token();
+        Token<PlsqlTokenId> stmtBegin = current;
         boolean getName = true;
         Token<PlsqlTokenId> customStartToken = null;
         String name = current.text().toString();
@@ -425,9 +437,6 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
                     customStartToken = token;
                 } else if (image.toUpperCase(Locale.ENGLISH).contains("<END-FOLD>")) {
                     if (customStartToken != null) {
-                        String fname = customStartToken.text().toString();
-                        int index = fname.toUpperCase(Locale.ENGLISH).indexOf("<FOLD>");
-                        fname = fname.substring(index + 7).trim();
                         if (ts.moveNext()) {
                             token = ts.token();
                             PlsqlBlock custom = new PlsqlBlock(customStartToken.offset(tokenHierarchy),
@@ -473,6 +482,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Check whether the given token offset is included in any existing block
+     *
      * @param token
      * @param immediateBlockHier
      * @param parent
@@ -499,6 +509,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method that will look for trigger blocks
+     *
      * @param tempToken
      * @param ts
      * @param parentBlocks
@@ -678,6 +689,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method that will check the prefix of the given block and change the block values accordingly
+     *
      * @param startOffset
      * @param ts
      * @param begin
@@ -712,6 +724,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Check whether there is a block existing with the given offset as the start offset
+     *
      * @param blockHierarchy
      * @param offset
      * @return
@@ -765,6 +778,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method that will remove the begin block of this declare block if there
+     *
      * @param declareBlock
      */
     private void removeChildBegin(PlsqlBlock declareBlock) {
@@ -781,6 +795,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Change offsets of the blocks below the area
+     *
      * @param blockHier
      * @param endParse
      * @param length
@@ -848,6 +863,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method that will check whether there are DEFINE statements in the affected area
+     *
      * @param doc
      * @param startOffset
      * @param endOffset
@@ -866,6 +882,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method that will make CURSOR blocks
+     *
      * @param tempToken
      * @param ts
      * @param parentBlocks
@@ -1011,6 +1028,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Check whether we have caught a begin of a declare block
+     *
      * @param ts
      * @param immediate
      * @return
@@ -1053,6 +1071,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Check whether the given block is already there in block hierarchy
+     *
      * @param block
      * @param childList
      * @return
@@ -1240,10 +1259,10 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
     }
 
     private synchronized void doUpdate(final Document document, final List<EventProperties> docList) {
+        LOG.log(Level.FINE, "doUpdate", new Object[]{document, docList});
 
         //make sure that the updates are run in the Swing thread
         SwingUtilities.invokeLater(new Runnable() {
-
             @Override
             public void run() {
                 setChanged();
@@ -1267,23 +1286,26 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Event fired on insert
+     *
      * @param e
      */
     @Override
     public void insertUpdate(DocumentEvent e) {
+        LOG.log(Level.FINER, "insertUpdate", e);
         if (isSaveInProgress()) {
             return;
         }
-
         addUpdateEvent(e, DocumentEvent.EventType.INSERT);
     }
 
     /**
      * Event fired in remove
+     *
      * @param e
      */
     @Override
     public void removeUpdate(DocumentEvent e) {
+        LOG.log(Level.FINER, "removeUpdate", e);
         if (isSaveInProgress()) {
             return;
         }
@@ -1292,6 +1314,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * triggered when opening a different document
+     *
      * @param e
      */
     @Override
@@ -1302,6 +1325,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Update block hierarchy on a document event
+     *
      * @param e
      * @param action
      */
@@ -1333,6 +1357,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method that will return the block within the start & end parse
+     *
      * @param start
      * @param end
      * @return
@@ -1359,6 +1384,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Get the line offset of the beginning of this block end line
+     *
      * @param doc
      * @param parent
      * @return
@@ -1431,6 +1457,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Get the line offset of the second line of this block start
+     *
      * @param doc
      * @param parent
      * @return
@@ -1479,8 +1506,8 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
     }
 
     /**
-     * Method that will evaluate the given block and
-     * decide whether the name has to be changed
+     * Method that will evaluate the given block and decide whether the name has to be changed
+     *
      * @param block
      */
     private void evaluateBlock(PlsqlBlock block) {
@@ -1498,6 +1525,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Remove given block from the hierarchy
+     *
      * @param blockHier
      * @param block
      */
@@ -1529,7 +1557,9 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
     }
 
     /**
-     * Add child blocks enclosed by the change area to the remove list (do not update the parse area here, done only in REMOVE)
+     * Add child blocks enclosed by the change area to the remove list (do not update the parse area here, done only in
+     * REMOVE)
+     *
      * @param doc
      * @param plsqlBlocks
      * @param toBeRemoved
@@ -1553,8 +1583,8 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
     }
 
     /**
-     * Add child blocks affected by the change area to the remove list
-     * and update the parse area
+     * Add child blocks affected by the change area to the remove list and update the parse area
+     *
      * @param doc
      * @param plsqlBlocks
      * @param toBeRemoved
@@ -1623,6 +1653,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Remove custom fold blocks that are there within the parse area
+     *
      * @param customFoldBlocks
      * @param startParse
      * @param endParse
@@ -1647,6 +1678,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * If given block exists in the hier delete
+     *
      * @param child
      * @param parentBlocks
      */
@@ -1693,6 +1725,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
      * Update block hierarchy based on the document event and the action
      */
     private synchronized void updateBlocks(Document doc, List<EventProperties> docList) {
+        LOG.log(Level.FINE, "updateBlocks", new Object[]{doc, docList});
         clear();
         try {
             ((AbstractDocument) doc).readLock();
@@ -1710,6 +1743,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
             for (int x = 0; x < docList.size(); x++) {
                 event = docList.get(x);
+                LOG.log(Level.FINE, "event={0}, ", new Object[]{event});
                 int offset = event.offset;
                 int length = event.length;
                 DocumentEvent.EventType action = event.mode;
@@ -1868,6 +1902,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Get block which is immediately before the given offset
+     *
      * @param blocks
      * @param block
      * @param offset
@@ -1895,6 +1930,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Get fold which is immediately after the given offset
+     *
      * @param blocks
      * @param block
      * @param offset
@@ -1922,6 +1958,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method that will generate blocks of the given offset range
+     *
      * @param startOffset
      * @param endOffset
      */
@@ -1930,6 +1967,9 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
         tokenHierarchy = TokenHierarchy.get(doc);
         @SuppressWarnings("unchecked")
         TokenSequence<PlsqlTokenId> ts = tokenHierarchy.tokenSequence(PlsqlTokenId.language());
+        if (ts == null) {
+            return;
+        }
 
         PlsqlBlock parent = getParentBlock(blockHierarchy, startParse, endParse);
         if (parent != null) {
@@ -1938,212 +1978,32 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
             immediateBlockHier = blockHierarchy;
         }
 
-        if (ts != null) {
-            //move offset
-            ts.move(startParse);
-            Token<PlsqlTokenId> tempToken = null;
-            Token<PlsqlTokenId> customStartToken = null;
-            Token<PlsqlTokenId> customEndToken = null;
+        LOG.log(Level.FINE, "generateBlocks, doc.getLength()={0}, ts.tokenCount()={1}",
+                new Object[]{doc.getLength(), ts.tokenCount()});
+        //move offset
+        ts.move(startParse);
+        Token<PlsqlTokenId> tempToken;
+        Token<PlsqlTokenId> customStartToken = null;
+        Token<PlsqlTokenId> customEndToken = null;
 
-            //Go through all the available tokens
-            while (ts.moveNext()) {
-                tempToken = ts.token();
-                PlsqlTokenId tokenID = tempToken.id();
-                String image = tempToken.text().toString();
+        //Go through all the available tokens
+        while (ts.moveNext()) {
+            tempToken = ts.token();
+            PlsqlTokenId tokenID = tempToken.id();
+            String image = tempToken.text().toString();
 
-                //Check end offset and break (exception for colun which will mark end of some blocks)
-                if ((tempToken != null) && (!image.equals(";")) && (tempToken.offset(tokenHierarchy) > endParse)) {
-                    break;
-                }
+            LOG.log(Level.FINE, "tempToken.id()={0}, tempToken.text()={1}",
+                    new Object[]{tempToken.id(), tempToken.text()});
 
-                if (tokenID == PlsqlTokenId.KEYWORD) {
-                    if (image.equalsIgnoreCase("VIEW")) {
-                        int offset = ts.offset();
-                        PlsqlBlock block = null;
-                        block = checkView(tempToken, ts, immediateBlockHier);
-                        if (block == null) {
-                            //pass from the immediate next token to get inner blocks
-                            ts.move(offset);
-                            ts.moveNext();
-                        } else {
-                            checkAndAddNew(block, parent, immediateBlockHier);
-                        }
-                    } else if (image.equalsIgnoreCase("FUNCTION")) {
-                        int offset = ts.offset();
-                        PlsqlBlock block = null;
-                        block = checkMethod(tempToken, ts, PlsqlBlockType.FUNCTION_IMPL, immediateBlockHier);
-                        if (block == null) {
-                            //pass from the immediate next token to get inner blocks
-                            ts.move(offset);
-                            ts.moveNext();
-                        } else {
-                            checkAndAddNew(block, parent, immediateBlockHier);
-                        }
-                    } else if (image.equalsIgnoreCase("PROCEDURE")) {
-                        int offset = ts.offset();
-                        PlsqlBlock block = null;
-                        block = checkMethod(tempToken, ts, PlsqlBlockType.PROCEDURE_IMPL, immediateBlockHier);
-                        if (block == null) {
-                            //pass from the immediate next token to get inner blocks
-                            ts.move(offset);
-                            ts.moveNext();
-                        } else {
-                            checkAndAddNew(block, parent, immediateBlockHier);
-                        }
-                    } else if (image.equalsIgnoreCase("PACKAGE")) {
-                        int offset = ts.offset();
-                        PlsqlBlock block = null;
-                        block = checkPackage(tempToken, ts, immediateBlockHier);
-                        if (block == null) {
-                            //pass from the immediate next token to get inner blocks
-                            ts.move(offset);
-                            ts.moveNext();
-                        } else {
-                            checkAndAddNew(block, parent, immediateBlockHier);
-                        }
-                    } else if (image.equalsIgnoreCase("CURSOR")) {
-                        int offset = ts.offset();
-                        PlsqlBlock block = null;
-                        block = checkCursor(tempToken, ts, immediateBlockHier);
-                        if (block == null) {
-                            //pass from the immediate next token to get inner blocks
-                            ts.move(offset);
-                            ts.moveNext();
-                        } else {
-                            checkAndAddNew(block, parent, immediateBlockHier);
-                        }
-                    } else if (image.equalsIgnoreCase("TRIGGER")) {
-                        int offset = ts.offset();
-                        PlsqlBlock block = null;
-                        block = checkTrigger(tempToken, ts, immediateBlockHier);
-                        if (block == null) {
-                            //pass from the immediate next token to get inner blocks
-                            ts.move(offset);
-                            ts.moveNext();
-                        } else {
-                            checkAndAddNew(block, parent, immediateBlockHier);
-                        }
-                    } else if (image.equalsIgnoreCase("COMMENT")) {
-                        int offset = ts.offset();
-                        PlsqlBlock block = null;
-                        block = checkTblColComment(tempToken, ts, immediateBlockHier);
-                        if (block == null) {
-                            //pass from the immediate next token to get inner blocks
-                            ts.move(offset);
-                            ts.moveNext();
-                        } else {
-                            checkAndAddNew(block, parent, immediateBlockHier);
-                        }
-                    } else if (image.equalsIgnoreCase("DECLARE")) {
-                        PlsqlBlock block = checkDeclareBlock(tempToken, ts, immediateBlockHier);
-                        if (block != null) {//If inner check seems to have failed need to continue this one
-                            checkAndAddNew(block, parent, immediateBlockHier);
-                        }
-                    } else if (image.equalsIgnoreCase("BEGIN")) {
-                        if (!isDeclare(ts, immediateBlockHier)) {//We need to check whether the declare is isolated by a CURSOR block
+            //Check end offset and break (exception for colun which will mark end of some blocks)
+            if ((!image.equals(";")) && (tempToken.offset(tokenHierarchy) > endParse)) {
+                break;
+            }
 
-                            int offset = ts.offset();
-                            PlsqlBlock block = checkBeginBlock(tempToken, ts, immediateBlockHier);
-                            if (block == null) {//If inner check seems to have failed need to continue this one
-
-                                ts.move(offset);
-                                ts.moveNext();
-                            } else {
-                                checkAndAddNew(block, parent, immediateBlockHier);
-                            }
-                        }
-                    } else if (image.equalsIgnoreCase("IF")
-                            || image.equalsIgnoreCase("ELSIF")) {
-                        if (!isNotBlockStart(tempToken, ts)) {
-                            int offset = tempToken.offset(tokenHierarchy);
-                            List children = checkIfBlock(tempToken, ts, immediateBlockHier);
-                            if (children == null || children.isEmpty()) {//If inner check seems to have failed need to continue this one
-
-                                ts.move(offset);
-                                ts.moveNext();
-                            } else {
-                                for (int i = 0; i < children.size(); i++) {
-                                    PlsqlBlock child = (PlsqlBlock) children.get(i);
-                                    checkAndAddNew(child, parent, immediateBlockHier);
-                                }
-                            }
-                        }
-                    } else if (image.equalsIgnoreCase("ELSE")) {
-                        if (!isNotBlockStart(tempToken, ts)) {
-                            int offset = tempToken.offset(tokenHierarchy);
-                            List children = checkIfBlock(tempToken, ts, immediateBlockHier);
-                            if (children == null || children.isEmpty()) {
-                                children = checkCaseBlock(tempToken, ts, immediateBlockHier, false);
-                            }
-
-                            if (children == null || children.isEmpty()) {//If inner check seems to have failed need to continue this one
-
-                                ts.move(offset);
-                                ts.moveNext();
-                            } else {
-                                for (int i = 0; i < children.size(); i++) {
-                                    PlsqlBlock child = (PlsqlBlock) children.get(i);
-                                    checkAndAddNew(child, parent, immediateBlockHier);
-                                }
-                            }
-                        }
-                    } else if (image.equalsIgnoreCase("CASE")
-                            || image.equalsIgnoreCase("WHEN")) {
-                        if (!isNotBlockStart(tempToken, ts)) {
-                            int offset = tempToken.offset(tokenHierarchy);
-                            List children = checkCaseBlock(tempToken, ts, immediateBlockHier, false);
-                            if (children == null || children.isEmpty()) {//If inner check seems to have failed need to continue this one
-
-                                ts.move(offset);
-                                ts.moveNext();
-                            } else {
-                                for (int i = 0; i < children.size(); i++) {
-                                    PlsqlBlock child = (PlsqlBlock) children.get(i);
-                                    checkAndAddNew(child, parent, immediateBlockHier);
-                                }
-                            }
-                        }
-                    } else if (image.equalsIgnoreCase("LOOP")
-                            || image.equalsIgnoreCase("WHILE")
-                            || image.equalsIgnoreCase("FOR")) {
-                        if (!isNotBlockStart(tempToken, ts)) {
-                            int offset = tempToken.offset(tokenHierarchy);
-                            if (!unsuccessBlocks.contains(offset)) {
-                                PlsqlBlock child = checkLoopBlock(tempToken, ts, immediateBlockHier);
-                                if (child == null) {//If inner check seems to have failed need to continue this one
-                                    unsuccessBlocks.add(offset);
-                                    ts.move(offset);
-                                    ts.moveNext();
-                                } else {
-                                    checkAndAddNew(child, parent, immediateBlockHier);
-                                }
-                            }
-                        }
-                    } else if (image.equalsIgnoreCase("TABLE")
-                            || image.equalsIgnoreCase("INDEX")
-                            || image.equalsIgnoreCase("SELECT")
-                            || image.equalsIgnoreCase("UPDATE")
-                            || image.equalsIgnoreCase("DELETE")
-                            || image.equalsIgnoreCase("INSERT")
-                            || image.equalsIgnoreCase("MERGE")
-                            || image.equalsIgnoreCase("DROP")
-                            || image.equalsIgnoreCase("SEQUENCE")) {
-                        if (!isNotBlockStart(tempToken, ts)) {
-                            int offset = tempToken.offset(tokenHierarchy);
-                            PlsqlBlock child = checkStatementBlock(tempToken, ts, immediateBlockHier);
-                            if (child == null) {//If inner check seems to have failed need to continue this one
-
-                                ts.move(offset);
-                                ts.moveNext();
-                            } else {
-                                checkAndAddNew(child, parent, immediateBlockHier);
-                            }
-                        }
-                    }
-                } else if (tokenID == PlsqlTokenId.JAVA_SOUCE) {
+            if (tokenID == PlsqlTokenId.KEYWORD) {
+                if (image.equalsIgnoreCase("VIEW")) {
                     int offset = ts.offset();
-                    PlsqlBlock block = null;
-                    block = checkJavaSource(tempToken, ts);
+                    PlsqlBlock block = checkView(tempToken, ts, immediateBlockHier);
                     if (block == null) {
                         //pass from the immediate next token to get inner blocks
                         ts.move(offset);
@@ -2151,67 +2011,245 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
                     } else {
                         checkAndAddNew(block, parent, immediateBlockHier);
                     }
-                } else if (tokenID == PlsqlTokenId.LINE_COMMENT) {
-                    //only single comment line
-                    if (image.toUpperCase(Locale.ENGLISH).contains("<FOLD>")) {
-                        customStartToken = tempToken;
-                    } else if (image.toUpperCase(Locale.ENGLISH).contains("<END-FOLD>")) {
-                        if (customStartToken != null) {
-                            String name = customStartToken.text().toString();
-                            int index = name.toUpperCase(Locale.ENGLISH).indexOf("<FOLD>");
-                            name = name.substring(index + 7).trim();
-                            if (ts.moveNext()) {
-                                tempToken = ts.token();
-                                PlsqlBlock custom = new PlsqlBlock(customStartToken.offset(tokenHierarchy),
-                                        tempToken.offset(tokenHierarchy), name, "", PlsqlBlockType.CUSTOM_FOLD);
-                                customFoldBlocks.add(custom);
-                            }
-                            customStartToken = null;
-                        } else {
-                            customEndToken = tempToken;
-                        }
+                } else if (image.equalsIgnoreCase("FUNCTION")) {
+                    int offset = ts.offset();
+                    PlsqlBlock block = checkMethod(tempToken, ts, PlsqlBlockType.FUNCTION_IMPL, immediateBlockHier);
+                    if (block == null) {
+                        //pass from the immediate next token to get inner blocks
+                        ts.move(offset);
+                        ts.moveNext();
                     } else {
-                        PlsqlBlock block = checkComment(tempToken, ts);
-                        if (block != null) {
+                        checkAndAddNew(block, parent, immediateBlockHier);
+                    }
+                } else if (image.equalsIgnoreCase("PROCEDURE")) {
+                    int offset = ts.offset();
+                    PlsqlBlock block = checkMethod(tempToken, ts, PlsqlBlockType.PROCEDURE_IMPL, immediateBlockHier);
+                    if (block == null) {
+                        //pass from the immediate next token to get inner blocks
+                        ts.move(offset);
+                        ts.moveNext();
+                    } else {
+                        checkAndAddNew(block, parent, immediateBlockHier);
+                    }
+                } else if (image.equalsIgnoreCase("PACKAGE")) {
+                    int offset = ts.offset();
+                    PlsqlBlock block = checkPackage(tempToken, ts, immediateBlockHier);
+                    if (block == null) {
+                        //pass from the immediate next token to get inner blocks
+                        ts.move(offset);
+                        ts.moveNext();
+                    } else {
+                        checkAndAddNew(block, parent, immediateBlockHier);
+                    }
+                } else if (image.equalsIgnoreCase("CURSOR")) {
+                    int offset = ts.offset();
+                    PlsqlBlock block = checkCursor(tempToken, ts, immediateBlockHier);
+                    if (block == null) {
+                        //pass from the immediate next token to get inner blocks
+                        ts.move(offset);
+                        ts.moveNext();
+                    } else {
+                        checkAndAddNew(block, parent, immediateBlockHier);
+                    }
+                } else if (image.equalsIgnoreCase("TRIGGER")) {
+                    int offset = ts.offset();
+                    PlsqlBlock block = checkTrigger(tempToken, ts, immediateBlockHier);
+                    if (block == null) {
+                        //pass from the immediate next token to get inner blocks
+                        ts.move(offset);
+                        ts.moveNext();
+                    } else {
+                        checkAndAddNew(block, parent, immediateBlockHier);
+                    }
+                } else if (image.equalsIgnoreCase("COMMENT")) {
+                    int offset = ts.offset();
+                    PlsqlBlock block = checkTblColComment(tempToken, ts, immediateBlockHier);
+                    if (block == null) {
+                        //pass from the immediate next token to get inner blocks
+                        ts.move(offset);
+                        ts.moveNext();
+                    } else {
+                        checkAndAddNew(block, parent, immediateBlockHier);
+                    }
+                } else if (image.equalsIgnoreCase("DECLARE")) {
+                    PlsqlBlock block = checkDeclareBlock(tempToken, ts, immediateBlockHier);
+                    if (block != null) {//If inner check seems to have failed need to continue this one
+                        checkAndAddNew(block, parent, immediateBlockHier);
+                    }
+                } else if (image.equalsIgnoreCase("BEGIN")) {
+                    if (!isDeclare(ts, immediateBlockHier)) {//We need to check whether the declare is isolated by a CURSOR block
+
+                        int offset = ts.offset();
+                        PlsqlBlock block = checkBeginBlock(tempToken, ts, immediateBlockHier);
+                        if (block == null) {//If inner check seems to have failed need to continue this one
+
+                            ts.move(offset);
+                            ts.moveNext();
+                        } else {
                             checkAndAddNew(block, parent, immediateBlockHier);
                         }
                     }
-                } else if (tokenID == PlsqlTokenId.BLOCK_COMMENT) {
-                    int start = tempToken.offset(tokenHierarchy);
-                    PlsqlBlock block = new PlsqlBlock(start,
-                            start + tempToken.length(), "BLOCK COMMENT", "", PlsqlBlockType.COMMENT);
+                } else if (image.equalsIgnoreCase("IF")
+                        || image.equalsIgnoreCase("ELSIF")) {
+                    if (!isNotBlockStart(tempToken, ts)) {
+                        int offset = tempToken.offset(tokenHierarchy);
+                        List children = checkIfBlock(tempToken, ts, immediateBlockHier);
+                        if (children == null || children.isEmpty()) {//If inner check seems to have failed need to continue this one
+
+                            ts.move(offset);
+                            ts.moveNext();
+                        } else {
+                            for (int i = 0; i < children.size(); i++) {
+                                PlsqlBlock child = (PlsqlBlock) children.get(i);
+                                checkAndAddNew(child, parent, immediateBlockHier);
+                            }
+                        }
+                    }
+                } else if (image.equalsIgnoreCase("ELSE")) {
+                    if (!isNotBlockStart(tempToken, ts)) {
+                        int offset = tempToken.offset(tokenHierarchy);
+                        List children = checkIfBlock(tempToken, ts, immediateBlockHier);
+                        if (children == null || children.isEmpty()) {
+                            children = checkCaseBlock(tempToken, ts, immediateBlockHier, false);
+                        }
+
+                        if (children == null || children.isEmpty()) {//If inner check seems to have failed need to continue this one
+
+                            ts.move(offset);
+                            ts.moveNext();
+                        } else {
+                            for (int i = 0; i < children.size(); i++) {
+                                PlsqlBlock child = (PlsqlBlock) children.get(i);
+                                checkAndAddNew(child, parent, immediateBlockHier);
+                            }
+                        }
+                    }
+                } else if (image.equalsIgnoreCase("CASE")
+                        || image.equalsIgnoreCase("WHEN")) {
+                    if (!isNotBlockStart(tempToken, ts)) {
+                        int offset = tempToken.offset(tokenHierarchy);
+                        List children = checkCaseBlock(tempToken, ts, immediateBlockHier, false);
+                        if (children == null || children.isEmpty()) {//If inner check seems to have failed need to continue this one
+
+                            ts.move(offset);
+                            ts.moveNext();
+                        } else {
+                            for (int i = 0; i < children.size(); i++) {
+                                PlsqlBlock child = (PlsqlBlock) children.get(i);
+                                checkAndAddNew(child, parent, immediateBlockHier);
+                            }
+                        }
+                    }
+                } else if (image.equalsIgnoreCase("LOOP")
+                        || image.equalsIgnoreCase("WHILE")
+                        || image.equalsIgnoreCase("FOR")) {
+                    if (!isNotBlockStart(tempToken, ts)) {
+                        int offset = tempToken.offset(tokenHierarchy);
+                        if (!unsuccessBlocks.contains(offset)) {
+                            PlsqlBlock child = checkLoopBlock(tempToken, ts, immediateBlockHier);
+                            if (child == null) {//If inner check seems to have failed need to continue this one
+                                unsuccessBlocks.add(offset);
+                                ts.move(offset);
+                                ts.moveNext();
+                            } else {
+                                checkAndAddNew(child, parent, immediateBlockHier);
+                            }
+                        }
+                    }
+                } else if (image.equalsIgnoreCase("TABLE")
+                        || image.equalsIgnoreCase("INDEX")
+                        || image.equalsIgnoreCase("SELECT")
+                        || image.equalsIgnoreCase("UPDATE")
+                        || image.equalsIgnoreCase("DELETE")
+                        || image.equalsIgnoreCase("INSERT")
+                        || image.equalsIgnoreCase("MERGE")
+                        || image.equalsIgnoreCase("DROP")
+                        || image.equalsIgnoreCase("SEQUENCE")) {
+                    if (!isNotBlockStart(tempToken, ts)) {
+                        int offset = tempToken.offset(tokenHierarchy);
+                        PlsqlBlock child = checkStatementBlock(tempToken, ts, immediateBlockHier);
+                        if (child == null) {//If inner check seems to have failed need to continue this one
+
+                            ts.move(offset);
+                            ts.moveNext();
+                        } else {
+                            checkAndAddNew(child, parent, immediateBlockHier);
+                        }
+                    }
+                }
+            } else if (tokenID == PlsqlTokenId.JAVA_SOUCE) {
+                int offset = ts.offset();
+                PlsqlBlock block = null;
+                block = checkJavaSource(tempToken, ts);
+                if (block == null) {
+                    //pass from the immediate next token to get inner blocks
+                    ts.move(offset);
+                    ts.moveNext();
+                } else {
+                    checkAndAddNew(block, parent, immediateBlockHier);
+                }
+            } else if (tokenID == PlsqlTokenId.LINE_COMMENT) {
+                //only single comment line
+                if (image.toUpperCase(Locale.ENGLISH).contains("<FOLD>")) {
+                    customStartToken = tempToken;
+                } else if (image.toUpperCase(Locale.ENGLISH).contains("<END-FOLD>")) {
+                    if (customStartToken != null) {
+                        String name = customStartToken.text().toString();
+                        int index = name.toUpperCase(Locale.ENGLISH).indexOf("<FOLD>");
+                        name = name.substring(index + 7).trim();
+                        if (ts.moveNext()) {
+                            tempToken = ts.token();
+                            PlsqlBlock custom = new PlsqlBlock(customStartToken.offset(tokenHierarchy),
+                                    tempToken.offset(tokenHierarchy), name, "", PlsqlBlockType.CUSTOM_FOLD);
+                            customFoldBlocks.add(custom);
+                        }
+                        customStartToken = null;
+                    } else {
+                        customEndToken = tempToken;
+                    }
+                } else {
+                    PlsqlBlock block = checkComment(tempToken, ts);
                     if (block != null) {
                         checkAndAddNew(block, parent, immediateBlockHier);
                     }
-                } else if ((tokenID == PlsqlTokenId.OPERATOR) && (image.equals(";"))) {
-                    PlsqlBlock block = checkEnd(tempToken, ts);
-                    //check whether this is the parent can happen in a remove
-                    if (block != null && (block.getType() != PlsqlBlockType.FUNCTION_IMPL && block.getType() != PlsqlBlockType.PROCEDURE_IMPL)) {
-                        if (!isEqual(parent, block)) {
-                            if ((block != null) && (checkExisting(block, immediateBlockHier) == false)) {
-                                addImmediateChildren(block, immediateBlockHier);
-                                immediateBlockHier.add(block);
-                                newBlocks.add(block);
-                                if (parent != null) {
-                                    block.setParent(parent);
-                                }
+                }
+            } else if (tokenID == PlsqlTokenId.BLOCK_COMMENT) {
+                int start = tempToken.offset(tokenHierarchy);
+                PlsqlBlock block = new PlsqlBlock(start,
+                        start + tempToken.length(), "BLOCK COMMENT", "", PlsqlBlockType.COMMENT);
+                if (block != null) {
+                    checkAndAddNew(block, parent, immediateBlockHier);
+                }
+            } else if ((tokenID == PlsqlTokenId.OPERATOR) && (image.equals(";"))) {
+                PlsqlBlock block = checkEnd(tempToken, ts);
+                //check whether this is the parent can happen in a remove
+                if (block != null && (block.getType() != PlsqlBlockType.FUNCTION_IMPL && block.getType() != PlsqlBlockType.PROCEDURE_IMPL)) {
+                    if (!isEqual(parent, block)) {
+                        if ((block != null) && (checkExisting(block, immediateBlockHier) == false)) {
+                            addImmediateChildren(block, immediateBlockHier);
+                            immediateBlockHier.add(block);
+                            newBlocks.add(block);
+                            if (parent != null) {
+                                block.setParent(parent);
                             }
                         }
                     }
                 }
-            }   //we have come to the end now, check whether we have unmatched custom tokens
-
-            if (customEndToken != null) {
-                checkCustom(customEndToken, ts, immediateBlockHier, parent, "END");
-            } else if (customStartToken != null) {
-                checkCustom(customStartToken, ts, immediateBlockHier, parent, "START");
             }
+        }   //we have come to the end now, check whether we have unmatched custom tokens
+
+        if (customEndToken != null) {
+            checkCustom(customEndToken, ts, immediateBlockHier, parent, "END");
+        } else if (customStartToken != null) {
+            checkCustom(customStartToken, ts, immediateBlockHier, parent, "START");
         }
     }
 
     private void checkAndAddNew(PlsqlBlock block, PlsqlBlock parent, List<PlsqlBlock> immediateBlockHier) {
+            LOG.log(Level.FINE, "checkAndAddNew, block.getName()={0}, block.getType()={1}", new Object[]{block.getName(), block.getType()});
         if (checkExisting(block, immediateBlockHier) == false && !isEqual(parent, block)) {
             immediateBlockHier.add(block);
+            LOG.log(Level.FINE, "newBlocks.add({0})", new Object[]{block.getName(), block.getType()});
             newBlocks.add(block);
             if (parent != null) {
                 block.setParent(parent);
@@ -2221,6 +2259,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Check whether current ';' is the end of a function/procedure/view/package
+     *
      * @param tempToken
      * @param ts
      */
@@ -2335,6 +2374,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Check whether there is a function/procedure in this block
+     *
      * @param ts
      * @param methodName
      * @return
@@ -2382,8 +2422,8 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
     }
 
     /**
-     * Check whether there is a function/procedure in this block
-     * Method name is not there in the 'END;'
+     * Check whether there is a function/procedure in this block Method name is not there in the 'END;'
+     *
      * @param ts
      * @return
      */
@@ -2436,11 +2476,13 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Check whether this is a block comment, single line or multi lined comment
+     *
      * @param current
      * @param ts
      * @return
      */
     private PlsqlBlock checkComment(Token<PlsqlTokenId> current, TokenSequence<PlsqlTokenId> ts) {
+        LOG.log(Level.FINE, "checkComment, ts.index()={0} current={1} ", new Object[]{ts.index(), current});
         //If the line don't start with the comment ignore
         String prefix = getPreceedingText(current.offset(tokenHierarchy), ts);
         if (!prefix.trim().equals("")) {
@@ -2448,13 +2490,10 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
         }
 
         Token<PlsqlTokenId> commentBegin = current;
-        Token<PlsqlTokenId> tmp = current;
         Token<PlsqlTokenId> commentEnd = current;
-        PlsqlBlock block = null;
         String text = commentBegin.text().toString();
-        int offset = ts.offset();
-        boolean moveNext = getNextNonWhitespace(ts, false);
-        tmp = ts.token();
+        boolean moveNext = getNextNonWhitespaceForComments(ts);
+        Token<PlsqlTokenId> tmp = ts.token();
         boolean takeDesc = true;
         String desc = getCommentDescription(text);
         if (!desc.equals("COMMENT...")) {
@@ -2476,26 +2515,24 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
                         takeDesc = false;
                     }
                 }
-                moveNext = getNextNonWhitespace(ts, false);
+                moveNext = getNextNonWhitespaceForComments(ts);
                 tmp = ts.token();
             }
         }
 
-        offset = commentEnd.offset(tokenHierarchy);
-        ts.move(offset);
+        ts.move(commentEnd.offset(tokenHierarchy));
         ts.moveNext();
 
         //Calculate end offset
         int endOffset = commentEnd.offset(tokenHierarchy) + commentEnd.length();
 
-        block = new PlsqlBlock(commentBegin.offset(tokenHierarchy),
+        return new PlsqlBlock(commentBegin.offset(tokenHierarchy),
                 endOffset, desc, "", PlsqlBlockType.COMMENT);
-
-        return block;
     }
 
     /**
      * Method that will give the description of the comment fold
+     *
      * @param text
      * @return
      */
@@ -2537,6 +2574,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Check whether this is the start of a PROCEDURE/FUNCTION block
+     *
      * @param methodToken
      * @param ts
      * @param type
@@ -2869,6 +2907,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Check whether this is the start of a PACKAGE block
+     *
      * @param tempToken
      * @param ts
      * @return
@@ -3095,6 +3134,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method that will check declare end blocks
+     *
      * @param current
      * @param ts
      * @param parentBlocks
@@ -3360,6 +3400,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method that will check begin end blocks
+     *
      * @param current
      * @param ts
      * @param parentBlocks
@@ -3583,6 +3624,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method to check table & column comments
+     *
      * @param current
      * @param ts
      * @param parentBlocks
@@ -3791,6 +3833,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Get Return next non whitespace token
+     *
      * @param ts
      * @param ignoreComment: if true will ignore comments also
      * @return
@@ -3819,7 +3862,29 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
     }
 
     /**
+     * Get Return next non whitespace token
+     *
+     * @param ts
+     * @return
+     */
+    private boolean getNextNonWhitespaceForComments(TokenSequence<PlsqlTokenId> ts) {
+        boolean moveNext = ts.moveNext();
+        Token<PlsqlTokenId> tmp = ts.token();
+        LOG.log(Level.FINE, "getNextNonWhitespaceForComments, tmp.id()={0}, tmp.text()={1}", new Object[]{tmp.id(), tmp.text().toString()});
+        while (moveNext) {
+            if (tmp.id() == PlsqlTokenId.WHITESPACE && "\n".equals(tmp.text())) {
+                moveNext = ts.moveNext();
+                tmp = ts.token();
+            } else {
+                break;
+            }
+        }
+        return moveNext;
+    }
+
+    /**
      * Return previous non whitespace token
+     *
      * @param ts
      * @param ignoreComment
      * @return
@@ -3847,6 +3912,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Check whether this is the start of a VIEW block
+     *
      * @param viewToken
      * @param ts
      * @param parentBlocks
@@ -4005,6 +4071,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Get the name defined by &Name
+     *
      * @param inputName
      * @return
      */
@@ -4024,6 +4091,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Check &Name is in map as a key
+     *
      * @param inputName
      * @return
      */
@@ -4039,6 +4107,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Check &Name is in map as a value
+     *
      * @param inputName
      * @return
      */
@@ -4049,6 +4118,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Get the key of &Name
+     *
      * @param inputName
      * @return
      */
@@ -4067,6 +4137,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method that will parse the document and initialize the aliases
+     *
      * @param doc
      */
     private void getAliases(Document doc) {
@@ -4136,6 +4207,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Replace exStr in the given text with newStr
+     *
      * @param plsqlString
      * @param exStr
      * @param newStr
@@ -4152,6 +4224,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Check whether the given offsets are in the same line
+     *
      * @param doc
      * @param offset1
      * @param offset2
@@ -4219,6 +4292,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method that will check if blocks
+     *
      * @param current
      * @param ts
      * @param parentBlocks
@@ -4451,6 +4525,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method that will check case blocks
+     *
      * @param current
      * @param ts
      * @param parentBlocks
@@ -4645,9 +4720,6 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
                     customStartToken = token;
                 } else if (image.toUpperCase(Locale.ENGLISH).contains("<END-FOLD>")) {
                     if (customStartToken != null) {
-                        String fname = customStartToken.text().toString();
-                        int index = fname.toUpperCase(Locale.ENGLISH).indexOf("<FOLD>");
-                        fname = fname.substring(index + 7).trim();
                         if (ts.moveNext()) {
                             token = ts.token();
                             PlsqlBlock custom = new PlsqlBlock(customStartToken.offset(tokenHierarchy),
@@ -4668,10 +4740,8 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
                 int start = token.offset(tokenHierarchy);
                 PlsqlBlock child = new PlsqlBlock(start,
                         start + token.length(), "BLOCK COMMENT", "", PlsqlBlockType.COMMENT);
-                if (child != null) {
-                    if (checkExisting(child, lstChild) == false) {
-                        lstChild.add(child);
-                    }
+                if (checkExisting(child, lstChild) == false) {
+                    lstChild.add(child);
                 }
             } else if (!isThen) {
                 name = name + image;
@@ -4687,6 +4757,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method that will return the prefix of the given block
+     *
      * @param startOffset
      * @param ts
      * @return
@@ -4716,6 +4787,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
     /**
      * Method that will check loop blocks
+     *
      * @param current
      * @param ts
      * @param parentBlocks
@@ -4854,9 +4926,6 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
                     customStartToken = token;
                 } else if (image.toUpperCase(Locale.ENGLISH).contains("<END-FOLD>")) {
                     if (customStartToken != null) {
-                        String fname = customStartToken.text().toString();
-                        int index = fname.toUpperCase(Locale.ENGLISH).indexOf("<FOLD>");
-                        fname = fname.substring(index + 7).trim();
                         if (ts.moveNext()) {
                             token = ts.token();
                             PlsqlBlock custom = new PlsqlBlock(customStartToken.offset(tokenHierarchy),
@@ -4900,8 +4969,8 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
     }
 
     /**
-     * Method that will add the given child blocks to the block and
-     * remove from parent blocks if existing there
+     * Method that will add the given child blocks to the block and remove from parent blocks if existing there
+     *
      * @param block
      * @param lstChild
      * @param parentBlocks
