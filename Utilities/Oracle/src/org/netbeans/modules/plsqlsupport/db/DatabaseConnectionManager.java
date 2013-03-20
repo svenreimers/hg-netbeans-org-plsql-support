@@ -97,6 +97,7 @@ public class DatabaseConnectionManager {
     private static final Logger logger = Logger.getLogger(DatabaseConnectionManager.class.getName());
     private static final RequestProcessor RP = new RequestProcessor(DatabaseConnectionManager.class);
     private DatabaseConnection reverseConnection;
+    private static List<String> failedConnections = new ArrayList<String>();
 
     static {
         String tempDir = System.getProperty("java.io.tmpdir");
@@ -352,6 +353,11 @@ public class DatabaseConnectionManager {
         }
 
         if (!online) {
+            if (force) {
+                if (failedConnections.contains(templateConnection.getName())) {
+                    failedConnections.remove(templateConnection.getName());
+                }
+            }
             connect(templateConnection);
         }
         if (!online) {
@@ -463,29 +469,34 @@ public class DatabaseConnectionManager {
                     setOnline(true);
                     usagesEnabled = isFindUsagesEnabled();
                 }
+                if (failedConnections.contains(connection.getName())) { 
+                    failedConnections.remove(connection.getName());
+                }                  
                 return;
             } else {
-                if (SwingUtilities.isEventDispatchThread()) {
-                    try {
-                        ConnectionManager.getDefault().showConnectionDialog(connection);
-                    } catch (NullPointerException e) {
-                        failed = true;
-                    } catch (IllegalStateException e) {
-                        failed = true;
-                    }
-                } else {
-                    try {
-                        SwingUtilities.invokeAndWait(new Runnable() {
+                if (!failedConnections.contains(connection.getName())) {
+                    if (SwingUtilities.isEventDispatchThread()) {
+                        try {
+                            ConnectionManager.getDefault().showConnectionDialog(connection);
+                        } catch (NullPointerException e) {
+                            failed = true;
+                        } catch (IllegalStateException e) {
+                            failed = true;
+                        }
+                    } else {
+                        try {
+                            SwingUtilities.invokeAndWait(new Runnable() {
 
-                            @Override
-                            public void run() {
-                                ConnectionManager.getDefault().showConnectionDialog(connection);
-                            }
-                        });
-                    } catch (InterruptedException e) {
-                        failed = true;
-                    } catch (InvocationTargetException e) {
-                        failed = true;
+                                @Override
+                                public void run() {
+                                    ConnectionManager.getDefault().showConnectionDialog(connection);
+                                }
+                            });
+                        } catch (InterruptedException e) {
+                            failed = true;
+                        } catch (InvocationTargetException e) {
+                            failed = true;
+                        }
                     }
                 }
                 if ((connection.getJDBCConnection() == null || connection.getJDBCConnection().isClosed())) {
@@ -519,13 +530,21 @@ public class DatabaseConnectionManager {
         }
         failed = failed || !testConnection(connection);
         if (failed) {
-            JOptionPane.showMessageDialog(null, "Can't connect to the database.");
+            if (!failedConnections.contains(connection.getName())) {
+               JOptionPane.showMessageDialog(null, "Can't connect to the database.");
+               failedConnections.add(connection.getName());
+            }
         }
         if (databaseConnectionsAreEqual(connection, templateConnection)) {
             setOnline(!failed);
             if (!failed && !onlineBeforeConnect) {
                 usagesEnabled = isFindUsagesEnabled();
             }
+        }
+        if (!failed) {
+           if (failedConnections.contains(connection.getName())) { 
+               failedConnections.remove(connection.getName());
+           }
         }
     }
 
