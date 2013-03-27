@@ -50,76 +50,94 @@ import org.openide.loaders.DataObject;
  */
 public interface PlsqlFileValidatorService {
 
-   /**
-    * Check if DataObject is valid (based on extension).
-    * If null object sent false is returned.
-    * @param dataObject 
-    * @return true if valid
-    */
-   public boolean isValidPackage(DataObject dataObject);
+    /**
+     * Check if DataObject is valid (based on extension). If null object sent false is returned.
+     *
+     * @param dataObject
+     * @return true if valid
+     */
+    public boolean isValidPackage(DataObject dataObject);
 
-   /**
-    * Check if FileObject is valid (based on extension).
-    * If null object sent false is returned.
-    * @param fileObject
-    * @return true if valid
-    */
-   public boolean isValidPackage(FileObject fileObject);
+    /**
+     * Check if FileObject is valid (based on extension). If null object sent false is returned.
+     *
+     * @param fileObject
+     * @return true if valid
+     */
+    public boolean isValidPackage(FileObject fileObject);
 
-   /**
-    * Check if DataObject is valid spec file (based on extension).
-    * If null object sent false is returned.
-    * @param dataObject
-    * @return
-    */
-   public boolean isValidPackageSpec(DataObject dataObject);
+    /**
+     * Check if DataObject is valid spec file (based on extension). If null object sent false is returned.
+     *
+     * @param dataObject
+     * @return true if DataObject is valid spec file (based on extension)
+     */
+    public boolean isValidPackageSpec(DataObject dataObject);
 
-   public boolean isValidPackageSpec(String fileExt);
+    /**
+     * Check if file extension is valid spec extension. If null object sent false is returned.
+     *
+     * @param fileExt
+     * @return true if file extension is valid spec extension. false if null object sent.
+     */
+    public boolean isValidPackageSpec(String fileExt);
 
-   /**
-    * Check if DataObject is valid body file (based on extension).
-    * If null object sent false is returned.
-    * @param dataObject
-    * @return
-    */
-   public boolean isValidPackageBody(DataObject dataObject);
+    /**
+     * Check if DataObject is valid body file (based on extension). If null object sent false is returned.
+     *
+     * @param dataObject
+     * @return
+     */
+    public boolean isValidPackageBody(DataObject dataObject);
 
-   public boolean isValidPackageBody(String fileExt);
+    /**
+     *
+     * @param fileExt
+     * @return
+     */
+    public boolean isValidPackageBody(String fileExt);
 
-   /**
-    * Check if DataObject is valid .tdb file.
-    * If null object sent false is returned.
-    * @param dataObject
-    * @return
-    */
-   public boolean isValidTDB(DataObject dataObject);
+    /**
+     * Check if DataObject is valid .tdb file. If null object sent false is returned.
+     *
+     * @param dataObject
+     * @return
+     */
+    public boolean isValidTDB(DataObject dataObject);
 
-   /**
-    * Returns valid DataObject or null if sourceDataObject has no sibling 
-    * or sibling is not Valid (not found).
-    * @param sourceDataObject
-    * @return
-    */
-   public DataObject getSiblingExt(DataObject sourceDataObject);
+    /**
+     * Returns valid DataObject or null if sourceDataObject has no sibling or sibling is not Valid (not found).
+     *
+     * @param sourceDataObject
+     * @return
+     */
+    public DataObject getSiblingExt(DataObject sourceDataObject);
 
-   /**
-    * Get file extension for given sibling.
-    * @param siblingExt case extension
-    * @return sibling extension if found or null if not found.
-    */
-   public String getSiblingExt(String siblingExt);
+    /**
+     * Get file extension for given sibling.
+     *
+     * @param siblingExt case extension
+     * @return sibling extension if found or null if not found.
+     */
+    public String getSiblingExt(String siblingExt);
 
-   /**
-    * 
-    * @return
-    */
-   public String getDefaultPackageBodyExt();
+    /**
+     *
+     * @return file extension for body package.
+     */
+    public String getDefaultPackageBodyExt();
 
-   /**
-    * 
-    * @return
-    */
-   public String getDefaultPackageSpecExt();
+    /**
+     *
+     * @return file extension for spec package.
+     */
+    public String getDefaultPackageSpecExt();
 
-   public boolean isValidPackageDefault(DataObject dataObject);
+    /**
+     * Check if DataObject is valid default package file (based on extension). If null object sent false is returned.
+     *
+     * @param dataObject
+     * @return true if DataObject is valid default package file (based on extension).
+     */
+    public boolean isValidPackageDefault(DataObject dataObject);
 }
