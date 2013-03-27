@@ -50,12 +50,9 @@ import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.*;
 import javax.swing.event.PopupMenuEvent;
@@ -82,9 +79,9 @@ import org.openide.util.actions.Presenter;
     @ActionReference(path = "Shortcuts", name = "DS-E"),
     @ActionReference(path = "Shortcuts", name = "OS-E"),
     @ActionReference(path = "Editors/text/x-plsql/Popup", name = "org-netbeans-modules-plsql-execution-PlsqlExecuteAction",
-    position = 405, separatorBefore = 404),
+            position = 405, separatorBefore = 404),
     @ActionReference(path = "Editors/text/x-plsql/Toolbars/Default", name = "org-netbeans-modules-plsql-execution-PlsqlExecuteAction",
-    position = 19500, separatorBefore = 19400)
+            position = 19500, separatorBefore = 19400)
 })
 public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAction, Presenter.Toolbar {
 
@@ -163,19 +160,16 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
             return;
         }
 
+        final DatabaseConnection dc;
         // If autocommit OFF - take the connection from data object.
         if (!autoCommit) {
-            setConnection(connectionProvider.getTemplateConnection());
+            dc = dataObject.getLookup().lookup(DatabaseConnection.class);
+        } else {
+            dc = connectionProvider.getTemplateConnection();
         }
-
-        if (connection == null) {
-            connection = connectionProvider.getTemplateConnection();
+        if (setConnection(dc)) {
+            saveAndExecute();
         }
-
-        if (connection == null) {
-            return;
-        }
-        saveAndExecute();
     }
 
     @Override
@@ -245,58 +239,37 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
         }
     }
 
-    private void setConnection(DatabaseConnection newConnection) {
-        if (connection != null && connection.getName().equals(newConnection.getName())) {
-            connection = dataObject.getLookup().lookup(DatabaseConnection.class);
-        } else {
-            if (connection != null) {
-                connection = dataObject.getLookup().lookup(DatabaseConnection.class);
-                if (commit.getCommit()) {
-                    if (!OptionsUtilities.isDeployNoPromptEnabled()) {
-
-                        String msg = "Commit transactions for " + connection.getDisplayName() + " ?";
-                        String title = "Confirm!";
-                        int showOptionDialog = JOptionPane.showOptionDialog(null,
-                                msg,
-                                title,
-                                JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE,
-                                null, null, null);
-
-                        if (showOptionDialog == JOptionPane.YES_OPTION) {
-                            commit.commitTransaction(dataObject, connection, connectionProvider);
-                        } else if (showOptionDialog == JOptionPane.NO_OPTION) {
-                            commit.rollbackTransaction(dataObject, connection, connectionProvider);
-                        } else {
-                            return;
-                        }
-                    }
-                }
-            }
-            if (!connectionProvider.isDefaultDatabase(newConnection)) {
+    private boolean setConnection(DatabaseConnection newConnection) {
+        if (connectionHasChanged(newConnection)) {
+//            connection = dataObject.getLookup().lookup(DatabaseConnection.class);
+            if (commit.getCommit()) {
                 if (!OptionsUtilities.isDeployNoPromptEnabled()) {
-                    String msg = "You are now connecting to a secondary database.";
-                    String title = "Connecting to a Secondary Database!";
-                    if (JOptionPane.showOptionDialog(null,
-                            msg,
-                            title,
-                            JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE,
-                            null, null, null) == JOptionPane.NO_OPTION) {
-                        return;
-                    }
-                    connection = newConnection;
-                    try {
-                        Connection jdbcConnection = connection.getJDBCConnection();
-                        if (jdbcConnection == null || !jdbcConnection.isValid(1000)) {
-                            return;
-                        }
-                    } catch (SQLException ex) {
-                        LOG.log(Level.INFO, connection.toString(), ex);
+                    String msg = "Commit transactions for " + connection.getDisplayName() + " ?";
+                    String title = "Confirm!";
+                    int dialogAnswer = JOptionPane.showOptionDialog(null, msg, title, JOptionPane.YES_NO_CANCEL_OPTION,
+                            JOptionPane.QUESTION_MESSAGE, null, null, null);
+
+                    if (dialogAnswer == JOptionPane.YES_OPTION) {
+                        commit.commitTransaction(dataObject, connection, connectionProvider);
+                    } else if (dialogAnswer == JOptionPane.NO_OPTION) {
+                        commit.rollbackTransaction(dataObject, connection, connectionProvider);
+                    } else {
+                        return false;
                     }
                 }
-            } else {
-                connection = newConnection;
             }
         }
+        if (!connectionProvider.isDefaultDatabase(newConnection) && !OptionsUtilities.isDeployNoPromptEnabled()) {
+            String msg = "You are now connecting to a secondary database.";
+            String title = "Connecting to a Secondary Database!";
+            final int dialogAnswer = JOptionPane.showOptionDialog(null, msg, title, JOptionPane.YES_NO_OPTION,
+                    JOptionPane.QUESTION_MESSAGE, null, null, null);
+            if (dialogAnswer != JOptionPane.YES_OPTION) {
+                return false;
+            }
+        }
+        connection = newConnection;
+        return true;
     }
 
     public void saveAndExecute() {
@@ -346,7 +319,7 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
                     List<PlsqlExecutableObject> newblocks = new ArrayList<PlsqlExecutableObject>();
 
                     int caretPos = 0;
-                    if ((panes != null) && (panes.length > 0)) {
+                    if (panes.length > 0) {
                         caretPos = panes[0].getCaretPosition();
                     }
                     for (PlsqlExecutableObject block : blocks) {
@@ -380,6 +353,10 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
         } catch (IOException ex) {
             Exceptions.printStackTrace(ex);
         }
+    }
+
+    private boolean connectionHasChanged(DatabaseConnection newConnection) {
+        return connection != null && !connection.getName().equals(newConnection.getName());
     }
 
     private class ExecutionHandler implements Runnable, Cancellable {
@@ -455,9 +432,9 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
 
             JMenuItem item = (JMenuItem) e.getSource();
             DatabaseConnection newConnection = (DatabaseConnection) item.getClientProperty(DATABASE_CONNECTION_KEY);
-            setConnection(newConnection);
-            saveAndExecute();
-
+            if (setConnection(newConnection)) {
+                saveAndExecute();
+            }
         }
     };
 

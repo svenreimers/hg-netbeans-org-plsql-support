@@ -113,8 +113,10 @@ public class PlsqlFileExecutor {
     private final InputOutput preparedIO;
     private final DatabaseConnectionManager connectionProvider;
     private Savepoint firstSavepoint = null;
+    private final String connectionDisplayName;
 
     public PlsqlFileExecutor(DatabaseConnectionManager connectionProvider, DatabaseConnection connection) {
+        this.connectionDisplayName = "Using DB: " + connection.getDisplayName() + " [" + connection.getName() + "]";
         this.connection = connection;
         this.preparedIO = null;
         this.connectionProvider = connectionProvider;
@@ -123,10 +125,11 @@ public class PlsqlFileExecutor {
 
     public PlsqlFileExecutor(DatabaseConnectionManager connectionProvider, Connection debugConnection, InputOutput io) {
         this.connection = null;
+        this.connectionDisplayName = null;
         this.debugConnection = debugConnection;
         this.preparedIO = io;
         this.connectionProvider = connectionProvider;
-        this.cache = DatabaseContentManager.getInstance(connection);
+//        this.cache = DatabaseContentManager.getInstance(connection);
     }
 
     public void cancel() {
@@ -359,11 +362,11 @@ public class PlsqlFileExecutor {
                 io.getOut().println();
             } else {
                 io.getOut().reset();
-                io.getErr().reset();
                 io.getOut().flush();
                 io.getErr().flush();
             }
             io.select();
+            io.getOut().println(connectionDisplayName);
             io.getOut().println(startMsg);
             io.getOut().println("-------------------------------------------------------------");
         } catch (IOException ex) {
@@ -391,7 +394,7 @@ public class PlsqlFileExecutor {
 
     }
 
-    public InputOutput executePLSQL(List executableObjs, Document doc, boolean hidden, boolean autoCommit) {
+    public InputOutput executePLSQL(List<PlsqlExecutableObject> executableObjs, Document doc, boolean hidden, boolean autoCommit) {
         final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
         Project project = null;
         Object object = doc.getProperty(Document.StreamDescriptionProperty);
@@ -432,7 +435,7 @@ public class PlsqlFileExecutor {
         //quick & dirty fix to avoid having output tabs for the SQL Execution window (unless there's an exception)
         //first check to see if this is a simple select statement and if so treat it separately.
         if (executableObjs.size() == 1) {
-            PlsqlExecutableObject executionObject = (PlsqlExecutableObject) executableObjs.get(0);
+            PlsqlExecutableObject executionObject = executableObjs.get(0);
             if (executionObject.getType() == PlsqlExecutableObjectType.STATEMENT || executionObject.getType() == PlsqlExecutableObjectType.UNKNOWN) {
                 String plsqlText = executionObject.getPlsqlString();
                 try {
@@ -459,7 +462,7 @@ public class PlsqlFileExecutor {
 
                 } catch (SQLException sqlEx) {
                     try {
-                        io = initializeIO(fileName, getIOTabName(executableObjs, fileName, dataObj.getNodeDelegate().getDisplayName()), dataObj);
+                        io = initializeIO(fileName, getIOTabName(executableObjs.get(0), fileName, dataObj.getNodeDelegate().getDisplayName()), dataObj);
                         int errLine = getLineNumberFromMsg(sqlEx.getMessage());
                         int outLine = executionObject.getStartLineNo() + errLine - 1;
                         String msg = getmodifiedErorrMsg(sqlEx.getMessage(), outLine);
@@ -483,7 +486,7 @@ public class PlsqlFileExecutor {
         try {
 
 
-            io = initializeIO(fileName, getIOTabName(executableObjs, fileName, dataObj.getNodeDelegate().getDisplayName()), dataObj);
+            io = initializeIO(fileName, getIOTabName(executableObjs.get(0), fileName, dataObj.getNodeDelegate().getDisplayName()), dataObj);
             con = debugConnection != null ? debugConnection : connection.getJDBCConnection();
             con.setAutoCommit(false);
             enableDbmsOut(con);
@@ -493,14 +496,14 @@ public class PlsqlFileExecutor {
             stm = con.createStatement();
             stm.setEscapeProcessing(false);
             boolean firstSelectStatement = true;
-            for (int i = 0; i < executableObjs.size(); i++) {
+
+            for (PlsqlExecutableObject exeObj : executableObjs) {
                 if (cancel) {
                     io.getErr().println("!!!Execution cancelled. Performing rollback");
                     // con.rollback();
                     con.rollback(firstSavepoint);
                     return io;
                 }
-                PlsqlExecutableObject exeObj = (PlsqlExecutableObject) executableObjs.get(i);
                 int lineNumber = exeObj.getStartLineNo();
                 String plsqlText = exeObj.getPlsqlString();
 
@@ -810,7 +813,7 @@ public class PlsqlFileExecutor {
                         break;
                     }
                 }
-                List errLst;
+                List<PlsqlErrorObject> errLst;
                 boolean exception = false;
                 String excMessage = "";
                 if (exeObj.getType() == PlsqlExecutableObjectType.PROCEDURE) {
@@ -837,7 +840,7 @@ public class PlsqlFileExecutor {
                     } else {
                         io.getErr().println((new StringBuilder()).append("!!!Procedure ").append(exeObjName).append(" Created With Compilation Errors").toString());
                         for (int a = 0; a < errLst.size(); a++) {
-                            PlsqlErrorObject errObj = (PlsqlErrorObject) errLst.get(a);
+                            PlsqlErrorObject errObj = errLst.get(a);
                             int stNo = exeObj.getStartLineNo();
                             int errNo = errObj.getLineNumber();
                             if (errNo <= 0) {
@@ -880,7 +883,7 @@ public class PlsqlFileExecutor {
                     } else {
                         io.getErr().println((new StringBuilder()).append("!!!Function ").append(exeObjName).append(" Created With Compilation Errors").toString());
                         for (int a = 0; a < errLst.size(); a++) {
-                            PlsqlErrorObject errObj = (PlsqlErrorObject) errLst.get(a);
+                            PlsqlErrorObject errObj = errLst.get(a);
                             int stNo = exeObj.getStartLineNo();
                             int errNo = errObj.getLineNumber();
                             if (errNo <= 0) {
@@ -922,7 +925,7 @@ public class PlsqlFileExecutor {
                     } else {
                         io.getErr().println((new StringBuilder()).append("!!!Package ").append(exeObjName).append(" Created With Compilation Errors").toString());
                         for (int a = 0; a < errLst.size(); a++) {
-                            PlsqlErrorObject errObj = (PlsqlErrorObject) errLst.get(a);
+                            PlsqlErrorObject errObj = errLst.get(a);
                             int stNo = exeObj.getStartLineNo();
                             int errNo = errObj.getLineNumber();
                             if (errNo <= 0) {
@@ -966,7 +969,7 @@ public class PlsqlFileExecutor {
                 } else {
                     io.getErr().println((new StringBuilder()).append("!!!Package Body ").append(exeObjName).append(" Created With Compilation Errors").toString());
                     for (int a = 0; a < errLst.size(); a++) {
-                        PlsqlErrorObject errObj = (PlsqlErrorObject) errLst.get(a);
+                        PlsqlErrorObject errObj = errLst.get(a);
                         int stNo = exeObj.getStartLineNo();
                         int errNo = errObj.getLineNumber();
                         if (errNo <= 0) {
@@ -1012,6 +1015,7 @@ public class PlsqlFileExecutor {
                 if (preparedIO == null) {
                     io.getOut().println("-------------------------------------------------------------");
                     io.getOut().println(endMsg + " (Total times: " + totalTime + "s)");
+                    io.getOut().println(connectionDisplayName);
                     io.getOut().println(new Timestamp(endTime).toString());
                 }
             }
@@ -1047,8 +1051,8 @@ public class PlsqlFileExecutor {
         return msg;
     }
 
-    private List getPackageerrors(String packageName, String packageType) {
-        List<PlsqlErrorObject> lst = new ArrayList<PlsqlErrorObject>();
+    private List<PlsqlErrorObject> getPackageerrors(String packageName, String packageType) {
+        List<PlsqlErrorObject> errorObjects = new ArrayList<PlsqlErrorObject>();
         Connection con = debugConnection != null ? debugConnection : connection.getJDBCConnection();
         if (con != null) {
             Statement stm = null;
@@ -1064,7 +1068,7 @@ public class PlsqlFileExecutor {
                     errObj.setLineNumber(lineNo);
                     errObj.setPosition(pos);
                     errObj.setErrorMsg(msg);
-                    lst.add(errObj);
+                    errorObjects.add(errObj);
                 }
             } catch (SQLException e) {
             } finally {
@@ -1079,7 +1083,7 @@ public class PlsqlFileExecutor {
         } else {
             throw new RuntimeException("Not Connected to Database to Get USER_ERRORS");
         }
-        return lst;
+        return errorObjects;
     }
 
     /**
@@ -1112,8 +1116,7 @@ public class PlsqlFileExecutor {
      * @return
      */
     private List<Character> getAliases(HashMap<String, String> definesMap, Document doc, int start, int end, List<Character> define, InputOutput io) {
-        TokenHierarchy tokenHierarchy = TokenHierarchy.get(doc);
-        @SuppressWarnings("unchecked")
+        TokenHierarchy<Document> tokenHierarchy = TokenHierarchy.get(doc);
         TokenSequence<PlsqlTokenId> ts = tokenHierarchy.tokenSequence(PlsqlTokenId.language());
         ts.move(start);
         boolean moveNext = ts.moveNext();
@@ -1384,9 +1387,7 @@ public class PlsqlFileExecutor {
                     //Load the editor cookier and allow parsing
                     Document document = PlsqlFileUtil.getDocument(obj);
                     PlsqlExecutableBlocksMaker blockMaker = new PlsqlExecutableBlocksMaker(document);
-                    final List exeBlocks = blockMaker.makeExceutableObjects();
-                    executePLSQL(exeBlocks, document, true, true);
-
+                    executePLSQL(blockMaker.makeExceutableObjects(), document, true, true);
                 }
             } else {
                 io.getOut().println("!!!Error opening " + fileName);
@@ -1441,29 +1442,24 @@ public class PlsqlFileExecutor {
          * @param databaseConenction
          * @return
          */
-        private SQLExecutionResults execute(String sqlScript, int startOffset, int endOffset,
-                DatabaseConnection conn) {
+        private SQLExecutionResults execute(String sqlScript, int startOffset, int endOffset, DatabaseConnection conn) {
             boolean cancelled = false;
             List<StatementInfo> statements = getStatements(sqlScript, startOffset, endOffset);
             List<SQLExecutionResult> results = new ArrayList<SQLExecutionResult>();
             String url = conn.getDatabaseURL();
-
-            for (Iterator i = statements.iterator(); i.hasNext();) {
+            for (StatementInfo info : statements) {
                 cancelled = Thread.currentThread().isInterrupted();
                 if (cancelled) {
                     break;
                 }
 
-                StatementInfo info = (StatementInfo) i.next();
                 String sql = info.getSQL();
 
-                SQLExecutionResult result = null;
                 DataView view = DataView.create(conn, sql, DEFAULT_PAGE_SIZE);
 
                 // Save SQL statements executed for the SQLHistoryManager
                 SQLHistoryManager.getInstance().saveSQL(new SQLHistoryEntry(url, sql, new Date()));
-                result = new SQLExecutionResult(info, view);
-                results.add(result);
+                results.add(new SQLExecutionResult(info, view));
             }
 
             // Persist SQL executed
@@ -1514,9 +1510,7 @@ public class PlsqlFileExecutor {
         private void displayErrors(SQLExecutionResults results) {
             if (results != null) {
                 for (SQLExecutionResult result : results.getResults()) {
-                    Collection<Throwable> collect = result.getExceptions();
-                    for (Iterator it = collect.iterator(); it.hasNext();) {
-                        Throwable excep = (Throwable) it.next();
+                    for (Throwable excep : result.getExceptions()) {
                         NotifyDescriptor descriptor = new NotifyDescriptor.Message(excep.getLocalizedMessage(), NotifyDescriptor.ERROR_MESSAGE);
                         DialogDisplayer.getDefault().notifyLater(descriptor);
                     }
@@ -1534,10 +1528,9 @@ public class PlsqlFileExecutor {
      * Get the suitable IO tab name, according to the content
      * of the file.
      */
-    private String getIOTabName(List executableObjs, String fileName, String displayName) {
-        PlsqlExecutableObject executionObject = (PlsqlExecutableObject) executableObjs.get(0);
+    private String getIOTabName(PlsqlExecutableObject executionObject, String fileName, String displayName) {
         if (fileName.equals(displayName)) {
-            if (executableObjs.size() > 0 && fileName.endsWith(".tdb")) {
+            if (executionObject != null && fileName.endsWith(".tdb")) {
                 String str = executionObject.getPlsqlString().replaceAll("\n", " ");
                 fileName = str.length() > 30 ? str.substring(0, 30) + "..." : str;
             }
@@ -1638,6 +1631,7 @@ public class PlsqlFileExecutor {
                                     Object pageContext = method.invoke(delegate);
                                     method = pageContext.getClass().getDeclaredMethod("getCurrentRows");
                                     method.setAccessible(true);
+                                    @SuppressWarnings("unchecked")
                                     List<Object[]> currentRows = (List<Object[]>) method.invoke(pageContext);
                                     //Get selected row numbers
                                     method = tableUI.getClass().getMethod("getSelectedRows");
