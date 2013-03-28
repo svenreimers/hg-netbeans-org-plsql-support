@@ -42,6 +42,7 @@
 package org.netbeans.modules.plsql.execution;
 
 import java.awt.Component;
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
@@ -235,6 +236,9 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
                 url = alias + " [" + url + "]";
             }
             JMenuItem item = new JMenuItem(url);
+            if (connectionProvider.isDefaultDatabase(c)) {
+                item.setFont(item.getFont().deriveFont(Font.BOLD));
+            }
             item.putClientProperty(DATABASE_CONNECTION_KEY, c);
             item.addActionListener(buttonListener);
             popup.add(item);
