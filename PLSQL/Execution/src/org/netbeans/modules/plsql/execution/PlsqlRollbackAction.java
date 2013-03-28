@@ -47,17 +47,13 @@ import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.text.Document;
 import org.netbeans.api.db.explorer.DatabaseConnection;
-import org.netbeans.api.progress.ProgressHandle;
-import org.netbeans.api.progress.ProgressHandleFactory;
+import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.awt.ActionID;
@@ -68,20 +64,18 @@ import org.openide.cookies.SaveCookie;
 import org.openide.loaders.DataObject;
 import org.openide.util.*;
 import org.openide.util.actions.Presenter;
-import org.openide.windows.IOProvider;
-import org.openide.windows.InputOutput;
 
 @ActionID(id = "org.netbeans.modules.plsql.execution.PlsqlRollbackAction", category = "PLSQL")
-@ActionRegistration(displayName = "#CTL_PlsqlRollback")
+@ActionRegistration(displayName = "#CTL_PlsqlRollback", lazy = false)
 public class PlsqlRollbackAction extends AbstractAction implements ContextAwareAction, Presenter.Toolbar {
 
-    private static final List<String> EXTENSIONS = Arrays.asList(new String[]{"tdb"});
-    private DataObject dataObject;
+    private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
+    private final DataObject dataObject;
+    private final PlsqlTransaction transaction;
     private DatabaseConnectionManager connectionProvider;
     private JButton button;
     private DatabaseConnection connection;
-    PlsqlCommit commit;
-    private PropertyChangeListener EnableRollback;
+    private final PropertyChangeListener propertyChangeListener = new EnableRollback();
 
     public PlsqlRollbackAction() {
         this(Utilities.actionsGlobalContext());
@@ -93,28 +87,27 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
         putValue(SMALL_ICON, new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/database_rollback.png")));
 
         dataObject = context.lookup(DataObject.class);
+        transaction = PlsqlTransaction.getInstance(dataObject);
+    }
 
+    @Override
+    public boolean isEnabled() {
         //Enable execution for .spec .body files in workspace (copied using 'Copy to Workspace Folder')
-        if (dataObject != null && (dataObject.getPrimaryFile().getExt().toLowerCase(Locale.ENGLISH).equals("spec")
-                || dataObject.getPrimaryFile().getExt().toLowerCase(Locale.ENGLISH).equals("body")
-                || dataObject.getPrimaryFile().getExt().toLowerCase(Locale.ENGLISH).equals("db"))) {
-            if (!dataObject.getPrimaryFile().canWrite()) {
-                dataObject = null;
-            }
-        } else if (dataObject != null && !EXTENSIONS.contains(dataObject.getPrimaryFile().getExt().toLowerCase(Locale.ENGLISH))) {
-            dataObject = null;
-        }
-
-        if (dataObject != null && dataObject.getLookup().lookup(EditorCookie.class) == null) {
-            dataObject = null;
-        }
-
         if (dataObject != null) {
-            setEnabled(true); 
-            commit = PlsqlCommit.getInstance(dataObject);
-        } else {
-            setEnabled(false);
+            if (validator.isValidPackageDefault(dataObject) || dataObject.getPrimaryFile().getExt().toLowerCase(Locale.ENGLISH).equals("db")) {
+                if (!dataObject.getPrimaryFile().canWrite()) {
+                    return false;
+                }
+            }
+            if (!validator.isValidTDB(dataObject)) {
+                return false;
+            }
+
+            if (dataObject.getLookup().lookup(EditorCookie.class) == null) {
+                return false;
+            }
         }
+        return true;
     }
 
     @Override
@@ -143,8 +136,7 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
         }
 
         saveIfModified(dataObject);
-        commit.rollbackTransaction(dataObject, connection, connectionProvider);
-        commit.setCommit(false);
+        transaction.rollbackTransaction(connection, connectionProvider);
     }
 
     @Override
@@ -155,17 +147,15 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
         button = DropDownButtonFactory.createDropDownButton(
                 new ImageIcon(new BufferedImage(32, 32, BufferedImage.TYPE_BYTE_GRAY)), null);
         button.setAction(this);
-        button.setSelected(!OptionsUtilities.isCommandWindowAutoCommitEnabled());
         button.setEnabled(false);
         button.setDisabledIcon(new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/database_rollback_disable.png")));
-        EnableRollback = new EnableRollback();
-        commit.addPropertyChangeListener(EnableRollback);
+        transaction.addPropertyChangeListener(propertyChangeListener);
         return button;
     }
 
     private void saveIfModified(DataObject dataObj) {
         try {
-            SaveCookie saveCookie = dataObj.getCookie(SaveCookie.class);
+            SaveCookie saveCookie = dataObj.getLookup().lookup(SaveCookie.class);
             if (saveCookie != null) {
                 saveCookie.save();
             }
@@ -173,18 +163,16 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
             Exceptions.printStackTrace(ex);
         }
     }
-    
-    private class EnableRollback implements PropertyChangeListener {
 
-        public EnableRollback() {}
+    private class EnableRollback implements PropertyChangeListener {
 
         @Override
         public void propertyChange(PropertyChangeEvent event) {
-          if(!OptionsUtilities.isCommandWindowAutoCommitEnabled() && commit.getCommit()){
-              button.setEnabled(true);
-          }
-          else
-              button.setEnabled(false);
+            if (!OptionsUtilities.isCommandWindowAutoCommitEnabled() && transaction.isOpen()) {
+                button.setEnabled(true);
+            } else {
+                button.setEnabled(false);
+            }
         }
     }
 }

@@ -67,100 +67,102 @@ import org.openide.windows.InputOutput;
 import org.openide.windows.OutputWriter;
 
 @ActionID(id = "org.netbeans.modules.plsql.execution.PlsqlExplainPlanAction", category = "PLSQL")
-@ActionRegistration(displayName = "#CTL_PlsqlExplainPlanAction")
+@ActionRegistration(displayName = "#CTL_PlsqlExplainPlanAction", lazy = false)
 public final class PlsqlExplainPlanAction extends CookieAction {
 
     @Override
-   protected void performAction(Node[] activatedNodes) {
-      EditorCookie editorCookie = activatedNodes[0].getLookup().lookup(EditorCookie.class);
-      DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
-      if (editorCookie != null && dataObject != null) {
-         try {
-            DatabaseConnectionManager dbConnectionManager = DatabaseConnectionManager.getInstance(dataObject);
-            if(dbConnectionManager==null) {
-               JOptionPane.showMessageDialog(null, "Connect the project to a database");
-               return;
-            }
-            DatabaseConnection dbConnection = dbConnectionManager.getPooledDatabaseConnection(true, true);
+    protected void performAction(Node[] activatedNodes) {
+        EditorCookie editorCookie = activatedNodes[0].getLookup().lookup(EditorCookie.class);
+        DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
+        if (editorCookie != null && dataObject != null) {
             try {
-               Connection connection = dbConnection.getJDBCConnection();
-               Document doc = editorCookie.getDocument();
-               if (connection != null) {
-                  explainPlan(doc.getText(0, doc.getLength()), connection);
-               }
-            } finally {
-               dbConnectionManager.releaseDatabaseConnection(dbConnection);
+                DatabaseConnectionManager dbConnectionManager = DatabaseConnectionManager.getInstance(dataObject);
+                if (dbConnectionManager == null) {
+                    JOptionPane.showMessageDialog(null, "Connect the project to a database");
+                    return;
+                }
+                DatabaseConnection dbConnection = dbConnectionManager.getPooledDatabaseConnection(true, true);
+                try {
+                    Connection connection = dbConnection.getJDBCConnection();
+                    Document doc = editorCookie.getDocument();
+                    if (connection != null) {
+                        explainPlan(doc.getText(0, doc.getLength()), connection);
+                    }
+                } finally {
+                    dbConnectionManager.releaseDatabaseConnection(dbConnection);
+                }
+            } catch (BadLocationException ex) {
+                Exceptions.printStackTrace(ex);
             }
-         } catch (BadLocationException ex) {
-            Exceptions.printStackTrace(ex);
-         }
-      }
-   }
+        }
+    }
 
     @Override
-   protected int mode() {
-      return CookieAction.MODE_EXACTLY_ONE;
-   }
+    protected int mode() {
+        return CookieAction.MODE_EXACTLY_ONE;
+    }
 
     @Override
-   public String getName() {
-      return NbBundle.getMessage(PlsqlExplainPlanAction.class, "CTL_PlsqlExplainPlanAction");
-   }
+    public String getName() {
+        return NbBundle.getMessage(PlsqlExplainPlanAction.class, "CTL_PlsqlExplainPlanAction");
+    }
 
     @Override
-   protected Class[] cookieClasses() {
-      return new Class[]{DataObject.class};
-   }
-
-   @Override
-   protected String iconResource() {
-      return "org/netbeans/modules/plsql/execution/explain.png";
-   }
+    protected Class[] cookieClasses() {
+        return new Class[]{DataObject.class};
+    }
 
     @Override
-   public HelpCtx getHelpCtx() {
-      return HelpCtx.DEFAULT_HELP;
-   }
+    protected String iconResource() {
+        return "org/netbeans/modules/plsql/execution/explain.png";
+    }
 
-   @Override
-   protected boolean asynchronous() {
-      return false;
-   }
+    @Override
+    public HelpCtx getHelpCtx() {
+        return HelpCtx.DEFAULT_HELP;
+    }
 
-   /**
-    * Enable this action only for the SQL execution window
-    * @param nodes
-    * @return
-    */
-   @Override
-   protected boolean enable(Node[] activatedNodes) {
-      if (!super.enable(activatedNodes))
-         return false;
-      return activatedNodes[0].getLookup().lookup(DataObject.class).getPrimaryFile().getNameExt().startsWith(SQLCommandWindow.SQL_EXECUTION_FILE_PREFIX);
-   }
+    @Override
+    protected boolean asynchronous() {
+        return false;
+    }
 
-   private void explainPlan(String sql, Connection con) {
-      InputOutput io = IOProvider.getDefault().getIO("Explain Plan", true);
-      io.select();
-      try {
-         sql = sql.trim();
-         OutputWriter out = io.getOut();
-         Statement stmt = con.createStatement();
-         out.println("Explain plan for:");
-         out.println("   " + sql.replaceAll("\n", "\n   "));
-         if(sql.endsWith(";"))
-            sql = sql.substring(0, sql.length()-1);
-         stmt.execute("explain plan for " + sql);
-         ResultSet rs = stmt.executeQuery("select plan_table_output from table(dbms_xplan.display)");
-         while (rs.next()) {
-            out.println(rs.getString(1));
-         }
-         stmt.close();
-         out.close();
-         io.getErr().close();
-      } catch (SQLException ex) {
-         io.getErr().println(ex.getMessage());
-      }
-   }
+    /**
+     * Enable this action only for the SQL execution window
+     *
+     * @param nodes
+     * @return
+     */
+    @Override
+    protected boolean enable(Node[] activatedNodes) {
+        if (!super.enable(activatedNodes)) {
+            return false;
+        }
+        return activatedNodes[0].getLookup().lookup(DataObject.class).getPrimaryFile().getNameExt().startsWith(SQLCommandWindow.SQL_EXECUTION_FILE_PREFIX);
+    }
+
+    private void explainPlan(String sql, Connection con) {
+        InputOutput io = IOProvider.getDefault().getIO("Explain Plan", true);
+        io.select();
+        try {
+            sql = sql.trim();
+            OutputWriter out = io.getOut();
+            Statement stmt = con.createStatement();
+            out.println("Explain plan for:");
+            out.println("   " + sql.replaceAll("\n", "\n   "));
+            if (sql.endsWith(";")) {
+                sql = sql.substring(0, sql.length() - 1);
+            }
+            stmt.execute("explain plan for " + sql);
+            ResultSet rs = stmt.executeQuery("select plan_table_output from table(dbms_xplan.display)");
+            while (rs.next()) {
+                out.println(rs.getString(1));
+            }
+            stmt.close();
+            out.close();
+            io.getErr().close();
+        } catch (SQLException ex) {
+            io.getErr().println(ex.getMessage());
+        }
+    }
 }
-

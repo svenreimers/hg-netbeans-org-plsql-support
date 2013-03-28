@@ -91,7 +91,7 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
     private static final String DATABASE_CONNECTION_KEY = "databaseConnection";
     private static final String TEST_BLOCK_NAME_PREFIX = "TestBlock:";
-    private DataObject dataObject;
+    private final DataObject dataObject;
     private PlsqlDataObject plsqlDataobject;
     private DatabaseConnectionManager connectionProvider;
     private DatabaseConnection connection;
@@ -100,7 +100,7 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
     private JButton button;
     private ActionListener buttonListener = new ButtonListener();
     private boolean autoCommit = true;
-    PlsqlCommit commit;
+    private final PlsqlTransaction transaction;
 
     public PlsqlExecuteAction() {
         this(Utilities.actionsGlobalContext());
@@ -113,25 +113,27 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
 
         dataObject = context.lookup(DataObject.class);
 
-        //Enable execution for .spec .body files in workspace (copied using 'Copy to Workspace Folder')
-        if (dataObject != null && (validator.isValidPackageDefault(dataObject)
-                || dataObject.getPrimaryFile().getExt().toLowerCase(Locale.ENGLISH).equals("db"))) {
-            if (!dataObject.getPrimaryFile().canWrite()) {
-                dataObject = null;
-            }
-        }
-
-        if (dataObject != null && dataObject.getLookup().lookup(EditorCookie.class) == null) {
-            dataObject = null;
-        }
-
-        setEnabled(dataObject != null);
         if (validator.isValidTDB(dataObject)) {
             autoCommit = OptionsUtilities.isCommandWindowAutoCommitEnabled();
         }
+        transaction = PlsqlTransaction.getInstance(dataObject);
+    }
+
+    @Override
+    public boolean isEnabled() {
+        //Enable execution for .spec .body files in workspace (copied using 'Copy to Workspace Folder')
         if (dataObject != null) {
-            commit = PlsqlCommit.getInstance(dataObject);
+            if (validator.isValidPackageDefault(dataObject) || dataObject.getPrimaryFile().getExt().toLowerCase(Locale.ENGLISH).equals("db")) {
+                if (!dataObject.getPrimaryFile().canWrite()) {
+                    return false;
+                }
+            }
+
+            if (dataObject.getLookup().lookup(EditorCookie.class) == null) {
+                return false;
+            }
         }
+        return true;
     }
 
     @Override
@@ -242,17 +244,17 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
     private boolean setConnection(DatabaseConnection newConnection) {
         if (connectionHasChanged(newConnection)) {
 //            connection = dataObject.getLookup().lookup(DatabaseConnection.class);
-            if (commit.getCommit()) {
+            if (transaction != null && transaction.isOpen()) {
                 if (!OptionsUtilities.isDeployNoPromptEnabled()) {
-                    String msg = "Commit transactions for " + connection.getDisplayName() + " ?";
-                    String title = "Confirm!";
+                    String msg = "Commit open transactions for " + connection.getDisplayName() + "?";
+                    String title = "Commit open transaction?";
                     int dialogAnswer = JOptionPane.showOptionDialog(null, msg, title, JOptionPane.YES_NO_CANCEL_OPTION,
                             JOptionPane.QUESTION_MESSAGE, null, null, null);
 
                     if (dialogAnswer == JOptionPane.YES_OPTION) {
-                        commit.commitTransaction(dataObject, connection, connectionProvider);
+                        transaction.commitTransaction(connection, connectionProvider);
                     } else if (dialogAnswer == JOptionPane.NO_OPTION) {
-                        commit.rollbackTransaction(dataObject, connection, connectionProvider);
+                        transaction.rollbackTransaction(connection, connectionProvider);
                     } else {
                         return false;
                     }
@@ -415,10 +417,8 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
         }
 
         private void modifyConnection() {
-
             plsqlDataobject = (PlsqlDataObject) dataObject;
             plsqlDataobject.modifyLookupDatabaseConnection(connection);
-            dataObject = plsqlDataobject;
         }
     }
 
