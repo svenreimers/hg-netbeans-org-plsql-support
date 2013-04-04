@@ -141,6 +141,7 @@ public class PlsqlSyntax extends Syntax {
      * Parse the next token
      * @return returns the token identified by the parser
      */
+    @Override
     protected TokenID parseToken() {
         char actChar; //the current character
         
@@ -450,6 +451,7 @@ public class PlsqlSyntax extends Syntax {
      * @param stateNumber the int value of the token
      * @return returns the String value for the tokens
      */
+    @Override
     public String getStateName(int stateNumber) {
         switch(stateNumber) {
         case ISI_WHITESPACE:

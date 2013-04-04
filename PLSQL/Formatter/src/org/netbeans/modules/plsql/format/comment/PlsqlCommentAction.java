@@ -57,6 +57,7 @@ import org.openide.util.actions.CookieAction;
 
 public final class PlsqlCommentAction extends CookieAction {
 
+   @Override
    protected void performAction(Node[] activatedNodes) {
       try {   
          DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
@@ -65,21 +66,23 @@ public final class PlsqlCommentAction extends CookieAction {
          if (contentType.equals("org.netbeans.modules.plsql.filetype.PlsqlDataObject")) {
             JTextComponent component = Utilities.getFocusedComponent();            
             commentLines(component);
-         } else 
-            return;
+         }
       } catch (BadLocationException ex) {
          Exceptions.printStackTrace(ex);
       }
    }
 
+   @Override
    protected int mode() {
       return CookieAction.MODE_EXACTLY_ONE;
    }
 
+   @Override
    public String getName() {
       return NbBundle.getMessage(PlsqlCommentAction.class, "CTL_CommentAction");
    }
 
+   @Override
    protected Class[] cookieClasses() {
       return new Class[]{EditorCookie.class};
    }
@@ -89,6 +92,7 @@ public final class PlsqlCommentAction extends CookieAction {
       return "org/netbeans/modules/plsql/format/comment/resources/comment.png";
    }
 
+   @Override
    public HelpCtx getHelpCtx() {
       return HelpCtx.DEFAULT_HELP;
    }
@@ -113,6 +117,7 @@ public final class PlsqlCommentAction extends CookieAction {
         if (doc instanceof BaseDocument)
             ((BaseDocument)doc).runAtomic(new Runnable() {
 
+            @Override
             public void run() {
                 commentLines(target, doc);
             }
@@ -160,7 +165,7 @@ public final class PlsqlCommentAction extends CookieAction {
                }
             }            
         } catch (BadLocationException ble) {
-            ble.printStackTrace();
+           Exceptions.printStackTrace(ble);
         }
    }
 }

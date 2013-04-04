@@ -59,28 +59,6 @@ import org.netbeans.editor.Formatter;
 import org.netbeans.editor.Syntax;
 import org.netbeans.editor.SyntaxSupport;
 import org.netbeans.modules.editor.NbEditorKit;
-
-/*
- * Class description
- *
- * Created on February 13, 2006, 9:42 AM
- *
- * @author IFS
- *
- * To change this template, choose Tools | Template Manager
- * and open the template in the editor.
- */
-/*
- * Class description
- *
- * Created on February 13, 2006, 9:42 AM
- *
- * @author IFS
- *
- * To change this template, choose Tools | Template Manager
- * and open the template in the editor.
- */
-
 import org.openide.util.NbBundle;
 
 public class PlsqlEditorKit extends NbEditorKit {
@@ -102,10 +80,12 @@ public class PlsqlEditorKit extends NbEditorKit {
     * Create a syntax object suitable for highlighting PLSQL file syntax
     *
     */
+   @Override
    public Syntax createSyntax(Document doc) {
       return new PlsqlSyntax();
    }
 
+   @Override
    public SyntaxSupport createSyntaxSupport(BaseDocument doc) {
       return new PlsqlSyntaxSupport(doc);
    }
@@ -118,6 +98,7 @@ public class PlsqlEditorKit extends NbEditorKit {
     * Override create actions method to add our actions
     * @return
     */
+   @Override
    protected Action[] createActions() {
       Action[] superActions = super.createActions();
       Action[] plsqlActions = new Action[]{
@@ -133,6 +114,7 @@ public class PlsqlEditorKit extends NbEditorKit {
    /**
     * Retrieves the content type for this editor kit
     */
+   @Override
    public String getContentType() {
       return MIME_TYPE;
    }
@@ -148,6 +130,7 @@ public class PlsqlEditorKit extends NbEditorKit {
          putValue(BaseAction.POPUP_MENU_TEXT, NbBundle.getBundle(PlsqlEditorKit.class).getString("popup-expand-folds"));
       }
 
+      @Override
       public void actionPerformed(ActionEvent evt, JTextComponent target) {
          int startSelect = -1;
          int endSelect = -1;
@@ -167,7 +150,6 @@ public class PlsqlEditorKit extends NbEditorKit {
                hierarchy.expand(temp);
             }
             hierarchy.unlock();
-            return;
          }
 
       //If there are no enclosed blocks try default expand fold
@@ -187,6 +169,7 @@ public class PlsqlEditorKit extends NbEditorKit {
          putValue(BaseAction.POPUP_MENU_TEXT, NbBundle.getBundle(PlsqlEditorKit.class).getString("popup-collapse-folds"));
       }
 
+      @Override
       public void actionPerformed(ActionEvent evt, JTextComponent target) {
          int startSelect = -1;
          int endSelect = -1;
@@ -206,7 +189,6 @@ public class PlsqlEditorKit extends NbEditorKit {
                hierarchy.collapse(temp);
             }
             hierarchy.unlock();
-            return;
          }
 
       //If there are no enclosed blocks try default expand fold
@@ -226,6 +208,7 @@ public class PlsqlEditorKit extends NbEditorKit {
          putValue(BaseAction.POPUP_MENU_TEXT, NbBundle.getBundle(PlsqlEditorKit.class).getString("popup-expand-child-folds"));
       }
 
+      @Override
       public void actionPerformed(ActionEvent evt, JTextComponent target) {
          int dot = target.getCaret().getDot();
          int mark = target.getCaret().getMark();
@@ -280,6 +263,7 @@ public class PlsqlEditorKit extends NbEditorKit {
          putValue(BaseAction.POPUP_MENU_TEXT, NbBundle.getBundle(PlsqlEditorKit.class).getString("popup-collapse-child-folds"));
       }
 
+      @Override
       public void actionPerformed(ActionEvent evt, JTextComponent target) {
          int dot = target.getCaret().getDot();
          int mark = target.getCaret().getMark();
@@ -325,6 +309,7 @@ public class PlsqlEditorKit extends NbEditorKit {
 
    public static class PlsqlGenerateFoldPopupAction extends GenerateFoldPopupAction {
 
+      @Override
       protected void addAdditionalItems(JTextComponent target, JMenu menu) {
          addAction(target, menu, collapseFolds);
          addAction(target, menu, expandFolds);

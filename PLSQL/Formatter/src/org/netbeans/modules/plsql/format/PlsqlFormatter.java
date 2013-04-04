@@ -41,7 +41,6 @@
  */
 package org.netbeans.modules.plsql.format;
 
-import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;

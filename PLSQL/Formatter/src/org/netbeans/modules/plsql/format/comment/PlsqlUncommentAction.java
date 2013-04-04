@@ -57,29 +57,33 @@ import org.openide.util.actions.CookieAction;
 
 public final class PlsqlUncommentAction extends CookieAction {
 
+   @Override
    protected void performAction(Node[] activatedNodes) {
       try {
          DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
          String contentType = dataObject.getLoader().getRepresentationClassName().trim();
-         
+
          if (contentType.equals("org.netbeans.modules.plsql.filetype.PlsqlDataObject")) {
             JTextComponent component = Utilities.getFocusedComponent();
             uncommentLines(component);
-         } else 
-            return;
+         } else {
+         }
       } catch (BadLocationException ex) {
          Exceptions.printStackTrace(ex);
       }
    }
 
+   @Override
    protected int mode() {
       return CookieAction.MODE_EXACTLY_ONE;
    }
 
+   @Override
    public String getName() {
       return NbBundle.getMessage(PlsqlUncommentAction.class, "CTL_UncommentAction");
    }
 
+   @Override
    protected Class[] cookieClasses() {
       return new Class[]{EditCookie.class};
    }
@@ -89,6 +93,7 @@ public final class PlsqlUncommentAction extends CookieAction {
       return "org/netbeans/modules/plsql/format/comment/resources/uncomment.png";
    }
 
+   @Override
    public HelpCtx getHelpCtx() {
       return HelpCtx.DEFAULT_HELP;
    }
@@ -97,96 +102,81 @@ public final class PlsqlUncommentAction extends CookieAction {
    protected boolean asynchronous() {
       return false;
    }
-   
-     /**
+
+   /**
     * Method that will uncomment lines in the selected area
+    *
     * @param target
     * @throws javax.swing.text.BadLocationException
     */
    public void uncommentLines(final JTextComponent target)
-    throws BadLocationException {           
-        final Document doc = target.getDocument();
-        if (doc == null)
-            
-            return;
-        
-        if (doc instanceof BaseDocument)
-            ((BaseDocument)doc).runAtomic(new Runnable() {
+           throws BadLocationException {
+      final Document doc = target.getDocument();
+      if (doc == null) {
+         return;
+      }
 
+      if (doc instanceof BaseDocument) {
+         ((BaseDocument) doc).runAtomic(new Runnable() {
+            @Override
             public void run() {
-                uncommentLines(target, doc);
+               uncommentLines(target, doc);
             }
-        });
-    }
+         });
+      }
+   }
 
    /**
     * Method that will actually perform the commenting
+    *
     * @param target
     * @param doc
     */
    private void uncommentLines(JTextComponent target, Document doc) {
       int lineStart = -1;
-        try {
-            //at first, find selected text range
-            Caret caret = target.getCaret();
-            int currentDot = caret.getDot();
-            int currentMark = caret.getMark();
-            int start = Math.min(currentDot, currentMark);
-            int end = Math.max(currentDot, currentMark);
-            int docLength = doc.getLength();            
-            
-            if (start == end) {//No selection
-               if (docLength == end) //If we are going to the EOF ignore that
-                  return;
-               
-               lineStart = Utilities.getRowStart(target, end);
-               int commentStart = Utilities.getRowFirstNonWhite((BaseDocument)doc, lineStart);
-               String str = doc.getText(commentStart, 2);
-               if ((str != null) && (str.equals("--"))) {
-                  doc.remove(commentStart, 2);
-               }
-            } else {  
-               lineStart = Utilities.getRowStart(target, start);
-               target.setSelectionStart(lineStart);
-               String originalText = target.getSelectedText();
-               String text = originalText.substring(0, originalText.length()).replaceAll("\n--", "\n");     
-               if(text.startsWith("--"))
-                  text=text.substring(2);
-               target.replaceSelection(text);
-               if(start!=lineStart) {
-                  start=start-2;
-               } 
-               if(currentDot<currentMark) {
-                  caret.setDot(lineStart+text.length());
-                  caret.moveDot(start);
-               } else {
-                  caret.setDot(start);
-                  caret.moveDot(lineStart+text.length());
-               }
-            }            
-        } catch (BadLocationException ble) {
-            ble.printStackTrace();
-        }
-   }
-   
-    /**
-    * Method to get number of lines involved
-    * @param target
-    * @param start
-    * @param end
-    * @return
-    */
-   private int GetNumberOfLines(JTextComponent target, int start, int end) throws BadLocationException {
-      int lineNo = 0;
-      int lineStart = -1;
-      for (int i = start; i <= end; i++) {
-         int tmp = Utilities.getRowStart(target, i);
-         if (tmp != lineStart) {
-            lineStart = tmp;      
-            ++lineNo;
+      try {
+         //at first, find selected text range
+         Caret caret = target.getCaret();
+         int currentDot = caret.getDot();
+         int currentMark = caret.getMark();
+         int start = Math.min(currentDot, currentMark);
+         int end = Math.max(currentDot, currentMark);
+         int docLength = doc.getLength();
+
+         if (start == end) {//No selection
+            if (docLength == end) //If we are going to the EOF ignore that
+            {
+               return;
+            }
+
+            lineStart = Utilities.getRowStart(target, end);
+            int commentStart = Utilities.getRowFirstNonWhite((BaseDocument) doc, lineStart);
+            String str = doc.getText(commentStart, 2);
+            if ((str != null) && (str.equals("--"))) {
+               doc.remove(commentStart, 2);
+            }
+         } else {
+            lineStart = Utilities.getRowStart(target, start);
+            target.setSelectionStart(lineStart);
+            String originalText = target.getSelectedText();
+            String text = originalText.substring(0, originalText.length()).replaceAll("\n--", "\n");
+            if (text.startsWith("--")) {
+               text = text.substring(2);
+            }
+            target.replaceSelection(text);
+            if (start != lineStart) {
+               start = start - 2;
+            }
+            if (currentDot < currentMark) {
+               caret.setDot(lineStart + text.length());
+               caret.moveDot(start);
+            } else {
+               caret.setDot(start);
+               caret.moveDot(lineStart + text.length());
+            }
          }
+      } catch (BadLocationException ble) {
+         Exceptions.printStackTrace(ble);
       }
-      return lineNo;
    }
 }
-

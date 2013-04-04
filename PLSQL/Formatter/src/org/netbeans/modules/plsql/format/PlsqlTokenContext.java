@@ -45,105 +45,91 @@ import org.netbeans.editor.BaseTokenCategory;
 import org.netbeans.editor.BaseTokenID;
 import org.netbeans.editor.TokenContext;
 import org.netbeans.editor.TokenContextPath;
+import org.openide.util.Exceptions;
 
-/*
- * Class description
- *
- * Created on February 13, 2006, 9:22 AM
- *
- * @author IFS
- *
- * To change this template, choose Tools | Template Manager
- * and open the template in the editor.
- */
 public class PlsqlTokenContext extends TokenContext {
-    // Numeric-ids for token categories
-    public static final int ERRORS_ID = 0; // errors
-    // Numeric-ids for token-ids
-    public static final int WHITESPACE_ID = ERRORS_ID + 1; // inside white space
-    public static final int LINE_COMMENT_ID = WHITESPACE_ID + 1; // inside line comment --
-    public static final int BLOCK_COMMENT_ID = LINE_COMMENT_ID + 1; // inside block comment /* ... */
-    public static final int STRING_ID = BLOCK_COMMENT_ID + 1; // inside string constant
-    public static final int INCOMPLETE_STRING_ID = STRING_ID + 1; // inside string constant after '
-    public static final int IDENTIFIER_ID = INCOMPLETE_STRING_ID + 1; // inside identifier
-    public static final int OPERATOR_ID = IDENTIFIER_ID + 1; // slash char
-    public static final int INVALID_COMMENT_END_ID = OPERATOR_ID + 1; // after '0'
-    public static final int INT_LITERAL_ID = INVALID_COMMENT_END_ID + 1; // integer number
-    public static final int DOUBLE_LITERAL_ID = INT_LITERAL_ID + 1; // double number
-    public static final int DOT_ID = DOUBLE_LITERAL_ID + 1; // after '.'
-    public static final int KEYWORD_ID = DOT_ID + 1;  
-    public static final int LPAREN_ID = KEYWORD_ID + 1;
-    public static final int RPAREN_ID = LPAREN_ID + 1;
-    public static final int RBRACKET_ID = RPAREN_ID + 1;
-    public static final int LBRACKET_ID = RBRACKET_ID+ 1;
-    public static final int LBRACE_ID = LBRACKET_ID+1;
-    public static final int RBRACE_ID = LBRACE_ID + 1;    
-    public static final int CHAR_LITERAL_ID= RBRACE_ID +1;
+   // Numeric-ids for token categories
 
-    // Token categories
-    public static final BaseTokenCategory ERRORS = 
-            new BaseTokenCategory("errors", ERRORS_ID); // NOI18N
-    
-    // Token-ids
-    public static final BaseTokenID WHITESPACE = 
-            new BaseTokenID( "whitespace", WHITESPACE_ID ); // NOI18N
-    public static final BaseTokenID LINE_COMMENT = 
-            new BaseTokenID( "line-comment", LINE_COMMENT_ID ); // NOI18N
-    public static final BaseTokenID BLOCK_COMMENT = 
-            new BaseTokenID( "block-comment", BLOCK_COMMENT_ID ); // NOI18N
-   
-    public static final BaseTokenID STRING_LITERAL = 
-            new BaseTokenID( "string-literal", STRING_ID ); // NOI18N
-    public static final BaseTokenID INCOMPLETE_STRING = 
-            new BaseTokenID( "incomplete-string-literal", INCOMPLETE_STRING_ID, 
-            ERRORS ); // NOI18N
-    
-    public static final BaseTokenID IDENTIFIER = 
-            new BaseTokenID( "identifier", IDENTIFIER_ID ); // NOI18N
-    public static final BaseTokenID OPERATOR = 
-            new BaseTokenID( "operator", OPERATOR_ID ); // NOI18N
-    public static final BaseTokenID INVALID_COMMENT_END = 
-            new BaseTokenID( "invalid-comment-end", INVALID_COMMENT_END_ID, 
-            ERRORS ); // NOI18N
-    public static final BaseTokenID INT_LITERAL = 
-            new BaseTokenID( "int-literal", INT_LITERAL_ID ); // NOI18N
-    public static final BaseTokenID DOUBLE_LITERAL = 
-            new BaseTokenID( "double-literal", DOUBLE_LITERAL_ID ); // NOI18N
-    public static final BaseTokenID DOT = 
-            new BaseTokenID( "dot", DOT_ID ); // NOI18N
-    public static final BaseTokenID KEYWORD = 
-            new BaseTokenID( "keyword", KEYWORD_ID ); // NOI18N  
-    public static final BaseTokenID LPAREN = 
-            new BaseTokenID( "lparen", LPAREN_ID ); // NOI18N
-    public static final BaseTokenID RPAREN = 
-            new BaseTokenID( "rparen", RPAREN_ID ); // NOI18N
-    public static final BaseTokenID RBRACKET = 
-            new BaseTokenID( "rbracket", RBRACKET_ID ); // NOI18N
-    public static final BaseTokenID LBRACKET = 
-            new BaseTokenID( "lbracket", LBRACKET_ID ); // NOI18N
-    public static final BaseTokenID LBRACE = 
-            new BaseTokenID( "lbrace", LBRACE_ID ); // NOI18N
-    public static final BaseTokenID RBRACE = 
-            new BaseTokenID( "rbrace", RBRACE_ID ); // NOI18N 
-    public static final BaseTokenID CHAR_LITERAL=
-            new BaseTokenID("char-literal",CHAR_LITERAL_ID);
-    
-    // Context instance declaration
-    public static final PlsqlTokenContext context = new PlsqlTokenContext();
-    public static final TokenContextPath contextPath = context.getContextPath();   
+   public static final int ERRORS_ID = 0; // errors
+   // Numeric-ids for token-ids
+   public static final int WHITESPACE_ID = ERRORS_ID + 1; // inside white space
+   public static final int LINE_COMMENT_ID = WHITESPACE_ID + 1; // inside line comment --
+   public static final int BLOCK_COMMENT_ID = LINE_COMMENT_ID + 1; // inside block comment /* ... */
+   public static final int STRING_ID = BLOCK_COMMENT_ID + 1; // inside string constant
+   public static final int INCOMPLETE_STRING_ID = STRING_ID + 1; // inside string constant after '
+   public static final int IDENTIFIER_ID = INCOMPLETE_STRING_ID + 1; // inside identifier
+   public static final int OPERATOR_ID = IDENTIFIER_ID + 1; // slash char
+   public static final int INVALID_COMMENT_END_ID = OPERATOR_ID + 1; // after '0'
+   public static final int INT_LITERAL_ID = INVALID_COMMENT_END_ID + 1; // integer number
+   public static final int DOUBLE_LITERAL_ID = INT_LITERAL_ID + 1; // double number
+   public static final int DOT_ID = DOUBLE_LITERAL_ID + 1; // after '.'
+   public static final int KEYWORD_ID = DOT_ID + 1;
+   public static final int LPAREN_ID = KEYWORD_ID + 1;
+   public static final int RPAREN_ID = LPAREN_ID + 1;
+   public static final int RBRACKET_ID = RPAREN_ID + 1;
+   public static final int LBRACKET_ID = RBRACKET_ID + 1;
+   public static final int LBRACE_ID = LBRACKET_ID + 1;
+   public static final int RBRACE_ID = LBRACE_ID + 1;
+   public static final int CHAR_LITERAL_ID = RBRACE_ID + 1;
+   // Token categories
+   public static final BaseTokenCategory ERRORS =
+           new BaseTokenCategory("errors", ERRORS_ID); // NOI18N
+   // Token-ids
+   public static final BaseTokenID WHITESPACE =
+           new BaseTokenID("whitespace", WHITESPACE_ID); // NOI18N
+   public static final BaseTokenID LINE_COMMENT =
+           new BaseTokenID("line-comment", LINE_COMMENT_ID); // NOI18N
+   public static final BaseTokenID BLOCK_COMMENT =
+           new BaseTokenID("block-comment", BLOCK_COMMENT_ID); // NOI18N
+   public static final BaseTokenID STRING_LITERAL =
+           new BaseTokenID("string-literal", STRING_ID); // NOI18N
+   public static final BaseTokenID INCOMPLETE_STRING =
+           new BaseTokenID("incomplete-string-literal", INCOMPLETE_STRING_ID,
+           ERRORS); // NOI18N
+   public static final BaseTokenID IDENTIFIER =
+           new BaseTokenID("identifier", IDENTIFIER_ID); // NOI18N
+   public static final BaseTokenID OPERATOR =
+           new BaseTokenID("operator", OPERATOR_ID); // NOI18N
+   public static final BaseTokenID INVALID_COMMENT_END =
+           new BaseTokenID("invalid-comment-end", INVALID_COMMENT_END_ID,
+           ERRORS); // NOI18N
+   public static final BaseTokenID INT_LITERAL =
+           new BaseTokenID("int-literal", INT_LITERAL_ID); // NOI18N
+   public static final BaseTokenID DOUBLE_LITERAL =
+           new BaseTokenID("double-literal", DOUBLE_LITERAL_ID); // NOI18N
+   public static final BaseTokenID DOT =
+           new BaseTokenID("dot", DOT_ID); // NOI18N
+   public static final BaseTokenID KEYWORD =
+           new BaseTokenID("keyword", KEYWORD_ID); // NOI18N  
+   public static final BaseTokenID LPAREN =
+           new BaseTokenID("lparen", LPAREN_ID); // NOI18N
+   public static final BaseTokenID RPAREN =
+           new BaseTokenID("rparen", RPAREN_ID); // NOI18N
+   public static final BaseTokenID RBRACKET =
+           new BaseTokenID("rbracket", RBRACKET_ID); // NOI18N
+   public static final BaseTokenID LBRACKET =
+           new BaseTokenID("lbracket", LBRACKET_ID); // NOI18N
+   public static final BaseTokenID LBRACE =
+           new BaseTokenID("lbrace", LBRACE_ID); // NOI18N
+   public static final BaseTokenID RBRACE =
+           new BaseTokenID("rbrace", RBRACE_ID); // NOI18N 
+   public static final BaseTokenID CHAR_LITERAL =
+           new BaseTokenID("char-literal", CHAR_LITERAL_ID);
+   // Context instance declaration
+   public static final PlsqlTokenContext context = new PlsqlTokenContext();
+   public static final TokenContextPath contextPath = context.getContextPath();
 
-    /**
-     * Constructs a new PLSQLTokenContext
-     */
-    private PlsqlTokenContext() {
-        super("plsql-"); // NOI18N
+   /**
+    * Constructs a new PLSQLTokenContext
+    */
+   private PlsqlTokenContext() {
+      super("plsql-"); // NOI18N
 
-        try {
-            addDeclaredTokenIDs();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+      try {
+         addDeclaredTokenIDs();
+      } catch (Exception e) {
+         Exceptions.printStackTrace(e);
+      }
 
-    }
+   }
 }
-
