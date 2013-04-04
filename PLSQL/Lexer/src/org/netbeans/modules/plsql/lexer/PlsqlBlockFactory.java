@@ -1220,6 +1220,23 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
         return currentName;
     }
 
+    public boolean isBlockAtOffsetOfType(int offset, PlsqlBlockType blockType) {
+        return isBlockAtOffsetOfType(blockHierarchy, offset, blockType);
+    }
+
+    private boolean isBlockAtOffsetOfType(List<PlsqlBlock> blocks, int offset, PlsqlBlockType blockType) {
+        for (PlsqlBlock plsqlBlock : blocks) {
+            if (plsqlBlock.getStartOffset() <= offset && plsqlBlock.getEndOffset() >= offset && blockType == plsqlBlock.getType()) {
+                return true;
+            }
+            final List<PlsqlBlock> childBlocks = plsqlBlock.getChildBlocks();
+            if (isBlockAtOffsetOfType(childBlocks, offset, blockType)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static class EventProperties {
 
         public int offset = -1;
@@ -2246,7 +2263,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
     }
 
     private void checkAndAddNew(PlsqlBlock block, PlsqlBlock parent, List<PlsqlBlock> immediateBlockHier) {
-            LOG.log(Level.FINE, "checkAndAddNew, block.getName()={0}, block.getType()={1}", new Object[]{block.getName(), block.getType()});
+        LOG.log(Level.FINE, "checkAndAddNew, block.getName()={0}, block.getType()={1}", new Object[]{block.getName(), block.getType()});
         if (checkExisting(block, immediateBlockHier) == false && !isEqual(parent, block)) {
             immediateBlockHier.add(block);
             LOG.log(Level.FINE, "newBlocks.add({0})", new Object[]{block.getName(), block.getType()});
@@ -2772,8 +2789,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
                 if (children == null || children.isEmpty()) {//If inner check seems to have failed need to continue this one
 
                     ts.move(beforeOff);
-                    moveNext =
-                            ts.moveNext();
+                    moveNext = ts.moveNext();
                 } else {
                     for (int i = 0; i
                             < children.size(); i++) {
@@ -2852,7 +2868,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
                 int start = tmp.offset(tokenHierarchy);
                 PlsqlBlock child = new PlsqlBlock(start,
                         start + tmp.length(), "BLOCK COMMENT", "", PlsqlBlockType.COMMENT);
-                if ((child != null) && (checkExisting(child, lstChild) == false)) {
+                if (checkExisting(child, lstChild) == false) {
                     lstChild.add(child);
                 }
             } else if (tokenID == PlsqlTokenId.KEYWORD && (image.equalsIgnoreCase("BEGIN"))) {
@@ -2961,7 +2977,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
             String image = tmp.text().toString();
             PlsqlTokenId tokenID = tmp.id();
 
-            if ((tmp != null) && (!image.equals(";")) && (tmp.offset(tokenHierarchy) > endParse)) {
+            if ((!image.equals(";")) && (tmp.offset(tokenHierarchy) > endParse)) {
                 break;
             }
 
@@ -2975,8 +2991,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
                         || tmpPre.text().toString().equalsIgnoreCase(alias)) {
                     //check whether previous Non white space token to the identifier is END
                     int offset = ts.offset();
-                    boolean preMove = false;
-                    preMove = getPreviousNonWhitespace(ts, true);
+                    boolean preMove = getPreviousNonWhitespace(ts, true);
                     preMove = getPreviousNonWhitespace(ts, true);
                     Token<PlsqlTokenId> previousNWS = ts.token();
 
@@ -3101,7 +3116,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
                 int start = tmp.offset(tokenHierarchy);
                 PlsqlBlock child = new PlsqlBlock(start,
                         start + tmp.length(), "BLOCK COMMENT", "", PlsqlBlockType.COMMENT);
-                if ((child != null) && (checkExisting(child, lstChild) == false)) {
+                if (checkExisting(child, lstChild) == false) {
                     lstChild.add(child);
                 }
             } else {

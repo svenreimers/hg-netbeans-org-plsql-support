@@ -57,6 +57,7 @@ import org.openide.windows.IOProvider;
 /**
  *
  * @author SubSLK
+ * @author chrlse
  */
 public class PlsqlTransaction {
 

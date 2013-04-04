@@ -50,9 +50,6 @@ import static org.junit.Assert.*;
  */
 public class PlsqlBlockTypeTest {
 
-   public PlsqlBlockTypeTest() {
-   }
-
    /**
     * Test of valueOf method, of class PlsqlBlockType.
     */
