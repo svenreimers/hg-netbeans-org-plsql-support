@@ -5,6 +5,6 @@ OpenIDE-Module: org.netbeans.modules.plsql.lexer
 OpenIDE-Module-Layer: org/netbeans/modules/plsql/lexer/layer.xml
 OpenIDE-Module-Localizing-Bundle: org/netbeans/modules/plsql/lexer/Bun
  dle.properties
-OpenIDE-Module-Specification-Version: 8.72.37.88
+OpenIDE-Module-Specification-Version: 8.72.40.96
 AutoUpdate-Show-In-Client: false
 
