@@ -111,6 +111,8 @@ public class PlsqlCursorWhereAnnotation extends PlsqlBlockAnnotation {
                param1 = "";
                param2 = "";
                isCheck = true;
+            } else if (token.text().toString().equalsIgnoreCase("PRIOR")) {
+               isCheck = false;
             } else if (isCheck && param1.equals("") && token.id() != PlsqlTokenId.OPERATOR) {
                param1 = getColumn(ts, block.getEndOffset());
             } else if (isCheck && param2.equals("") && token.id() != PlsqlTokenId.OPERATOR) {
