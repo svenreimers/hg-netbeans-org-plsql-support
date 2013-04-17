@@ -331,7 +331,11 @@ public final class PlsqlCommonDbAccessor {
                   viewDef.append("   IS '").append(rs.getString("COMMENTS")).append("';\n\n");
                }
 
-               query = "SELECT COLUMN_NAME, COMMENTS FROM ALL_COL_COMMENTS WHERE COMMENTS IS NOT NULL AND TABLE_NAME=? AND OWNER = ?";
+               query = "SELECT t.COLUMN_NAME, c.COMMENTS "
+		 +"FROM ALL_TAB_COLUMNS t, ALL_COL_COMMENTS c "
+		 +"WHERE c.COMMENTS IS NOT NULL AND t.TABLE_NAME=? AND t.OWNER = ? "
+		 +"AND t.TABLE_NAME = c.TABLE_NAME AND t.COLUMN_NAME = c.COLUMN_NAME AND t.OWNER = c.OWNER "
+		 +"ORDER BY t.COLUMN_ID";
                stmt = conn.prepareStatement(query);
                stmt.setString(1, viewName);
                stmt.setString(2, owner);
