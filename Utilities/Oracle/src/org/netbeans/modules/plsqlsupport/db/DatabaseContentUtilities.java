@@ -251,7 +251,7 @@ public class DatabaseContentUtilities {
    public static Map<String, String> getColumnNames(String name, String owner, Connection connection) throws SQLException {
       Map<String, String> columns = new LinkedHashMap<String, String>();
       PreparedStatement stmt = null;
-      String query = "SELECT COLUMN_NAME,DATA_TYPE FROM ALL_TAB_COLUMNS WHERE TABLE_NAME=? AND OWNER=?";
+      String query = "SELECT COLUMN_NAME,DATA_TYPE FROM ALL_TAB_COLUMNS WHERE TABLE_NAME=? AND OWNER=? ORDER BY COLUMN_ID";
       if(!name.startsWith("\"")) {
          name = name.toUpperCase(Locale.ENGLISH);
       } else {
