@@ -69,11 +69,14 @@ public abstract class PlsqlAnnotation extends Annotation {
 
    public static final String GENERAL = "General PL/SQL Rules";
    public static final String IFS_SPECIFIC = "IFS specific PL/SQL Rules";
-   public static final int ERROR = 1;
-   public static final int WARNING = 2;
+   public static final int BLOCKER = 1;
+   public static final int CRITICAL = 2;
+   public static final int MAJOR = 3;
+   public static final int MINOR = 4;
+   public static final int INFO = 5;
    public int offset = 0;
    public int ignoreOffset = -1;
-   public int severity = WARNING;
+   public int severity = MINOR;
    String category = IFS_SPECIFIC;
 
    public abstract String getErrorToolTip();
@@ -168,7 +171,7 @@ public abstract class PlsqlAnnotation extends Annotation {
          Date date = new Date();
          return dateFormat.format(date);
       }
-      
+
       private String getDate() {
          DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd");
          Date date = new Date();

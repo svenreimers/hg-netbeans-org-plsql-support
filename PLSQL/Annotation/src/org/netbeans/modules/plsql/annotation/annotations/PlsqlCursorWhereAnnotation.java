@@ -64,7 +64,7 @@ public class PlsqlCursorWhereAnnotation extends PlsqlBlockAnnotation {
    public PlsqlCursorWhereAnnotation(int offset, int ignoreOffset) {
       this.offset = offset;
       this.ignoreOffset = ignoreOffset;
-      this.severity = ERROR;
+      this.severity = CRITICAL;
       this.category = GENERAL;
    }
 

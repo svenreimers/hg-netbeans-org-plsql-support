@@ -57,7 +57,7 @@ import org.netbeans.api.lexer.TokenSequence;
 import org.openide.util.NbBundle;
 
 /**
- * Check for correct method param oder  (OUT, IN OUT or IN, DEFAULT) and warn
+ * Check for correct method param oder (OUT, IN OUT or IN, DEFAULT) and warn
  */
 public class PlsqlWrongParamOrderAnnotation extends PlsqlBlockAnnotation {
 
@@ -72,6 +72,7 @@ public class PlsqlWrongParamOrderAnnotation extends PlsqlBlockAnnotation {
       super();
       this.offset = offset;
       this.ignoreOffset = ignoreOffset;
+      this.severity = INFO;
       this.category = GENERAL;
    }
 
@@ -142,7 +143,7 @@ public class PlsqlWrongParamOrderAnnotation extends PlsqlBlockAnnotation {
             }
             pre = type;
          }
-      }      
+      }
    }
 
    private int getParamOrderNo(final String param) {

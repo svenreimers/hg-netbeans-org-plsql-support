@@ -73,7 +73,7 @@ public class PlsqlWrongEndNameAnnotation extends PlsqlBlockAnnotation {
       this.existingName = existingName;
       this.offset = offset;
       this.ignoreOffset = ignoreOffset;
-      this.severity = ERROR;
+      this.severity = CRITICAL;
       this.category = GENERAL;
    }
 

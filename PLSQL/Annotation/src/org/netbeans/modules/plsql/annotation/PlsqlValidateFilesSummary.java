@@ -59,6 +59,7 @@ import org.openide.windows.InputOutput;
 
 /**
  * Action that valitates files in the component folder and provide a summary
+ *
  * @author YADHLK
  */
 public class PlsqlValidateFilesSummary extends CookieAction {
@@ -76,7 +77,6 @@ public class PlsqlValidateFilesSummary extends CookieAction {
    @Override
    protected void performAction(final Node[] activatedNodes) {
       RequestProcessor.getDefault().post(new Runnable() {
-
          @Override
          public void run() {
             ProgressHandle handle = ProgressHandleFactory.createHandle("Validating files of the component...");
@@ -131,13 +131,14 @@ public class PlsqlValidateFilesSummary extends CookieAction {
       int warnings = 0;
       for (Integer offset : annotations.keySet()) {
          List<PlsqlAnnotation> lstAnnotation = annotations.get(offset);
-         for (PlsqlAnnotation annotation: lstAnnotation) {
+         for (PlsqlAnnotation annotation : lstAnnotation) {
             int severity = annotation.getSeverity();
-            if (severity == PlsqlAnnotation.ERROR)
+            if (severity == PlsqlAnnotation.CRITICAL || severity == PlsqlAnnotation.BLOCKER || severity == PlsqlAnnotation.MAJOR) {
                errors++;
-            else
+            } else {
                warnings++;
-         }         
+            }
+         }
       }
       io.getOut().print(" " + errors + " errors and " + warnings + " warnings found.\n");
    }

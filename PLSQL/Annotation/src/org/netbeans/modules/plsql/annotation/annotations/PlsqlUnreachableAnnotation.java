@@ -69,7 +69,7 @@ public class PlsqlUnreachableAnnotation extends PlsqlBlockAnnotation {
    public PlsqlUnreachableAnnotation(int offset, int ignoreOffset) {
       this.offset = offset;
       this.ignoreOffset = ignoreOffset;
-      this.severity = ERROR;
+      this.severity = MAJOR;
       this.category = GENERAL;
    }
 

@@ -52,6 +52,7 @@ import org.openide.util.NbBundle;
 
 /**
  * Check for missing return statements in functions
+ *
  * @author YADHLK
  */
 public class PlsqlFunctionReturnAnnotation extends PlsqlBlockAnnotation {
@@ -63,10 +64,10 @@ public class PlsqlFunctionReturnAnnotation extends PlsqlBlockAnnotation {
       return new PlsqlFunctionReturnAnnotation();
    }
 
-   public PlsqlFunctionReturnAnnotation(int offset, int ignoreOffset, int severity) {
+   public PlsqlFunctionReturnAnnotation(int offset, int ignoreOffset, int isReturn) {
       this.offset = offset;
       this.ignoreOffset = ignoreOffset;
-      this.severity = severity;
+      this.severity = isReturn == 1 ? MINOR : CRITICAL;
       this.category = GENERAL;
    }
 
@@ -82,37 +83,38 @@ public class PlsqlFunctionReturnAnnotation extends PlsqlBlockAnnotation {
 
    @Override
    public String getShortDescription() {
-       if (this.severity == WARNING) {
-           return NbBundle.getMessage(this.getClass(), "function_return_annotation_warning");
-       } else {
-           return NbBundle.getMessage(this.getClass(), "function_return_annotation");
-       }
+      if (this.severity == MINOR) {
+         return NbBundle.getMessage(this.getClass(), "function_return_annotation_warning");
+      } else {
+         return NbBundle.getMessage(this.getClass(), "function_return_annotation");
+      }
    }
 
-    @Override
-    public void evaluateAnnotation(Map<Integer, List<PlsqlAnnotation>> annotationsToAdd, Document doc, PlsqlBlock block, Document specDoc, PlsqlBlockFactory specBlockFac) {
-        int isReturn = PlsqlMethodAnnotationUtil.isReturnExist(doc, block);
-        int ignoreMarkerOffset = isIgnoreSpecified(doc, block.getStartOffset(), getIgnoreKey(), true);
-        boolean exists = false;
+   @Override
+   public void evaluateAnnotation(Map<Integer, List<PlsqlAnnotation>> annotationsToAdd, Document doc, PlsqlBlock block, Document specDoc, PlsqlBlockFactory specBlockFac) {
+      int isReturn = PlsqlMethodAnnotationUtil.isReturnExist(doc, block);
+      int ignoreMarkerOffset = isIgnoreSpecified(doc, block.getStartOffset(), getIgnoreKey(), true);
+      boolean exists = false;
 
-        if (isReturn > 0) {
-            exists = true;
-            PlsqlFunctionReturnAnnotation annotation = new PlsqlFunctionReturnAnnotation(block.getStartOffset(), block.getStartOffset(), isReturn);
-            if (annotation != null) {
-                if (!isIgnoreAlowed() || -1 == ignoreMarkerOffset) {
-                    PlsqlAnnotationUtil.addAnnotation(annotation, annotationsToAdd);
-                }
-                checkIgnoreAnnotation(annotationsToAdd, getIgnoreKey(), ignoreMarkerOffset, exists);
+      if (isReturn > 0) {
+         exists = true;
+         PlsqlFunctionReturnAnnotation annotation = new PlsqlFunctionReturnAnnotation(block.getStartOffset(), block.getStartOffset(), isReturn);
+         if (annotation != null) {
+            if (!isIgnoreAlowed() || -1 == ignoreMarkerOffset) {
+               PlsqlAnnotationUtil.addAnnotation(annotation, annotationsToAdd);
             }
-        }
-    }
+            checkIgnoreAnnotation(annotationsToAdd, getIgnoreKey(), ignoreMarkerOffset, exists);
+         }
+      }
+   }
 
    @Override
    public Action[] getActions() {
-      if (isIgnoreAlowed())
+      if (isIgnoreAlowed()) {
          return new Action[]{new AddIgnoreMarkerAction()};
-      else
+      } else {
          return new Action[0];
+      }
    }
 
    @Override
