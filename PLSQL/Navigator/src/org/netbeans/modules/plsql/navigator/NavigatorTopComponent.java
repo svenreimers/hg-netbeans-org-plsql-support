@@ -90,7 +90,11 @@ public class NavigatorTopComponent extends TopComponent {
 
         jScrollPane1 = new javax.swing.JScrollPane();
         jTree1 = new javax.swing.JTree();
-        jToolBar1 = new javax.swing.JToolBar();
+        jToolBar1 = new javax.swing.JToolBar(){
+            @Override
+            protected void paintComponent(java.awt.Graphics g){
+            }
+        };
         btnSortPosition = new javax.swing.JToggleButton();
         btnSortAlpha = new javax.swing.JToggleButton();
 
