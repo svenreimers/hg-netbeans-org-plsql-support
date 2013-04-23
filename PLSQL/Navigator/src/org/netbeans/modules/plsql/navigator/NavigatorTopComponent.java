@@ -97,13 +97,17 @@ public class NavigatorTopComponent extends TopComponent {
         jTree1.setToggleClickCount(Integer.MAX_VALUE);
         jScrollPane1.setViewportView(jTree1);
 
+        jToolBar1.setBorder(javax.swing.BorderFactory.createEmptyBorder());
+        jToolBar1.setFloatable(false);
+        jToolBar1.setRollover(true);
+        jToolBar1.setBorderPainted(false);
         jToolBar1.setFocusable(false);
+        jToolBar1.setOpaque(false);
 
         btnSortPosition.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/netbeans/modules/plsql/navigator/resources/sortPosition.png"))); // NOI18N
         btnSortPosition.setSelected(true);
         btnSortPosition.setToolTipText(org.openide.util.NbBundle.getMessage(NavigatorTopComponent.class, "OpenIDE-toolTip-Sort-by-Source")); // NOI18N
         btnSortPosition.setActionCommand("SORT_SOURCE");
-        btnSortPosition.setBorder(null);
         btnSortPosition.setFocusable(false);
         btnSortPosition.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         btnSortPosition.setMargin(new java.awt.Insets(0, 14, 0, 14));
@@ -116,7 +120,6 @@ public class NavigatorTopComponent extends TopComponent {
 
         btnSortAlpha.setIcon(new javax.swing.ImageIcon(getClass().getResource("/org/netbeans/modules/plsql/navigator/resources/sortAlpha.png"))); // NOI18N
         btnSortAlpha.setToolTipText(org.openide.util.NbBundle.getMessage(NavigatorTopComponent.class, "OpenIDE-toolTip-sort-byAlpha")); // NOI18N
-        btnSortAlpha.setBorder(null);
         btnSortAlpha.setFocusable(false);
         btnSortAlpha.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
         btnSortAlpha.setMargin(new java.awt.Insets(0, 14, 0, 14));
@@ -131,10 +134,8 @@ public class NavigatorTopComponent extends TopComponent {
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
-            .add(layout.createSequentialGroup()
-                .add(jToolBar1, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE, 100, org.jdesktop.layout.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap())
             .add(jScrollPane1, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, 409, Short.MAX_VALUE)
+            .add(jToolBar1, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, org.jdesktop.layout.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(org.jdesktop.layout.GroupLayout.LEADING)
