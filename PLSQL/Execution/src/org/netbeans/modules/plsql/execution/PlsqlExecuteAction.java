@@ -437,6 +437,7 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
             JMenuItem item = (JMenuItem) e.getSource();
             DatabaseConnection newConnection = (DatabaseConnection) item.getClientProperty(DATABASE_CONNECTION_KEY);
             if (setConnection(newConnection)) {
+                connectionProvider.setModuleInOracle(connection);
                 saveAndExecute();
             }
         }

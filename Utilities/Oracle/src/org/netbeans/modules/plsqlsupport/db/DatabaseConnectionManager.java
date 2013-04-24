@@ -47,6 +47,7 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.PreparedStatement;
@@ -307,9 +308,11 @@ public class DatabaseConnectionManager {
                 }
             }
             logger.log(Level.FINEST, "Creating new connection. Total number of connections created={0}", ++connectionCount);
-            return DatabaseConnection.create(templateConnection.getJDBCDriver(), templateConnection.getDatabaseURL(), templateConnection.getUser(), templateConnection.getSchema(), templateConnection.getPassword(), true, templateConnection.getDisplayName());
+            connection = DatabaseConnection.create(templateConnection.getJDBCDriver(), templateConnection.getDatabaseURL(), templateConnection.getUser(), templateConnection.getSchema(), templateConnection.getPassword(), true, templateConnection.getDisplayName());
+            setModuleInOracle(connection);
+            return connection;
         }
-    }
+    }                                
 
     public DatabaseConnection getTemplateConnection() {
         if (templateConnection != null) {
@@ -455,11 +458,29 @@ public class DatabaseConnectionManager {
         this.debugConnection = null;
         changeSupport.firePropertyChange(PROP_DATABASE_CONNECTIONS, oldConnections, newConnections);
     }
+    
+    public void setModuleInOracle(final DatabaseConnection connection){
+        try {
+            ResultSet rs = null;
+            CallableStatement stmt=null;
+            if (connection == null || connection.getJDBCConnection() == null) {
+                return;
+            }
+            String sqlProc = "{call Dbms_Application_Info.Set_Module(?,?)}";
+                stmt = connection.getJDBCConnection().prepareCall(sqlProc);
+                stmt.setString(1, "NetBeans");
+                stmt.setString(2, "Main Program");
+                stmt.executeUpdate();
+        } catch (SQLException ex) {
+           // Exceptions.printStackTrace(ex);
+             logger.log(Level.WARNING, "Error when adding Module in v$Session");
+        }
+    }
 
     public synchronized void connect(final DatabaseConnection connection) {
         if (connection == null) {
             return;
-        }
+        }        
         boolean onlineBeforeConnect = isOnline();
         boolean failed = false;
         try {
@@ -478,6 +499,7 @@ public class DatabaseConnectionManager {
                     if (SwingUtilities.isEventDispatchThread()) {
                         try {
                             ConnectionManager.getDefault().showConnectionDialog(connection);
+                            setModuleInOracle(connection);
                         } catch (NullPointerException e) {
                             failed = true;
                         } catch (IllegalStateException e) {
@@ -490,6 +512,7 @@ public class DatabaseConnectionManager {
                                 @Override
                                 public void run() {
                                     ConnectionManager.getDefault().showConnectionDialog(connection);
+                                    setModuleInOracle(connection);                                    
                                 }
                             });
                         } catch (InterruptedException e) {
@@ -507,6 +530,7 @@ public class DatabaseConnectionManager {
                             public void run() {
                                 try {
                                     ConnectionManager.getDefault().connect(connection);
+                                    setModuleInOracle(connection);
                                 } catch (DatabaseException ex) {
                                 }
                             }
@@ -519,6 +543,7 @@ public class DatabaseConnectionManager {
                     } else {
                         try {
                             ConnectionManager.getDefault().connect(connection);
+                            setModuleInOracle(connection);
                         } catch (DatabaseException ex) {
                             failed = true;
                         }
