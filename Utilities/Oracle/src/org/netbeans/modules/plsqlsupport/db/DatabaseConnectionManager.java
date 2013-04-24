@@ -58,6 +58,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.MissingResourceException;
 import java.util.Properties;
 import java.util.Stack;
 import java.util.logging.Level;
@@ -74,6 +75,7 @@ import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.loaders.DataObject;
 import org.openide.util.Exceptions;
+import org.openide.util.NbBundle;
 import org.openide.util.RequestProcessor;
 import org.openide.util.RequestProcessor.Task;
 
@@ -175,8 +177,7 @@ public class DatabaseConnectionManager {
 
     /**
      *
-     * @return The database URL of the primary database connection, empty String
-     * if none is found.
+     * @return The database URL of the primary database connection, empty String if none is found.
      */
     public String getPrimaryConnectionURL() {
         String result = "";
@@ -312,7 +313,7 @@ public class DatabaseConnectionManager {
             setModuleInOracle(connection);
             return connection;
         }
-    }                                
+    }
 
     public DatabaseConnection getTemplateConnection() {
         if (templateConnection != null) {
@@ -458,29 +459,40 @@ public class DatabaseConnectionManager {
         this.debugConnection = null;
         changeSupport.firePropertyChange(PROP_DATABASE_CONNECTIONS, oldConnections, newConnections);
     }
-    
-    public void setModuleInOracle(final DatabaseConnection connection){
+
+    /*
+     * This method attempts to set the module/program that is connecting to the database
+     * using Oracle's 'Dbms_Application_Info.Set_Module' procedure. This will be useful 
+     * for tracing current connections in the DB created by NetBeans by querying 'v$sessions'
+     */
+    public void setModuleInOracle(final DatabaseConnection connection) {
         try {
             ResultSet rs = null;
-            CallableStatement stmt=null;
+            CallableStatement stmt = null;
             if (connection == null || connection.getJDBCConnection() == null) {
                 return;
             }
+            String appName = "";
+            try {
+                appName = NbBundle.getBundle("org.netbeans.core.windows.view.ui.Bundle").getString("CTL_MainWindow_Title_No_Project");
+            } catch (MissingResourceException x) {
+                appName = "NetBeans"; // NOI18N
+            }
             String sqlProc = "{call Dbms_Application_Info.Set_Module(?,?)}";
-                stmt = connection.getJDBCConnection().prepareCall(sqlProc);
-                stmt.setString(1, "NetBeans");
-                stmt.setString(2, "Main Program");
-                stmt.executeUpdate();
+            stmt = connection.getJDBCConnection().prepareCall(sqlProc);
+            stmt.setString(1, appName);
+            stmt.setString(2, "Main Program");
+            stmt.executeUpdate();
         } catch (SQLException ex) {
-           // Exceptions.printStackTrace(ex);
-             logger.log(Level.WARNING, "Error when adding Module in v$Session");
+            // Exceptions.printStackTrace(ex);
+            logger.log(Level.WARNING, "Error when adding Module in v$Session");
         }
     }
 
     public synchronized void connect(final DatabaseConnection connection) {
         if (connection == null) {
             return;
-        }        
+        }
         boolean onlineBeforeConnect = isOnline();
         boolean failed = false;
         try {
@@ -490,9 +502,9 @@ public class DatabaseConnectionManager {
                     setOnline(true);
                     usagesEnabled = isFindUsagesEnabled();
                 }
-                if (failedConnections.contains(connection.getName())) { 
+                if (failedConnections.contains(connection.getName())) {
                     failedConnections.remove(connection.getName());
-                }                  
+                }
                 return;
             } else {
                 if (!failedConnections.contains(connection.getName())) {
@@ -508,11 +520,10 @@ public class DatabaseConnectionManager {
                     } else {
                         try {
                             SwingUtilities.invokeAndWait(new Runnable() {
-
                                 @Override
                                 public void run() {
                                     ConnectionManager.getDefault().showConnectionDialog(connection);
-                                    setModuleInOracle(connection);                                    
+                                    setModuleInOracle(connection);
                                 }
                             });
                         } catch (InterruptedException e) {
@@ -525,7 +536,6 @@ public class DatabaseConnectionManager {
                 if ((connection.getJDBCConnection() == null || connection.getJDBCConnection().isClosed())) {
                     if (SwingUtilities.isEventDispatchThread()) {
                         Task request = RP.post(new Runnable() {
-
                             @Override
                             public void run() {
                                 try {
@@ -556,8 +566,8 @@ public class DatabaseConnectionManager {
         failed = failed || !testConnection(connection);
         if (failed) {
             if (!failedConnections.contains(connection.getName())) {
-               JOptionPane.showMessageDialog(null, "Can't connect to the database.");
-               failedConnections.add(connection.getName());
+                JOptionPane.showMessageDialog(null, "Can't connect to the database.");
+                failedConnections.add(connection.getName());
             }
         }
         if (databaseConnectionsAreEqual(connection, templateConnection)) {
@@ -567,9 +577,9 @@ public class DatabaseConnectionManager {
             }
         }
         if (!failed) {
-           if (failedConnections.contains(connection.getName())) { 
-               failedConnections.remove(connection.getName());
-           }
+            if (failedConnections.contains(connection.getName())) {
+                failedConnections.remove(connection.getName());
+            }
         }
     }
 
@@ -644,6 +654,7 @@ public class DatabaseConnectionManager {
 
     /**
      * Set Reverse Engineering DatabaseConnection
+     *
      * @param newConnection
      */
     public void setReverseConnection(DatabaseConnection newConnection) {
@@ -654,6 +665,7 @@ public class DatabaseConnectionManager {
 
     /**
      * Returns Reverse Engineering DatabaseConnection
+     *
      * @return
      */
     public DatabaseConnection getReverseConnection() {
@@ -662,6 +674,7 @@ public class DatabaseConnectionManager {
 
     /**
      * Returns true is Reverse Engineering DatabaseConnection has been set.
+     *
      * @return
      */
     public boolean hasReverseConnection() {
@@ -670,6 +683,7 @@ public class DatabaseConnectionManager {
 
     /**
      * Returns true is Reverse Engineering DatabaseConnection is online.
+     *
      * @return
      */
     public boolean isReverseOnline() {
