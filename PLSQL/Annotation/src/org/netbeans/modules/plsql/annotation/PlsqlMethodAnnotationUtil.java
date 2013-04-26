@@ -61,15 +61,15 @@ import org.openide.windows.WindowManager;
 
 /**
  * Util class for annotations added for methods
+ *
  * @author YADHLK
  */
 public class PlsqlMethodAnnotationUtil {
-static int hasReturn = 0;
-private static final int HAS_RETURNS = 1;
-private static final int NO_RETURNS = 2;
 
+   static int hasReturn = 0;
+   private static final int HAS_RETURNS = 1;
+   private static final int NO_RETURNS = 2;
    private static Comparator<PlsqlBlock> comparator = new Comparator<PlsqlBlock>() {
-
       @Override
       public int compare(PlsqlBlock o1, PlsqlBlock o2) {
          Integer o1pos, o2pos;
@@ -153,84 +153,84 @@ private static final int NO_RETURNS = 2;
       }
       return methodSpec.trim();
    }
-        
-    public static PlsqlBlock findMethod(final List<PlsqlBlock> specBlockHier, final String packageName, final String methodName) {
-        PlsqlBlock match = null;
-        if (!packageName.equals("")) {
-            PlsqlBlock packageBlock = getPackageBody(specBlockHier, PlsqlBlockType.PACKAGE_BODY, packageName);
-            if (packageBlock != null) {
-                for (int i = 0; i < packageBlock.getChildCount(); i++) {
-                    final PlsqlBlock temp = packageBlock.getChildBlocks().get(i);
-                    if (temp.getName().equals(methodName)) {
-                        match = temp;
-                        break;
-                    }
-                }
+
+   public static PlsqlBlock findMethod(final List<PlsqlBlock> specBlockHier, final String packageName, final String methodName) {
+      PlsqlBlock match = null;
+      if (!packageName.equals("")) {
+         PlsqlBlock packageBlock = getPackageBody(specBlockHier, PlsqlBlockType.PACKAGE_BODY, packageName);
+         if (packageBlock != null) {
+            for (int i = 0; i < packageBlock.getChildCount(); i++) {
+               final PlsqlBlock temp = packageBlock.getChildBlocks().get(i);
+               if (temp.getName().equals(methodName)) {
+                  match = temp;
+                  break;
+               }
             }
-        }
-        return match;
-    }
-      
-    public static PlsqlBlock getPackageBody(final List<PlsqlBlock> specBlockHier, final PlsqlBlockType blockType, final String packageName){
-        PlsqlBlock packageBlock = null;
-            for (int i = 0; i < specBlockHier.size(); i++) {
-                final PlsqlBlock temp = specBlockHier.get(i);
-                if (temp.getType() == blockType && temp.getName().equalsIgnoreCase(packageName)) {
-                    packageBlock = temp;
-                    break;
-                }
-            }
-            return packageBlock;        
+         }
+      }
+      return match;
    }
 
-    public static int getOffsetToInsert(final Document doc, final List<PlsqlBlock> specBlockHier, final String packageName, final PlsqlBlock searchBlock, final int searchPlace) throws BadLocationException {
-        int offset = -1;
-        //Get package block
-        if (!packageName.equals("")) {
-            PlsqlBlock packageBlock = getPackageBody(specBlockHier, PlsqlBlockType.PACKAGE, packageName);
+   public static PlsqlBlock getPackageBody(final List<PlsqlBlock> specBlockHier, final PlsqlBlockType blockType, final String packageName) {
+      PlsqlBlock packageBlock = null;
+      for (int i = 0; i < specBlockHier.size(); i++) {
+         final PlsqlBlock temp = specBlockHier.get(i);
+         if (temp.getType() == blockType && temp.getName().equalsIgnoreCase(packageName)) {
+            packageBlock = temp;
+            break;
+         }
+      }
+      return packageBlock;
+   }
 
-            if (packageBlock != null) {
-                for (int i = 0; i < packageBlock.getChildCount(); i++) {
-                    final PlsqlBlock temp = packageBlock.getChildBlocks().get(i);
-                    if (!temp.getType().equals(PlsqlBlockType.COMMENT) && (temp.getType().equals(PlsqlBlockType.FUNCTION_DEF) || temp.getType().equals(PlsqlBlockType.PROCEDURE_DEF))) {
-                        if (temp.getName().contains(searchBlock.getName())) {
-                            if (searchPlace == -1) {
-                                offset = temp.getStartOffset();
-                            } else {
-                                offset = packageBlock.getChildBlocks().get(i + 1).getStartOffset() - 1;
-                            }
-                            break;
-                        }
-                    } else if (temp.getType().equals(PlsqlBlockType.COMMENT)&& searchBlock.getType().equals(PlsqlBlockType.COMMENT)) {
+   public static int getOffsetToInsert(final Document doc, final List<PlsqlBlock> specBlockHier, final String packageName, final PlsqlBlock searchBlock, final int searchPlace) throws BadLocationException {
+      int offset = -1;
+      //Get package block
+      if (!packageName.equals("")) {
+         PlsqlBlock packageBlock = getPackageBody(specBlockHier, PlsqlBlockType.PACKAGE, packageName);
 
-                        //Get block content and check; comments can be merged to one comment block
-                        final String text = doc.getText(temp.getStartOffset(), temp.getEndOffset() - temp.getStartOffset());
-                        int index = text.indexOf(searchBlock.getName());
+         if (packageBlock != null) {
+            for (int i = 0; i < packageBlock.getChildCount(); i++) {
+               final PlsqlBlock temp = packageBlock.getChildBlocks().get(i);
+               if (!temp.getType().equals(PlsqlBlockType.COMMENT) && (temp.getType().equals(PlsqlBlockType.FUNCTION_DEF) || temp.getType().equals(PlsqlBlockType.PROCEDURE_DEF))) {
+                  if (temp.getName().contains(searchBlock.getName())) {
+                     if (searchPlace == -1) {
+                        offset = temp.getStartOffset();
+                     } else {
+                        offset = packageBlock.getChildBlocks().get(i + 1).getStartOffset() - 1;
+                     }
+                     break;
+                  }
+               } else if (temp.getType().equals(PlsqlBlockType.COMMENT) && searchBlock.getType().equals(PlsqlBlockType.COMMENT)) {
+
+                  //Get block content and check; comments can be merged to one comment block
+                  final String text = doc.getText(temp.getStartOffset(), temp.getEndOffset() - temp.getStartOffset());
+                  int index = text.indexOf(searchBlock.getName());
+                  if (index != -1) {
+                     index = text.indexOf("\n", index);
+                     if (index != -1) {
+                        index = text.indexOf("\n", index + 1);
                         if (index != -1) {
-                            index = text.indexOf("\n", index);
-                            if (index != -1) {
-                                index = text.indexOf("\n", index + 1);
-                                if (index != -1) {
-                                    offset = temp.getStartOffset() + index;
-                                } else {
-                                    offset = temp.getEndOffset();
-                                }
-
-                                break;
-                            }
+                           offset = temp.getStartOffset() + index;
+                        } else {
+                           offset = temp.getEndOffset();
                         }
-                    }
-                }
 
-                //If the comment is not found insert some where
-                if (offset == -1) {
-                    offset = packageBlock.getChildBlocks().get(0).getEndOffset();
-                }
+                        break;
+                     }
+                  }
+               }
             }
-        }
 
-        return offset;
-    }
+            //If the comment is not found insert some where
+            if (offset == -1) {
+               offset = packageBlock.getChildBlocks().get(0).getEndOffset();
+            }
+         }
+      }
+
+      return offset;
+   }
 
    public static boolean changeParam(final Document doc, final int offset, final String methodName) {
       if (PlsqlAnnotationUtil.isFileReadOnly(doc)) {
@@ -256,21 +256,21 @@ private static final int NO_RETURNS = 2;
       }
       return false;
    }
-  
-    public static int isReturnExist(final Document doc, final PlsqlBlock block) {
-        hasReturn = 0;
-        boolean isMissing = isReturn(doc, block);
 
-        if (!isMissing) {
-            if (hasReturn == HAS_RETURNS) {
-                return HAS_RETURNS;
-            } else {
-                return NO_RETURNS;
-            }
-        } else {
-            return 0;
-        }
-    }
+   public static int isReturnExist(final Document doc, final PlsqlBlock block) {
+      hasReturn = 0;
+      boolean isMissing = isReturn(doc, block);
+
+      if (!isMissing) {
+         if (hasReturn == HAS_RETURNS) {
+            return HAS_RETURNS;
+         } else {
+            return NO_RETURNS;
+         }
+      } else {
+         return 0;
+      }
+   }
 
    public static boolean isReturn(final Document doc, final PlsqlBlock block) {
       boolean isReturn = false;
@@ -283,7 +283,7 @@ private static final int NO_RETURNS = 2;
                && child.getType() != PlsqlBlockType.CUSTOM_FOLD
                && startOffset < child.getStartOffset()) {
             if (!isReturnMissing(startOffset, child.getStartOffset(), doc, true)) {
-               isReturn = true;               
+               isReturn = true;
                break;
             }
          }
@@ -444,12 +444,12 @@ private static final int NO_RETURNS = 2;
       @SuppressWarnings("unchecked")
       final TokenSequence<PlsqlTokenId> ts = tokenHierarchy.tokenSequence(PlsqlTokenId.language());
       int endLineCount = 0;
-      
+
       if (ts != null) {
          ts.move(startOffset);
          Token<PlsqlTokenId> token = ts.token();
          boolean isException = false;
-         boolean isRaised=false;
+         boolean isRaised = false;
 
          while (ts.moveNext() && ts.offset() < endOffset) {
             token = ts.token();
@@ -458,11 +458,11 @@ private static final int NO_RETURNS = 2;
                if (moveToReturnEnd(ts, endOffset)) {
                   isReturn = true;
                }
-            }else if (token.toString().equalsIgnoreCase("RAISE")) {
+            } else if (token.toString().equalsIgnoreCase("RAISE")) {
                if (moveToReturnEnd(ts, endOffset)) {
                   isRaised = true;
                }
-            }else if (token.toString().equalsIgnoreCase("ERROR_SYS")) {
+            } else if (token.toString().equalsIgnoreCase("ERROR_SYS")) {
                if (ts.moveNext()) {
                   token = ts.token();
                   if (token.id() == PlsqlTokenId.DOT) {
@@ -479,6 +479,7 @@ private static final int NO_RETURNS = 2;
                }
             } else if (token.toString().equalsIgnoreCase("EXCEPTION")) {
                isException = true;
+               return isReturn;
             } else if (token.toString().equalsIgnoreCase("WHEN") && isException) {
                if (PlsqlParserUtil.getNextNonWhitespace(ts, true)) { //Exception name
                   if (PlsqlParserUtil.getNextNonWhitespace(ts, true)) {
@@ -492,7 +493,7 @@ private static final int NO_RETURNS = 2;
                }
             } else if ((isReturn || isRaised) && token.toString().contains("\n")) {
                endLineCount++;
-            } else if (endLineCount > 0 && token.toString().contains("END")
+            } else if (endLineCount > 0 && token.toString().toUpperCase(Locale.ENGLISH).contains("END")
                   && (NbEditorUtilities.getLine(doc, ts.offset(), false).getLineNumber()
                   == NbEditorUtilities.getLine(doc, endOffset, false).getLineNumber() || isRaised)) {
                //avoid END of blocks being unreachable statements
