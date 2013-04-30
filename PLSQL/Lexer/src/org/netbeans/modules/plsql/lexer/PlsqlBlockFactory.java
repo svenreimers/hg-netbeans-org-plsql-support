@@ -393,7 +393,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
         boolean getName = true;
         Token<PlsqlTokenId> customStartToken = null;
         String name = current.text().toString();
-
+        boolean endBlock = false;
         while (moveNext) {
             String image = token.text().toString();
             PlsqlTokenId tokenID = token.id();
@@ -405,6 +405,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
             if (image.equals(";") || (image.equals("/") && checkForOnlyChar(ts, ts.offset()))) {
                 block = new PlsqlBlock(stmtBegin.offset(tokenHierarchy), token.offset(tokenHierarchy), name.trim(), "", PlsqlBlockType.STATEMENT);
                 checkPrefix(stmtBegin.offset(tokenHierarchy), ts, block);
+                endBlock = true;
                 break;
             } else if (image.equalsIgnoreCase("CREATE")
                     || image.equalsIgnoreCase("DECLARE")
@@ -470,6 +471,11 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
 
             moveNext = ts.moveNext();
             token = ts.token();
+        }
+        
+        if(!endBlock){
+            block = new PlsqlBlock(stmtBegin.offset(tokenHierarchy), token.offset(tokenHierarchy), name.trim(), "", PlsqlBlockType.STATEMENT);
+            checkPrefix(stmtBegin.offset(tokenHierarchy), ts, block);
         }
 
         if (block != null) {
