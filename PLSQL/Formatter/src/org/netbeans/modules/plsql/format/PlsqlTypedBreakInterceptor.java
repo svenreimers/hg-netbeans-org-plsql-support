@@ -34,7 +34,7 @@ public class PlsqlTypedBreakInterceptor implements TypedBreakInterceptor {
       int insertPos = context.getCaretOffset();
       int lineStartPos = Utilities.getRowStart(doc, insertPos);
       String word = Utilities.getWord(doc, lineStartPos);
-      if (word.equals("--") && isHeaderComment(doc, insertPos)) {
+      if (word.equals("--") && isInitialComment(doc, insertPos)) {
          context.setText("\n--  ", 0, 5);
       } else if (word.equals("--------------------")) {
          context.setText("\n-------------------- ", 0, 22);
@@ -51,7 +51,7 @@ public class PlsqlTypedBreakInterceptor implements TypedBreakInterceptor {
       LOG.log(Level.FINER, "cancelled, context: {0}", context);
    }
 
-   private boolean isHeaderComment(BaseDocument doc, int insertPos) throws BadLocationException {
+   private boolean isInitialComment(BaseDocument doc, int insertPos) throws BadLocationException {
       for (int i = 0; i < Utilities.getLineOffset(doc, insertPos); i++) {
          int rowStartFromLineOffset = Utilities.getRowStartFromLineOffset(doc, i);
          String word = Utilities.getWord(doc, rowStartFromLineOffset);
