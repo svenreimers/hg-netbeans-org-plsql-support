@@ -31,11 +31,10 @@ public class PlsqlTypedBreakInterceptor implements TypedBreakInterceptor {
          return;
       }
       BaseDocument doc = (BaseDocument) context.getDocument();
-
       int insertPos = context.getCaretOffset();
       int lineStartPos = Utilities.getRowStart(doc, insertPos);
       String word = Utilities.getWord(doc, lineStartPos);
-      if (word.equals("--")) {
+      if (word.equals("--") && isHeaderComment(doc, insertPos)) {
          context.setText("\n--  ", 0, 5);
       } else if (word.equals("--------------------")) {
          context.setText("\n-------------------- ", 0, 22);
@@ -50,6 +49,17 @@ public class PlsqlTypedBreakInterceptor implements TypedBreakInterceptor {
    @Override
    public void cancelled(Context context) {
       LOG.log(Level.FINER, "cancelled, context: {0}", context);
+   }
+
+   private boolean isHeaderComment(BaseDocument doc, int insertPos) throws BadLocationException {
+      for (int i = 0; i < Utilities.getLineOffset(doc, insertPos); i++) {
+         int rowStartFromLineOffset = Utilities.getRowStartFromLineOffset(doc, i);
+         String word = Utilities.getWord(doc, rowStartFromLineOffset);
+         if (!word.startsWith("--")) {
+            return false;
+         }
+      }
+      return true;
    }
 
    @MimeRegistration(mimeType = PlsqlDataLoader.REQUIRED_MIME, service = TypedBreakInterceptor.Factory.class)
