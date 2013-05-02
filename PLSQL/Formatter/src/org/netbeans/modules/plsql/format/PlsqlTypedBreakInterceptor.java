@@ -1,21 +1,14 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package org.netbeans.modules.plsql.format;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.text.BadLocationException;
-import javax.swing.text.Document;
 import org.netbeans.api.editor.mimelookup.MimePath;
 import org.netbeans.api.editor.mimelookup.MimeRegistration;
 import org.netbeans.editor.BaseDocument;
+import org.netbeans.editor.Utilities;
 import org.netbeans.modules.plsql.filetype.PlsqlDataLoader;
-import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
-import org.netbeans.modules.plsql.lexer.PlsqlBlockType;
 import org.netbeans.spi.editor.typinghooks.TypedBreakInterceptor;
-import org.openide.util.Lookup;
 
 /**
  *
@@ -34,9 +27,18 @@ public class PlsqlTypedBreakInterceptor implements TypedBreakInterceptor {
    @Override
    public void insert(MutableContext context) throws BadLocationException {
       LOG.log(Level.FINER, "insert, context: {0}", context);
-      PlsqlBlockFactory blockFactory = getBlockFactory((BaseDocument) context.getDocument());
-      if (blockFactory.isBlockAtOffsetOfType(context.getCaretOffset(), PlsqlBlockType.COMMENT)) {
+      if (!(context.getDocument() instanceof BaseDocument)) {
+         return;
+      }
+      BaseDocument doc = (BaseDocument) context.getDocument();
+
+      int insertPos = context.getCaretOffset();
+      int lineStartPos = Utilities.getRowStart(doc, insertPos);
+      String word = Utilities.getWord(doc, lineStartPos);
+      if (word.equals("--")) {
          context.setText("\n--  ", 0, 5);
+      } else if (word.equals("--------------------")) {
+         context.setText("\n-------------------- ", 0, 22);
       }
    }
 
@@ -48,14 +50,6 @@ public class PlsqlTypedBreakInterceptor implements TypedBreakInterceptor {
    @Override
    public void cancelled(Context context) {
       LOG.log(Level.FINER, "cancelled, context: {0}", context);
-   }
-
-   private PlsqlBlockFactory getBlockFactory(BaseDocument doc) {
-      final Object obj = doc.getProperty(Document.StreamDescriptionProperty);
-      if (obj instanceof Lookup.Provider) {
-         return ((Lookup.Provider) obj).getLookup().lookup(PlsqlBlockFactory.class);
-      }
-      return null;
    }
 
    @MimeRegistration(mimeType = PlsqlDataLoader.REQUIRED_MIME, service = TypedBreakInterceptor.Factory.class)

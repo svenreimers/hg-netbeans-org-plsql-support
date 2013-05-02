@@ -1226,23 +1226,6 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
         return currentName;
     }
 
-    public boolean isBlockAtOffsetOfType(int offset, PlsqlBlockType blockType) {
-        return isBlockAtOffsetOfType(blockHierarchy, offset, blockType);
-    }
-
-    private boolean isBlockAtOffsetOfType(List<PlsqlBlock> blocks, int offset, PlsqlBlockType blockType) {
-        for (PlsqlBlock plsqlBlock : blocks) {
-            if (plsqlBlock.getStartOffset() <= offset && plsqlBlock.getEndOffset() >= offset && blockType == plsqlBlock.getType()) {
-                return true;
-            }
-            final List<PlsqlBlock> childBlocks = plsqlBlock.getChildBlocks();
-            if (isBlockAtOffsetOfType(childBlocks, offset, blockType)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private static class EventProperties {
 
         public int offset = -1;
