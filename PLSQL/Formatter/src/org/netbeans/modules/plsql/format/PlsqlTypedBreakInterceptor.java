@@ -32,12 +32,8 @@ public class PlsqlTypedBreakInterceptor implements TypedBreakInterceptor {
       }
       BaseDocument doc = (BaseDocument) context.getDocument();
       int insertPos = context.getCaretOffset();
-      int lineStartPos = Utilities.getRowStart(doc, insertPos);
-      String word = Utilities.getWord(doc, lineStartPos);
-      if (word.equals("--") && isInitialComment(doc, insertPos)) {
+      if (wordInRowBelowStartsWith(doc, insertPos, "--")) {
          context.setText("\n--  ", 0, 5);
-      } else if (word.equals("--------------------")) {
-         context.setText("\n-------------------- ", 0, 22);
       }
    }
 
@@ -51,15 +47,10 @@ public class PlsqlTypedBreakInterceptor implements TypedBreakInterceptor {
       LOG.log(Level.FINER, "cancelled, context: {0}", context);
    }
 
-   private boolean isInitialComment(BaseDocument doc, int insertPos) throws BadLocationException {
-      for (int i = 0; i < Utilities.getLineOffset(doc, insertPos); i++) {
-         int rowStartFromLineOffset = Utilities.getRowStartFromLineOffset(doc, i);
-         String word = Utilities.getWord(doc, rowStartFromLineOffset);
-         if (!word.startsWith("--")) {
-            return false;
-         }
-      }
-      return true;
+   private boolean wordInRowBelowStartsWith(BaseDocument doc, int insertPos, String word) throws BadLocationException {
+      int currentRow = Utilities.getLineOffset(doc, insertPos);
+      int rowStartFromLineOffset = Utilities.getRowStartFromLineOffset(doc, currentRow + 1);
+      return Utilities.getWord(doc, rowStartFromLineOffset).startsWith(word);
    }
 
    @MimeRegistration(mimeType = PlsqlDataLoader.REQUIRED_MIME, service = TypedBreakInterceptor.Factory.class)
