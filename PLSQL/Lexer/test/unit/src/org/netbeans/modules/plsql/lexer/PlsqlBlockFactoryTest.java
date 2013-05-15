@@ -3785,24 +3785,4 @@ public class PlsqlBlockFactoryTest {
         tmp = tmp.substring(0, tmp.length() - 2);
         return tmp;
     }
-
-    @Test
-    public void testIsBlockAtOffsetOfType() throws IOException, BadLocationException {
-        System.out.println("testIsBlockAtOffsetOfType");
-        FileObject fileObject = fs.getRoot().createData("test.apy");
-        assertNotNull(fileObject);
-        try {
-            PlsqlBlockFactory blockFac = loadAsTmpFile(fileObject, "test.apy");
-            assertNotNull(blockFac);
-            assertTrue(blockFac.isBlockAtOffsetOfType(2134, PlsqlBlockType.COMMENT));
-            assertTrue(blockFac.isBlockAtOffsetOfType(100, PlsqlBlockType.COMMENT));
-            assertFalse(blockFac.isBlockAtOffsetOfType(1000, PlsqlBlockType.COMMENT));
-            assertTrue(blockFac.isBlockAtOffsetOfType(1000, PlsqlBlockType.VIEW));
-            assertTrue(blockFac.isBlockAtOffsetOfType(3538, PlsqlBlockType.PROCEDURE_IMPL));
-        } finally {
-            if (fileObject != null) {
-                fileObject.delete();
-            }
-        }
-    }
 }
