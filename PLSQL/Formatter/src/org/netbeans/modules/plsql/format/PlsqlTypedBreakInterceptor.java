@@ -32,7 +32,9 @@ public class PlsqlTypedBreakInterceptor implements TypedBreakInterceptor {
       }
       BaseDocument doc = (BaseDocument) context.getDocument();
       int insertPos = context.getCaretOffset();
-      if (wordInRowBelowStartsWith(doc, insertPos, "--")) {
+      int lineStartPos = Utilities.getRowStart(doc, insertPos);
+      String startWord = Utilities.getWord(doc, lineStartPos);
+      if (startWord.startsWith("--") && wordInRowBelowStartsWith(doc, insertPos, "--")) {
          context.setText("\n--  ", 0, 5);
       }
    }
