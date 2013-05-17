@@ -54,7 +54,9 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionHolder;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
+import org.netbeans.modules.plsqlsupport.db.DatabaseTransaction;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionRegistration;
@@ -72,9 +74,10 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
     private final DataObject dataObject;
     private DatabaseConnectionManager connectionProvider;
+    private DatabaseConnectionHolder connectionHolder;
     private DatabaseConnection connection;
     private JButton button;
-    private final PlsqlTransaction transaction;
+    private final DatabaseTransaction transaction;
     private final PropertyChangeListener changeListener = new EnableCommit();
 
     public PlsqlCommitAction() {
@@ -86,7 +89,7 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
         putValue(SMALL_ICON, new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/database_commit.png")));
 
         dataObject = context.lookup(DataObject.class);
-        transaction = PlsqlTransaction.getInstance(dataObject);
+        transaction = DatabaseTransaction.getInstance(dataObject);
     }
 
     @Override
@@ -126,10 +129,6 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
 
         prepareConnection();
         if (connectionProvider == null || connection == null) {
-            return;
-        }
-
-        if (!connectionProvider.hasDataToCommit(connection)) {
             return;
         }
 

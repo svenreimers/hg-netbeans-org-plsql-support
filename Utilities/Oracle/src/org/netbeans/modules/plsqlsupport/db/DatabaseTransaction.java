@@ -39,68 +39,67 @@
  *
  * Portions Copyrighted 2011 Sun Microsystems, Inc.
  */
-package org.netbeans.modules.plsql.execution;
+package org.netbeans.modules.plsqlsupport.db;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.ArrayList;
 import java.util.List;
 import org.netbeans.api.db.explorer.DatabaseConnection;
-import org.openide.loaders.DataObject;
-import org.openide.windows.InputOutput;
 import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.progress.ProgressHandleFactory;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
+import org.openide.loaders.DataObject;
 import org.openide.util.Exceptions;
 import org.openide.windows.IOProvider;
+import org.openide.windows.InputOutput;
 
 /**
  *
  * @author SubSLK
  * @author chrlse
  */
-public class PlsqlTransaction {
+public class DatabaseTransaction {
 
-    private final static List<PlsqlTransaction> instance = new ArrayList<PlsqlTransaction>();
+    private final static List<DatabaseTransaction> instance = new ArrayList<DatabaseTransaction>();
     private boolean open;
     private final DataObject dataObject;
     public static final String PROP_commit = "PlsqlCommit";
     private final PropertyChangeSupport changeSupport = new PropertyChangeSupport(this);
     private final InputOutput io;
 
-    public PlsqlTransaction(DataObject dataObject, InputOutput io) {
+    public DatabaseTransaction(DataObject dataObject, InputOutput io) {
         open = false;
         this.dataObject = dataObject;
         this.io = io;
     }
 
-    public static PlsqlTransaction getInstance(DataObject object) {
+    public static DatabaseTransaction getInstance(DataObject object) {
         if (object == null) {
             return null;
         }
         InputOutput io = IOProvider.getDefault().getIO(object.getPrimaryFile().getNameExt(), false);
 
         if (instance.isEmpty()) {
-            instance.add(new PlsqlTransaction(object, io));
+            instance.add(new DatabaseTransaction(object, io));
             return instance.get(0);
         } else {
             for (int i = 0; i < instance.size(); i++) {
-                PlsqlTransaction plsqlCommit = instance.get(i);
+                DatabaseTransaction plsqlCommit = instance.get(i);
                 if (plsqlCommit.dataObject.equals(object)) {
                     return plsqlCommit;
                 }
             }
-            PlsqlTransaction plsqlCommit = new PlsqlTransaction(object, io);
-            instance.add(plsqlCommit);
-            return plsqlCommit;
+            DatabaseTransaction transaction = new DatabaseTransaction(object, io);
+            instance.add(transaction);
+            return transaction;
         }
     }
 
-    void open() {
+    public void open() {
         setOpen(true);
     }
 
-    void close() {
+    public void close() {
         setOpen(false);
     }
 
@@ -115,20 +114,17 @@ public class PlsqlTransaction {
     }
 
     public void commitTransaction(DatabaseConnection connection, DatabaseConnectionManager connectionProvider) {
-
         ProgressHandle handle = ProgressHandleFactory.createHandle("Commit database file...");
         handle.start();
 
         try {
+            if (connection.getJDBCConnection() != null && connectionProvider.hasDataToCommit(connection)) {
+                connectionProvider.commitRollbackTransactions(connection, true);
+            }
+            close();
             if (!io.isClosed()) {
                 io.getOut().println((new StringBuilder()).append("> Commit Statement successfully"));
             }
-
-            if (connection.getJDBCConnection() != null) {
-                connectionProvider.commitRollbackTransactions(connection, true);
-                close();
-            }
-
         } catch (Exception ex) {
             io.getOut().println((new StringBuilder()).append(">!!! Error Commit Statement"));
             Exceptions.printStackTrace(ex);
@@ -142,13 +138,12 @@ public class PlsqlTransaction {
         handle.start();
 
         try {
+            if (connection.getJDBCConnection() != null && connectionProvider.hasDataToCommit(connection)) {
+                connectionProvider.commitRollbackTransactions(connection, false);
+            }
+            close();
             if (!io.isClosed()) {
                 io.getOut().println((new StringBuilder()).append("> Rollback Statement successfully"));
-            }
-
-            if (connection.getJDBCConnection() != null) {
-                connectionProvider.commitRollbackTransactions(connection, false);
-                close();
             }
 
         } catch (Exception ex) {

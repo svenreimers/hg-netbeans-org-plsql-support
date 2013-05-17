@@ -64,7 +64,9 @@ import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.progress.ProgressHandleFactory;
 import org.netbeans.modules.plsql.filetype.PlsqlDataObject;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionHolder;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
+import org.netbeans.modules.plsqlsupport.db.DatabaseTransaction;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.awt.*;
 import org.openide.cookies.EditorCookie;
@@ -101,7 +103,7 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
     private JButton button;
     private ActionListener buttonListener = new ButtonListener();
     private boolean autoCommit = true;
-    private final PlsqlTransaction transaction;
+    private final DatabaseTransaction transaction;
 
     public PlsqlExecuteAction() {
         this(Utilities.actionsGlobalContext());
@@ -117,7 +119,7 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
         if (validator.isValidTDB(dataObject)) {
             autoCommit = OptionsUtilities.isCommandWindowAutoCommitEnabled();
         }
-        transaction = PlsqlTransaction.getInstance(dataObject);
+        transaction = DatabaseTransaction.getInstance(dataObject);
     }
 
     @Override
@@ -421,15 +423,15 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
         }
 
         private void modifyConnection() {
+            DatabaseConnectionHolder connectionHolder = dataObject.getLookup().lookup(DatabaseConnectionHolder.class);
+            connectionHolder.setDatabaseConnection(connection);
+            // will remove below if new impl is better.
             plsqlDataobject = (PlsqlDataObject) dataObject;
             plsqlDataobject.modifyLookupDatabaseConnection(connection);
         }
     }
 
     private class ButtonListener implements ActionListener {
-
-        public ButtonListener() {
-        }
 
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -444,9 +446,6 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
     };
 
     private class PopupMenuPopulator implements PropertyChangeListener {
-
-        public PopupMenuPopulator() {
-        }
 
         @Override
         public void propertyChange(PropertyChangeEvent event) {

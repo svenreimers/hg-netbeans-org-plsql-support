@@ -53,8 +53,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.*;
-import java.util.Date;
 import java.util.*;
+import java.util.Date;
 import javax.swing.JButton;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -83,6 +83,7 @@ import org.netbeans.modules.plsql.utilities.PlsqlFileUtil;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
+import org.netbeans.modules.plsqlsupport.db.DatabaseTransaction;
 import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
 import org.openide.DialogDisplayer;
 import org.openide.NotifyDescriptor;
@@ -102,6 +103,7 @@ import org.openide.windows.TopComponent;
 
 public class PlsqlFileExecutor {
 
+    private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
     private boolean cancel = false;
     private final RequestProcessor rp = new RequestProcessor("SQLExecution", 1, true);
     // execution results. Not synchronized since accessed only from rp of throughput 1.
@@ -344,7 +346,7 @@ public class PlsqlFileExecutor {
             return this.preparedIO;
         }
         String startMsg = "Deploying " + FileExecutionUtil.getActivatedFileName(dataObj);
-        if (fileName.endsWith(".tdb")) {
+        if (validator.isValidTDB(dataObj)) {
             startMsg = "Executing " + fileName;
         }
         InputOutput io = null;
@@ -378,12 +380,7 @@ public class PlsqlFileExecutor {
     //store in object history if this is an SQL Command window (*.tdb)
     private void addToHistory(Document doc) {
         DataObject obj = FileExecutionUtil.getDataObject(doc);
-        FileObject file = obj.getPrimaryFile();
-        if (file == null) {
-            return;
-        }
-        String extension = file.getExt();
-        if ("tdb".equalsIgnoreCase(extension)) {
+        if (validator.isValidTDB(obj)) {
             StatementExecutionHistory history = obj.getLookup().lookup(StatementExecutionHistory.class);
             try {
                 history.addEntry(doc.getText(0, doc.getLength()));
@@ -395,7 +392,6 @@ public class PlsqlFileExecutor {
     }
 
     public InputOutput executePLSQL(List<PlsqlExecutableObject> executableObjs, Document doc, boolean hidden, boolean autoCommit) {
-        final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
         Project project = null;
         Object object = doc.getProperty(Document.StreamDescriptionProperty);
         if (object instanceof DataObject) {
@@ -424,13 +420,13 @@ public class PlsqlFileExecutor {
         String fileName = dataObj.getPrimaryFile().getNameExt();
         boolean moreRowsToBeFetched = false;
         //Check whether this is the excution window file
-        if (fileName.endsWith(".tdb")) {
+        if (validator.isValidTDB(dataObj)) {
             endMsg = "Finished executing command ";
         }
         Connection con;
         Statement stm = null;
         String firstWord = null;
-        PlsqlTransaction commit = PlsqlTransaction.getInstance((DataObject) object);
+        DatabaseTransaction transaction = DatabaseTransaction.getInstance((DataObject) object);
 
         //quick & dirty fix to avoid having output tabs for the SQL Execution window (unless there's an exception)
         //first check to see if this is a simple select statement and if so treat it separately.
@@ -990,17 +986,12 @@ public class PlsqlFileExecutor {
                 }
             }
 
-            if (fileName.endsWith(".tdb") && !autoCommit) {
-                if (!deploymentOk && !(firstWord != null
-                        && (firstWord.equalsIgnoreCase("INSERT") || firstWord.equalsIgnoreCase("UPDATE") || firstWord.equalsIgnoreCase("DELETE")))) {
+            if (validator.isValidTDB(dataObj) && !autoCommit) {
+                if (!deploymentOk && !connectionProvider.hasDataToCommit(connection)) {
                     con.commit();
-                } else {
-                    if (deploymentOk && (firstWord != null
-                            && (firstWord.equalsIgnoreCase("INSERT") || firstWord.equalsIgnoreCase("UPDATE") || firstWord.equalsIgnoreCase("DELETE")))) {
-                        commit.open();
-                    }
+                } else if (deploymentOk && connectionProvider.hasDataToCommit(connection)) {
+                    transaction.open();
                 }
-
             } else {
                 con.commit();
             }
@@ -1188,13 +1179,10 @@ public class PlsqlFileExecutor {
                 } else if (tokenTxt.toUpperCase(Locale.ENGLISH).startsWith("SET ")) {
                     StringTokenizer tokenizer = new StringTokenizer(tokenTxt);
                     tokenizer.nextToken();
-                    String alias;
-                    boolean isNext = tokenizer.hasMoreTokens();
                     tokenizer.nextToken();
-                    isNext = tokenizer.hasMoreTokens();
                     //alias
-                    if (isNext) {
-                        alias = tokenizer.nextToken();
+                    if (tokenizer.hasMoreTokens()) {
+                        tokenizer.nextToken();
                     } else {
                         break;
                     }

@@ -64,6 +64,7 @@ import org.openide.util.NbPreferences;
 import org.openide.util.lookup.Lookups;
 import org.openide.util.lookup.ProxyLookup;
 import org.netbeans.api.db.explorer.DatabaseConnection;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionHolder;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 
 public class PlsqlDataObject extends MultiDataObject {
@@ -76,6 +77,7 @@ public class PlsqlDataObject extends MultiDataObject {
    private PlsqlAnnotationManager annotationManager = null;
    private boolean isAnnotationsEnabled = false;
    private final PlsqlEditorSupport editorSupport;
+   private DatabaseConnectionHolder connectionHolder;
    private DatabaseConnection databaseConnection;
    private StatementExecutionHistory statementExecutionHistory;
 
@@ -109,6 +111,7 @@ public class PlsqlDataObject extends MultiDataObject {
       if (project != null) {
          databaseConnection = DatabaseConnectionManager.getInstance(project).getTemplateConnection();
       }
+      connectionHolder = new DatabaseConnectionHolder(databaseConnection);
       createLookup();
    }
 
@@ -131,6 +134,7 @@ public class PlsqlDataObject extends MultiDataObject {
 
    /**
     * Return cookie set, to be used in editor support
+    *
     * @return
     */
    CookieSet getCookieSet0() {
@@ -139,7 +143,6 @@ public class PlsqlDataObject extends MultiDataObject {
 
    private void addPreferenceListener() {
       listener = new PreferenceChangeListener() {
-
          @Override
          public void preferenceChange(PreferenceChangeEvent evt) {
             if (evt.getKey().equals(OptionsUtilities.PLSQL_ANNOTATIONS_ENABLED_KEY)) {
@@ -168,10 +171,11 @@ public class PlsqlDataObject extends MultiDataObject {
       List<Object> objects = new ArrayList<Object>();
       objects.add(blockFactory);
       objects.add(statementExecutionHistory);
+      objects.add(connectionHolder);
 
-       if (annotationManager != null) {
-           objects.add(annotationManager);
-       }
+      if (annotationManager != null) {
+         objects.add(annotationManager);
+      }
 
       if (databaseConnection != null) {
          objects.add(databaseConnection);
@@ -180,8 +184,8 @@ public class PlsqlDataObject extends MultiDataObject {
       lookup = new ProxyLookup(new Lookup[]{getCookieSet().getLookup(), fixed});
    }
 
-   public void modifyLookupDatabaseConnection(DatabaseConnection Connection) {
-      databaseConnection = Connection;
+   public void modifyLookupDatabaseConnection(DatabaseConnection connection) {
+      databaseConnection = connection;
       createLookup();
    }
 

@@ -55,6 +55,7 @@ import javax.swing.JButton;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
+import org.netbeans.modules.plsqlsupport.db.DatabaseTransaction;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionRegistration;
@@ -71,7 +72,7 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
 
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
     private final DataObject dataObject;
-    private final PlsqlTransaction transaction;
+    private final DatabaseTransaction transaction;
     private DatabaseConnectionManager connectionProvider;
     private JButton button;
     private DatabaseConnection connection;
@@ -87,7 +88,7 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
         putValue(SMALL_ICON, new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/database_rollback.png")));
 
         dataObject = context.lookup(DataObject.class);
-        transaction = PlsqlTransaction.getInstance(dataObject);
+        transaction = DatabaseTransaction.getInstance(dataObject);
     }
 
     @Override
@@ -128,10 +129,6 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
 
         prepareConnection();
         if (connectionProvider == null || connection == null) {
-            return;
-        }
-
-        if (!connectionProvider.hasDataToCommit(connection)) {
             return;
         }
 
