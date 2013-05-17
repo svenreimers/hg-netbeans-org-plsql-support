@@ -90,7 +90,7 @@ public class PlsqlExecuteAction extends AbstractAction implements ContextAwareAc
 
     private static final Logger LOG = Logger.getLogger(PlsqlExecuteAction.class.getName());
     private static final String ICON_PATH = "org/netbeans/modules/plsql/execution/execute.png";
-    private static final RequestProcessor RP = new RequestProcessor(PlsqlExecuteAction.class);
+    private static final RequestProcessor RP = new RequestProcessor(PlsqlExecuteAction.class.getName(), 4);
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
     private static final String DATABASE_CONNECTION_KEY = "databaseConnection";
     private static final String TEST_BLOCK_NAME_PREFIX = "TestBlock:";

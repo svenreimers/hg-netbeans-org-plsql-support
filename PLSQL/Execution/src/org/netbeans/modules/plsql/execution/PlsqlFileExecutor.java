@@ -103,11 +103,9 @@ import org.openide.windows.TopComponent;
 
 public class PlsqlFileExecutor {
 
+    private static final RequestProcessor RP = new RequestProcessor("SQLExecution", 4, true);
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
     private boolean cancel = false;
-    private final RequestProcessor rp = new RequestProcessor("SQLExecution", 1, true);
-    // execution results. Not synchronized since accessed only from rp of throughput 1.
-    private SQLExecutionResults executionResults;
     private final DatabaseConnection connection;
     private Connection debugConnection;
     private DatabaseContentManager cache;
@@ -166,7 +164,7 @@ public class PlsqlFileExecutor {
         String formattedQuery = formatQuery(query, con);
         DataObject obj = FileExecutionUtil.getDataObject(doc);
         SQLExecutor executor = new SQLExecutor(obj, con, formattedQuery, label);
-        RequestProcessor.Task task = rp.create(executor);
+        RequestProcessor.Task task = RP.create(executor);
         executor.setTask(task);
         task.run();
         return false;
@@ -1294,10 +1292,6 @@ public class PlsqlFileExecutor {
         return newString.toString();
     }
 
-    private void setExecutionResults(SQLExecutionResults executionResults) {
-        this.executionResults = executionResults;
-    }
-
     private void setResultsToEditors(final SQLExecutionResults results, final DataObject obj, final String label) {
         if (results != null) {
             final List<Component> components = new ArrayList<Component>();
@@ -1474,8 +1468,6 @@ public class PlsqlFileExecutor {
                 // execution cancelled
                 return;
             }
-
-            setExecutionResults(executionResults);
 
             if (executionResults.size() <= 0) {
                 // no results, but successfull
