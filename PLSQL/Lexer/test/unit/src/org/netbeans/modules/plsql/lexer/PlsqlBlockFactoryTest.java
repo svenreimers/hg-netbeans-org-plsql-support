@@ -472,7 +472,6 @@ public class PlsqlBlockFactoryTest extends TestRecordPlayer {
             List<PlsqlBlock> lstBlockFac = blockFac.getBlockHierarchy();
 //         printHierarchy(lstBlockFac, "");
 //         generateAssert(lstBlockFac, "lstBlockFac", "false");
-            assertEquals(22, lstBlockFac.size());
             processBlocks(plsqlFileName, lstBlockFac);
         } finally {
             if (fileObject != null) {
