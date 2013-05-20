@@ -1,0 +1,20 @@
+SELECT
+   CASE dummy 
+   WHEN 'X' THEN
+      'CASE inside SELECT'
+   ELSE
+      'Y'
+   END xyz
+FROM dual
+/
+
+SELECT
+   CASE dummy 
+   WHEN 'A' THEN
+      'AAA'
+   ELSE
+      (SELECT 'SELECT inside CASE' FROM dual)
+   END xyz
+FROM dual
+/
+   

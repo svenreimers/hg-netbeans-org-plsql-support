@@ -2170,8 +2170,8 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
                         PlsqlBlock child = checkStatementBlock(tempToken, ts, immediateBlockHier);
                         if (child == null) {//If inner check seems to have failed need to continue this one
 
-                            ts.move(offset);
-                            ts.moveNext();
+//                            ts.move(offset);
+//                            ts.moveNext();
                         } else {
                             checkAndAddNew(child, parent, immediateBlockHier);
                         }

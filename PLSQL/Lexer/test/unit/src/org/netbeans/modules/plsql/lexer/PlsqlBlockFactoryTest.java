@@ -545,7 +545,30 @@ public class PlsqlBlockFactoryTest extends TestRecordPlayer {
             }
         }
     }
+    
+    @Test
+    public void testSimpleCaseStatement() throws IOException, BadLocationException {
+        System.out.println("testSimpleCaseStatement");
+        final String plsqlFileName = "case.upg";
+        FileObject fileObject = fs.getRoot().createData(plsqlFileName);
+        assertNotNull(fileObject);
+        try {
+            PlsqlBlockFactory blockFac = loadAsTmpFile(fileObject, plsqlFileName);
+            assertNotNull(blockFac);
 
+            List<PlsqlBlock> lstBlockFac = blockFac.getBlockHierarchy();
+//         printHierarchy(lstBlockFac, "");
+ //          generateAssert(lstBlockFac, "lstBlockFac", "false");
+ //          assertEquals(2, lstBlockFac.size());
+            processBlocks(plsqlFileName, lstBlockFac);
+        } finally {
+            if (fileObject != null) {
+                fileObject.delete();
+            }
+        }
+    }
+    
+   
     private PlsqlBlockFactory loadAsTmpFile(FileObject fileObj, String fileName) throws IOException, BadLocationException {
         InputStream inputStream = new FileInputStream(new File(getDataDir(), fileName));
         InputStreamReader indexReader = new InputStreamReader(inputStream);
