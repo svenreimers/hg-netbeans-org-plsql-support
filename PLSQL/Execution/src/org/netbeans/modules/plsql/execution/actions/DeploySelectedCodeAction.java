@@ -203,6 +203,9 @@ public final class DeploySelectedCodeAction extends CookieAction {
             String output = "";
             connection = (DatabaseConnection) item.getClientProperty(DATABASE_CONNECTION_KEY);
             DatabaseConnectionManager connectionProvider = DatabaseConnectionManager.getInstance(project);
+            if (connection.getJDBCConnection() == null) {
+                connectionProvider.connect(connection);
+            }
             EditorCookie editorCookie = activatedNodes[0].getLookup().lookup(EditorCookie.class);
             try {
                 output = replaceAliases(getSelection(editorCookie), dataObject.getLookup().lookup(PlsqlBlockFactory.class), '&');
