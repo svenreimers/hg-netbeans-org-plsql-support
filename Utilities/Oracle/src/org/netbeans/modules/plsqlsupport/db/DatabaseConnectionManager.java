@@ -41,7 +41,6 @@
  */
 package org.netbeans.modules.plsqlsupport.db;
 
-import org.netbeans.modules.plsqlsupport.db.ui.DatabaseConnectionPanel;
 import java.beans.ExceptionListener;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
@@ -71,6 +70,7 @@ import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.db.explorer.DatabaseException;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
+import org.netbeans.modules.plsqlsupport.db.ui.DatabaseConnectionPanel;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.loaders.DataObject;
@@ -187,6 +187,11 @@ public class DatabaseConnectionManager {
         return result;
     }
 
+    /**
+     *
+     * @param connection
+     * @return true if given connection is the template connection (main).
+     */
     public boolean isDefaultDatabase(DatabaseConnection connection) {
         return databaseConnectionsAreEqual(connection, templateConnection);
     }
@@ -239,53 +244,6 @@ public class DatabaseConnectionManager {
         }
     }
 
-    public void commitRollbackTransactions(DatabaseConnection connection, boolean commit) {
-        try {
-            if (connection.getJDBCConnection() == null) {
-                return;
-            }
-            Connection con = connection.getJDBCConnection();
-
-            if (commit) {
-                con.commit();
-            } else {
-                con.rollback();
-            }
-        } catch (SQLException ex) {
-            Exceptions.printStackTrace(ex);
-        }
-    }
-
-    /**
-     *
-     * @return True if there in on going transactions for a command window.
-     */
-    public boolean hasDataToCommit(DatabaseConnection connection) {
-        ResultSet rs = null;
-        PreparedStatement stmt = null;
-        String commitData = null;
-        if (connection == null || connection.getJDBCConnection() == null) {
-            return false;
-        }
-
-        try {
-            String sqlSelect = " SELECT taddr FROM   v$session WHERE  AUDsid=userenv('SESSIONID')";
-            stmt = connection.getJDBCConnection().prepareStatement(sqlSelect);
-            rs = stmt.executeQuery();
-            if (rs.next()) {
-                commitData = rs.getString(1);
-            }
-            if (commitData != null) {
-                return true;
-            } else {
-                return false;
-            }
-        } catch (SQLException ex) {
-            Exceptions.printStackTrace(ex);
-        }
-        return false;
-    }
-
     private void clearConnectionPool() {
         synchronized (connectionPool) {
             while (!connectionPool.isEmpty()) {
@@ -315,6 +273,10 @@ public class DatabaseConnectionManager {
         }
     }
 
+    /**
+     *
+     * @return the Template Connection (main connection).
+     */
     public DatabaseConnection getTemplateConnection() {
         if (templateConnection != null) {
             return templateConnection;
@@ -465,7 +427,7 @@ public class DatabaseConnectionManager {
      * using Oracle's 'Dbms_Application_Info.Set_Module' procedure. This will be useful 
      * for tracing current connections in the DB created by NetBeans by querying 'v$sessions'
      */
-    public void setModuleInOracle(final DatabaseConnection connection) {
+    public static void setModuleInOracle(final DatabaseConnection connection) {
         try {
             ResultSet rs = null;
             CallableStatement stmt = null;
@@ -635,7 +597,7 @@ public class DatabaseConnectionManager {
         changeSupport.removePropertyChangeListener(listener);
     }
 
-    public boolean testConnection(DatabaseConnection connection) {
+    public static boolean testConnection(DatabaseConnection connection) {
         Connection con = connection.getJDBCConnection();
         if (con == null) {
             return false;

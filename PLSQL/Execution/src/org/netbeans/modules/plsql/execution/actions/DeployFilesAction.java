@@ -217,7 +217,7 @@ public abstract class DeployFilesAction extends CookieAction {
                         if (obj != null) {
                             if (fileName.toLowerCase(Locale.ENGLISH).endsWith(executionOrder.get(typeIndex))) {
                                 //Load the editor cookier and allow parsing
-                                EditorCookie ec = obj.getCookie(EditorCookie.class);
+                                EditorCookie ec = obj.getLookup().lookup(EditorCookie.class);
                                 Task task = ec.prepareDocument();
                                 task.waitFinished();
                                 Document doc = ec.getDocument();

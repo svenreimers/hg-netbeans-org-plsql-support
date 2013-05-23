@@ -52,10 +52,8 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsqlsupport.db.DatabaseTransaction;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionNewExecutor;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionRegistration;
@@ -72,10 +70,11 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
 
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
     private final DataObject dataObject;
-    private final DatabaseTransaction transaction;
-    private DatabaseConnectionManager connectionProvider;
+//    private final DatabaseTransaction transaction;
+    private DatabaseConnectionNewExecutor connectionSession;
+//    private DatabaseConnectionManager connectionProvider;
     private JButton button;
-    private DatabaseConnection connection;
+//    private DatabaseConnection connection;
     private final PropertyChangeListener propertyChangeListener = new EnableRollback();
 
     public PlsqlRollbackAction() {
@@ -88,7 +87,9 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
         putValue(SMALL_ICON, new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/database_rollback.png")));
 
         dataObject = context.lookup(DataObject.class);
-        transaction = DatabaseTransaction.getInstance(dataObject);
+        if (dataObject != null) {
+            connectionSession = dataObject.getLookup().lookup(DatabaseConnectionNewExecutor.class);
+        }
     }
 
     @Override
@@ -119,21 +120,22 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
 
     private void prepareConnection() {
         if (dataObject != null) {
-            connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
+            connectionSession = dataObject.getLookup().lookup(DatabaseConnectionNewExecutor.class);
         }
-        connection = dataObject.getLookup().lookup(DatabaseConnection.class);
+//        connection = dataObject.getLookup().lookup(DatabaseConnection.class);
     }
 
     @Override
     public void actionPerformed(ActionEvent event) {
 
         prepareConnection();
-        if (connectionProvider == null || connection == null) {
-            return;
-        }
+//        if (connectionProvider == null || connection == null) {
+//            return;
+//        }
 
         saveIfModified(dataObject);
-        transaction.rollbackTransaction(connection, connectionProvider);
+        connectionSession.rollbackTransaction();
+//        transaction.rollbackTransaction(connection);
     }
 
     @Override
@@ -146,7 +148,7 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
         button.setAction(this);
         button.setEnabled(false);
         button.setDisabledIcon(new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/database_rollback_disable.png")));
-        transaction.addPropertyChangeListener(propertyChangeListener);
+        connectionSession.addTransactionListener(propertyChangeListener);
         return button;
     }
 
@@ -165,10 +167,8 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
 
         @Override
         public void propertyChange(PropertyChangeEvent event) {
-            if (!OptionsUtilities.isCommandWindowAutoCommitEnabled() && transaction.isOpen()) {
-                button.setEnabled(true);
-            } else {
-                button.setEnabled(false);
+            if (!OptionsUtilities.isCommandWindowAutoCommitEnabled()) {
+                button.setEnabled((Boolean) event.getNewValue());
             }
         }
     }

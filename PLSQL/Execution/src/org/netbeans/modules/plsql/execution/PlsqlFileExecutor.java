@@ -82,8 +82,8 @@ import org.netbeans.modules.plsql.lexer.PlsqlTokenId;
 import org.netbeans.modules.plsql.utilities.PlsqlFileUtil;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionNewExecutor;
 import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
-import org.netbeans.modules.plsqlsupport.db.DatabaseTransaction;
 import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
 import org.openide.DialogDisplayer;
 import org.openide.NotifyDescriptor;
@@ -106,26 +106,32 @@ public class PlsqlFileExecutor {
     private static final RequestProcessor RP = new RequestProcessor("SQLExecution", 4, true);
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
     private boolean cancel = false;
-    private final DatabaseConnection connection;
+    private final DatabaseConnectionNewExecutor connectionSession;
     private Connection debugConnection;
     private DatabaseContentManager cache;
     private PlsqlEditor plsqlEditor;
     private final InputOutput preparedIO;
     private final DatabaseConnectionManager connectionProvider;
-    private Savepoint firstSavepoint = null;
-    private final String connectionDisplayName;
+//    private Savepoint firstSavepoint = null;
+//    private DatabaseConnection connection;
+
+    public PlsqlFileExecutor(DatabaseConnectionManager connectionProvider, DatabaseConnectionNewExecutor connection) {
+        this.connectionSession = connection;
+        this.preparedIO = null;
+        this.connectionProvider = connectionProvider;
+        this.cache = DatabaseContentManager.getInstance(connection.getConnection());
+    }
 
     public PlsqlFileExecutor(DatabaseConnectionManager connectionProvider, DatabaseConnection connection) {
-        this.connectionDisplayName = "Using DB: " + connection.getDisplayName() + " [" + connection.getName() + "]";
-        this.connection = connection;
+        this.connectionSession = null;
+//        this.connection = connection;
         this.preparedIO = null;
         this.connectionProvider = connectionProvider;
         this.cache = DatabaseContentManager.getInstance(connection);
     }
 
     public PlsqlFileExecutor(DatabaseConnectionManager connectionProvider, Connection debugConnection, InputOutput io) {
-        this.connection = null;
-        this.connectionDisplayName = null;
+        this.connectionSession = null;
         this.debugConnection = debugConnection;
         this.preparedIO = io;
         this.connectionProvider = connectionProvider;
@@ -339,10 +345,11 @@ public class PlsqlFileExecutor {
         }
     }
 
-    private InputOutput initializeIO(String fileName, String displayName, DataObject dataObj) {
+    private InputOutput initializeIO(String fileName, String displayName, DataObject dataObj, PlsqlExecutableObject executableObject) {
         if (this.preparedIO != null) {
             return this.preparedIO;
         }
+        displayName = getIOTabName(executableObject, fileName, displayName);
         String startMsg = "Deploying " + FileExecutionUtil.getActivatedFileName(dataObj);
         if (validator.isValidTDB(dataObj)) {
             startMsg = "Executing " + fileName;
@@ -366,7 +373,7 @@ public class PlsqlFileExecutor {
                 io.getErr().flush();
             }
             io.select();
-            io.getOut().println(connectionDisplayName);
+            io.getOut().println(connectionSession.getDisplayName());
             io.getOut().println(startMsg);
             io.getOut().println("-------------------------------------------------------------");
         } catch (IOException ex) {
@@ -403,7 +410,7 @@ public class PlsqlFileExecutor {
         cancel = false;
         InputOutput io = null;
         boolean deploymentOk = true;
-        if (debugConnection == null && connection.getJDBCConnection() == null) {
+        if (debugConnection == null && connectionSession.getConnection().getJDBCConnection() == null) {
             JOptionPane.showMessageDialog(null, "Connect to the Database");
             return null;
         }
@@ -424,7 +431,7 @@ public class PlsqlFileExecutor {
         Connection con;
         Statement stm = null;
         String firstWord = null;
-        DatabaseTransaction transaction = DatabaseTransaction.getInstance((DataObject) object);
+//        DatabaseTransaction transaction = DatabaseTransaction.getInstance((DataObject) object);
 
         //quick & dirty fix to avoid having output tabs for the SQL Execution window (unless there's an exception)
         //first check to see if this is a simple select statement and if so treat it separately.
@@ -447,16 +454,16 @@ public class PlsqlFileExecutor {
                         if (!ignoreDefines) {
                             plsqlText = replaceAliases(plsqlText, definesMap, define, io);
                         }
-                        executeSelect(plsqlText, connection, doc, null);
+                        executeSelect(plsqlText, connectionSession.getConnection(), doc, null);
                         return null;
                     } else if (firstWord.equalsIgnoreCase("DESC") || firstWord.equalsIgnoreCase("DESCRIBE")) {
-                        describeObject(connection, doc, tokenizer, io);
+                        describeObject(connectionSession.getConnection(), doc, tokenizer, io);
                         return null;
                     }
 
                 } catch (SQLException sqlEx) {
                     try {
-                        io = initializeIO(fileName, getIOTabName(executableObjs.get(0), fileName, dataObj.getNodeDelegate().getDisplayName()), dataObj);
+                        io = initializeIO(fileName, dataObj.getNodeDelegate().getDisplayName(), dataObj, executableObjs.get(0));
                         int errLine = getLineNumberFromMsg(sqlEx.getMessage());
                         int outLine = executionObject.getStartLineNo() + errLine - 1;
                         String msg = getmodifiedErorrMsg(sqlEx.getMessage(), outLine);
@@ -480,11 +487,11 @@ public class PlsqlFileExecutor {
         try {
 
 
-            io = initializeIO(fileName, getIOTabName(executableObjs.get(0), fileName, dataObj.getNodeDelegate().getDisplayName()), dataObj);
-            con = debugConnection != null ? debugConnection : connection.getJDBCConnection();
+            io = initializeIO(fileName, dataObj.getNodeDelegate().getDisplayName(), dataObj, executableObjs.get(0));
+            con = debugConnection != null ? debugConnection : connectionSession.getJDBCConnection();
             con.setAutoCommit(false);
             enableDbmsOut(con);
-            firstSavepoint = con.setSavepoint();
+//            firstSavepoint = con.setSavepoint();
             //savepointsCreated.put(new Integer(firstSavepoint.getSavepointId()),firstSavepoint);
 
             stm = con.createStatement();
@@ -494,8 +501,8 @@ public class PlsqlFileExecutor {
             for (PlsqlExecutableObject exeObj : executableObjs) {
                 if (cancel) {
                     io.getErr().println("!!!Execution cancelled. Performing rollback");
-                    // con.rollback();
-                    con.rollback(firstSavepoint);
+                    con.rollback();
+//                    con.rollback(firstSavepoint);
                     return io;
                 }
                 int lineNumber = exeObj.getStartLineNo();
@@ -548,7 +555,7 @@ public class PlsqlFileExecutor {
                                 plsqlEditor.closeResultSetTabs();
                                 firstSelectStatement = false;
                             }
-                            moreRowsToBeFetched = executeSelect(plsqlText, connection, doc, null);
+                            moreRowsToBeFetched = executeSelect(plsqlText, connectionSession.getConnection(), doc, null);
                             continue;
                         } else {
                             io.select();
@@ -654,8 +661,8 @@ public class PlsqlFileExecutor {
                         io.getOut().println("!!!Error detected. Performing Rollback");
                         deploymentOk = false;
                         try {
-                            // con.rollback();
-                            con.rollback(firstSavepoint);
+                            con.rollback();
+//                            con.rollback(firstSavepoint);
                         } catch (SQLException ex) {
                         }
                         break;
@@ -705,12 +712,12 @@ public class PlsqlFileExecutor {
                             if (plsqlEditor != null) {
                                 plsqlEditor.closeResultSetTabs();
                             }
-                            moreRowsToBeFetched = executeSelect(plsqlText, connection, doc, null);
+                            moreRowsToBeFetched = executeSelect(plsqlText, connectionSession.getConnection(), doc, null);
                             continue;
                         } else {
                             io.select();
                             if (firstWord.equalsIgnoreCase("DESC") || firstWord.equalsIgnoreCase("DESCRIBE")) {
-                                describeObject(connection, doc, tokenizer, io);
+                                describeObject(connectionSession.getConnection(), doc, tokenizer, io);
                                 continue;
                             } else if (firstWord.equalsIgnoreCase("PROMPT")) {
                                 if (plsqlText.length() > 7) {
@@ -799,7 +806,8 @@ public class PlsqlFileExecutor {
                         if (!autoCommit) {
                             try {
                                 io.getOut().println("!!!Error detected. Performing rollback");
-                                con.rollback(firstSavepoint);
+                                con.rollback();
+//                                con.rollback(firstSavepoint);
                             } catch (SQLException ex) {
                             }
                         }
@@ -985,10 +993,10 @@ public class PlsqlFileExecutor {
             }
 
             if (validator.isValidTDB(dataObj) && !autoCommit) {
-                if (!deploymentOk && !connectionProvider.hasDataToCommit(connection)) {
+                if (!deploymentOk && !connectionSession.hasOpenTransaction()) {
                     con.commit();
-                } else if (deploymentOk && connectionProvider.hasDataToCommit(connection)) {
-                    transaction.open();
+//                } else if (deploymentOk && connectionSession.hasOpenTransaction()) {
+//                    connectionSession.openTransaction();
                 }
             } else {
                 con.commit();
@@ -1004,7 +1012,7 @@ public class PlsqlFileExecutor {
                 if (preparedIO == null) {
                     io.getOut().println("-------------------------------------------------------------");
                     io.getOut().println(endMsg + " (Total times: " + totalTime + "s)");
-                    io.getOut().println(connectionDisplayName);
+                    io.getOut().println(connectionSession.getDisplayName());
                     io.getOut().println(new Timestamp(endTime).toString());
                 }
             }
@@ -1027,6 +1035,11 @@ public class PlsqlFileExecutor {
                 io.getErr().close();
                 // IOPosition.currentPosition(io).scrollTo();
             }
+            if (autoCommit) {
+                connectionProvider.releaseDatabaseConnection(connectionSession.getConnection());
+            } else {
+                connectionSession.hasOpenTransaction();
+            }
         }
         return deploymentOk ? null : io;
     }
@@ -1042,7 +1055,7 @@ public class PlsqlFileExecutor {
 
     private List<PlsqlErrorObject> getPackageerrors(String packageName, String packageType) {
         List<PlsqlErrorObject> errorObjects = new ArrayList<PlsqlErrorObject>();
-        Connection con = debugConnection != null ? debugConnection : connection.getJDBCConnection();
+        Connection con = debugConnection != null ? debugConnection : connectionSession.getConnection().getJDBCConnection();
         if (con != null) {
             Statement stm = null;
             try {
@@ -1308,7 +1321,7 @@ public class PlsqlFileExecutor {
                                 }
                                 components.add(component);
                                 toolTips.add("<html>" + result.getStatementInfo().getSQL().replaceAll("\n", "<br>"));
-                                if ("IFSAPP".equals(connection.getSchema())) {
+                                if ("IFSAPP".equals(connectionSession.getConnection().getSchema())) {
                                     fixDataTablePopupMenu(result.getDataView());
                                 }
                             }

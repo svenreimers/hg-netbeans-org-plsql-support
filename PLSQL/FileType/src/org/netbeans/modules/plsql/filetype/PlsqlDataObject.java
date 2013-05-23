@@ -41,31 +41,27 @@
  */
 package org.netbeans.modules.plsql.filetype;
 
-import org.netbeans.modules.plsqlsupport.options.PLSQLAnnotationsPanel;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import java.io.IOException;
-import java.util.prefs.PreferenceChangeEvent;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.prefs.PreferenceChangeListener;
+import org.netbeans.api.db.explorer.DatabaseConnection;
+import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
+import org.netbeans.modules.plsql.annotation.PlsqlAnnotationManager;
+import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
+import org.netbeans.modules.plsql.utilities.PlsqlFileLocatorService;
+import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionNewExecutor;
 import org.openide.filesystems.FileObject;
 import org.openide.loaders.DataObjectExistsException;
 import org.openide.loaders.MultiDataObject;
 import org.openide.nodes.CookieSet;
 import org.openide.nodes.Node;
-import org.netbeans.api.project.FileOwnerQuery;
-import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
-import org.netbeans.modules.plsql.annotation.PlsqlAnnotationManager;
-import org.netbeans.modules.plsql.utilities.PlsqlFileLocatorService;
-import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.prefs.PreferenceChangeListener;
 import org.openide.util.Lookup;
-import org.openide.util.NbPreferences;
 import org.openide.util.lookup.Lookups;
 import org.openide.util.lookup.ProxyLookup;
-import org.netbeans.api.db.explorer.DatabaseConnection;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionHolder;
-import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 
 public class PlsqlDataObject extends MultiDataObject {
 
@@ -75,9 +71,8 @@ public class PlsqlDataObject extends MultiDataObject {
    private PreferenceChangeListener listener;
    private PlsqlBlockFactory blockFactory = null;
    private PlsqlAnnotationManager annotationManager = null;
-   private boolean isAnnotationsEnabled = false;
    private final PlsqlEditorSupport editorSupport;
-   private DatabaseConnectionHolder connectionHolder;
+   private DatabaseConnectionNewExecutor executor;
    private DatabaseConnection databaseConnection;
    private StatementExecutionHistory statementExecutionHistory;
 
@@ -102,16 +97,12 @@ public class PlsqlDataObject extends MultiDataObject {
          }
 
          blockFactory.addObserver(annotationManager);
-
-         //Add preference change listener to IFS Options panel
-         //addPreferenceListener();
-         //This will handle by the PlsqlAnnotationManager
-      }
+     }
       // TODO: if file not in project?!?
       if (project != null) {
          databaseConnection = DatabaseConnectionManager.getInstance(project).getTemplateConnection();
       }
-      connectionHolder = new DatabaseConnectionHolder(databaseConnection);
+      executor = DatabaseConnectionNewExecutor.create(databaseConnection, fileObject);
       createLookup();
    }
 
@@ -141,37 +132,11 @@ public class PlsqlDataObject extends MultiDataObject {
       return getCookieSet();
    }
 
-   private void addPreferenceListener() {
-      listener = new PreferenceChangeListener() {
-         @Override
-         public void preferenceChange(PreferenceChangeEvent evt) {
-            if (evt.getKey().equals(OptionsUtilities.PLSQL_ANNOTATIONS_ENABLED_KEY)) {
-               manageAnnotations();
-            }
-         }
-      };
-      NbPreferences.forModule(PLSQLAnnotationsPanel.class).addPreferenceChangeListener(listener);
-   }
-
-   private void manageAnnotations() {
-      if (OptionsUtilities.isPlSqlAnnotationsEnabled() && !isAnnotationsEnabled) {
-         blockFactory.addObserver(annotationManager);
-         isAnnotationsEnabled = true;
-         modifyLookupAnnotationManager(annotationManager);
-         annotationManager.initAnnotations(this);
-      } else if (!OptionsUtilities.isPlSqlAnnotationsEnabled() && isAnnotationsEnabled) {
-         blockFactory.deleteObserver(annotationManager);
-         annotationManager.clearAnnotations();
-         isAnnotationsEnabled = false;
-         modifyLookupAnnotationManager(annotationManager);
-      }
-   }
-
    private void createLookup() {
       List<Object> objects = new ArrayList<Object>();
       objects.add(blockFactory);
       objects.add(statementExecutionHistory);
-      objects.add(connectionHolder);
+      objects.add(executor);
 
       if (annotationManager != null) {
          objects.add(annotationManager);

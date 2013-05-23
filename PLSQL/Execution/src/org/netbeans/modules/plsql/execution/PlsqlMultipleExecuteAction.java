@@ -287,8 +287,8 @@ public final class PlsqlMultipleExecuteAction extends CookieAction {
                             String fileName = obj.getPrimaryFile().getNameExt();
                             if (fileName.toLowerCase(Locale.ENGLISH).endsWith(executionOrder.get(typeIndex))) {
                                 //Load the editor cookier and allow parsing
-                                EditorCookie ec = obj.getCookie(EditorCookie.class);
-                                Document doc = null;
+                                EditorCookie ec = obj.getLookup().lookup(EditorCookie.class);
+                                Document doc;
                                 try {
                                     doc = ec.openDocument();
                                 } catch (UserQuestionException uqe) {
@@ -337,7 +337,7 @@ public final class PlsqlMultipleExecuteAction extends CookieAction {
         private void saveIfModified(DataObject dataObj) {
             if (dataObj instanceof DataObject) {
                 try {
-                    SaveCookie saveCookie = dataObj.getCookie(SaveCookie.class);
+                    SaveCookie saveCookie = dataObj.getLookup().lookup(SaveCookie.class);
                     if (saveCookie != null) {
                         saveCookie.save();
                     }

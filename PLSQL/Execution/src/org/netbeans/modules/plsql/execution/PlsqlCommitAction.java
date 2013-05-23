@@ -52,11 +52,8 @@ import javax.swing.AbstractAction;
 import javax.swing.Action;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionHolder;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsqlsupport.db.DatabaseTransaction;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionNewExecutor;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionRegistration;
@@ -73,11 +70,11 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
 
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
     private final DataObject dataObject;
-    private DatabaseConnectionManager connectionProvider;
-    private DatabaseConnectionHolder connectionHolder;
-    private DatabaseConnection connection;
+//    private DatabaseConnectionManager connectionProvider;
+    private DatabaseConnectionNewExecutor connectionSession;
+//    private DatabaseConnection connection;
     private JButton button;
-    private final DatabaseTransaction transaction;
+//    private final DatabaseTransaction transaction;
     private final PropertyChangeListener changeListener = new EnableCommit();
 
     public PlsqlCommitAction() {
@@ -89,7 +86,9 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
         putValue(SMALL_ICON, new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/database_commit.png")));
 
         dataObject = context.lookup(DataObject.class);
-        transaction = DatabaseTransaction.getInstance(dataObject);
+        if (dataObject != null) {
+            connectionSession = dataObject.getLookup().lookup(DatabaseConnectionNewExecutor.class);
+        }
     }
 
     @Override
@@ -119,21 +118,23 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
 
     private void prepareConnection() {
         if (dataObject != null) {
-            connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
+//            connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
+            connectionSession = dataObject.getLookup().lookup(DatabaseConnectionNewExecutor.class);
         }
-        connection = dataObject.getLookup().lookup(DatabaseConnection.class);
+//        connection = dataObject.getLookup().lookup(DatabaseConnection.class);
     }
 
     @Override
     public void actionPerformed(ActionEvent event) {
 
         prepareConnection();
-        if (connectionProvider == null || connection == null) {
-            return;
-        }
+//        if (connectionProvider == null || connection == null) {
+//            return;
+//        }
 
         saveIfModified(dataObject);
-        transaction.commitTransaction(connection, connectionProvider);
+        connectionSession.commitTransaction();
+//        transaction.commitTransaction(connection, connectionProvider);
     }
 
     @Override
@@ -146,7 +147,7 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
         button.setAction(this);
         button.setEnabled(false);
         button.setDisabledIcon(new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/database_commit_disable.png")));
-        transaction.addPropertyChangeListener(changeListener);
+        connectionSession.addTransactionListener(changeListener);
         return button;
     }
 
@@ -165,10 +166,8 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
 
         @Override
         public void propertyChange(PropertyChangeEvent event) {
-            if (!OptionsUtilities.isCommandWindowAutoCommitEnabled() && transaction.isOpen()) {
-                button.setEnabled(true);
-            } else {
-                button.setEnabled(false);
+            if (!OptionsUtilities.isCommandWindowAutoCommitEnabled()) {
+                button.setEnabled((Boolean) event.getNewValue());
             }
         }
     }

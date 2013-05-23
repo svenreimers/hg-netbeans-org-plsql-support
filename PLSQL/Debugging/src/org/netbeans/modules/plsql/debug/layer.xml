@@ -16,14 +16,6 @@
                   <attr name="position" intvalue="1005"/>
                </file>
             </folder>
-            <folder name="Toolbars">
-               <folder name="Default">
-                  <file name="org-netbeans-modules-plsql-debug-PlsqlDebugAction.instance">
-                     <attr bundlevalue="org.netbeans.modules.plsql.debug.Bundle#CTL_PlsqlDebugAction" name="displayName"/>
-                     <attr name="position" intvalue="19600"/>
-                  </file>
-               </folder>
-            </folder>
          </folder>
       </folder>
    </folder>

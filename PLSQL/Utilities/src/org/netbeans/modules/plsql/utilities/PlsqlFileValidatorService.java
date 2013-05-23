@@ -98,10 +98,11 @@ public interface PlsqlFileValidatorService {
     public boolean isValidPackageBody(String fileExt);
 
     /**
-     * Check if DataObject is valid .tdb file. If null object sent false is returned.
+     * Check if DataObject is valid .tdb file and exist on disk. If null object sent false is returned.
+     * The .tdb file is the serialization of a PLSQL command window.
      *
      * @param dataObject
-     * @return
+     * @return true if DataObject is valid .tdb file and exist on disk.
      */
     public boolean isValidTDB(DataObject dataObject);
 

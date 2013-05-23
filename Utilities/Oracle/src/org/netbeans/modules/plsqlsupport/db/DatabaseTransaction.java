@@ -43,14 +43,15 @@ package org.netbeans.modules.plsqlsupport.db;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.CallableStatement;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.progress.ProgressHandleFactory;
-import org.openide.loaders.DataObject;
 import org.openide.util.Exceptions;
-import org.openide.windows.IOProvider;
 import org.openide.windows.InputOutput;
 
 /**
@@ -60,66 +61,52 @@ import org.openide.windows.InputOutput;
  */
 public class DatabaseTransaction {
 
-    private final static List<DatabaseTransaction> instance = new ArrayList<DatabaseTransaction>();
-    private boolean open;
-    private final DataObject dataObject;
-    public static final String PROP_commit = "PlsqlCommit";
+    private static final Logger LOG = Logger.getLogger(DatabaseTransaction.class.getName());
+    public static final String PROP_TRANSACTION = "TransactionOpen";
     private final PropertyChangeSupport changeSupport = new PropertyChangeSupport(this);
+    private DatabaseConnection connection;
     private final InputOutput io;
+    private boolean open = false;
 
-    public DatabaseTransaction(DataObject dataObject, InputOutput io) {
-        open = false;
-        this.dataObject = dataObject;
+    public DatabaseTransaction(DatabaseConnection connection, InputOutput io) {
+        this.connection = connection;
         this.io = io;
     }
 
-    public static DatabaseTransaction getInstance(DataObject object) {
-        if (object == null) {
-            return null;
-        }
-        InputOutput io = IOProvider.getDefault().getIO(object.getPrimaryFile().getNameExt(), false);
-
-        if (instance.isEmpty()) {
-            instance.add(new DatabaseTransaction(object, io));
-            return instance.get(0);
-        } else {
-            for (int i = 0; i < instance.size(); i++) {
-                DatabaseTransaction plsqlCommit = instance.get(i);
-                if (plsqlCommit.dataObject.equals(object)) {
-                    return plsqlCommit;
-                }
-            }
-            DatabaseTransaction transaction = new DatabaseTransaction(object, io);
-            instance.add(transaction);
-            return transaction;
-        }
+    void setConnection(DatabaseConnection connection) {
+        this.connection = connection;
+        close();
     }
 
-    public void open() {
-        setOpen(true);
-    }
-
-    public void close() {
+//    public void open() {
+//        setOpen(true);
+//    }
+//
+    private void close() {
         setOpen(false);
     }
 
     private void setOpen(boolean newOpen) {
         boolean oldOpen = open;
         open = newOpen;
-        changeSupport.firePropertyChange(PROP_commit, oldOpen, open);
+        changeSupport.firePropertyChange(PROP_TRANSACTION, oldOpen, open);
     }
 
     public boolean isOpen() {
         return open;
     }
 
-    public void commitTransaction(DatabaseConnection connection, DatabaseConnectionManager connectionProvider) {
+    /**
+     *
+     *
+     */
+    public void commitTransaction() {
         ProgressHandle handle = ProgressHandleFactory.createHandle("Commit database file...");
         handle.start();
 
         try {
-            if (connection.getJDBCConnection() != null && connectionProvider.hasDataToCommit(connection)) {
-                connectionProvider.commitRollbackTransactions(connection, true);
+            if (hasOpenTransaction()) {
+                commitRollbackTransactions(true);
             }
             close();
             if (!io.isClosed()) {
@@ -133,13 +120,17 @@ public class DatabaseTransaction {
         }
     }
 
-    public void rollbackTransaction(DatabaseConnection connection, DatabaseConnectionManager connectionProvider) {
+    /**
+     *
+     *
+     */
+    public void rollbackTransaction() {
         ProgressHandle handle = ProgressHandleFactory.createHandle("Rollback database file...");
         handle.start();
 
         try {
-            if (connection.getJDBCConnection() != null && connectionProvider.hasDataToCommit(connection)) {
-                connectionProvider.commitRollbackTransactions(connection, false);
+            if (hasOpenTransaction()) {
+                commitRollbackTransactions(false);
             }
             close();
             if (!io.isClosed()) {
@@ -172,5 +163,66 @@ public class DatabaseTransaction {
             }
         }
         changeSupport.addPropertyChangeListener(propertyName, listener);
+    }
+
+    /**
+     *
+     *
+     * @return True if there in on going transactions for a command window.
+     */
+    public boolean hasOpenTransaction() {
+        boolean isOpen = false;
+        String commitData = null;
+        if (connection.getJDBCConnection() == null) {
+            setOpen(isOpen);
+            return isOpen;
+        }
+
+        try {
+            String sqlProc = "{call ? := DBMS_TRANSACTION.local_transaction_id}";
+            CallableStatement stmt = connection.getJDBCConnection().prepareCall(sqlProc);
+            stmt.registerOutParameter(1, java.sql.Types.VARCHAR);
+            stmt.executeUpdate();
+            String transactionId = stmt.getString(1);
+//            System.out.println("transaction:" + transactionId);
+//            String sqlSelect = " SELECT taddr FROM   v$session WHERE  AUDsid=userenv('SESSIONID')";
+//            ResultSet rs = connection.getJDBCConnection().prepareStatement(sqlSelect).executeQuery();
+//            if (rs.next()) {
+//                commitData = rs.getString(1);
+//            }
+            io.getOut().println(("transactionId=" + transactionId));
+            if (transactionId != null) {
+                io.getOut().println(("transactionId=" + transactionId));
+                isOpen = true;
+            } else {
+                isOpen = false;
+            }
+        } catch (SQLException ex) {
+            LOG.log(Level.WARNING, "", ex);
+            isOpen = false;
+        }
+        setOpen(isOpen);
+        return isOpen;
+    }
+
+    /**
+     *
+     * @param commit the value of commit
+     */
+    private void commitRollbackTransactions(boolean commit) {
+        try {
+            if (connection.getJDBCConnection() == null) {
+                return;
+            }
+            Connection con = connection.getJDBCConnection();
+
+            if (commit) {
+                con.commit();
+            } else {
+                con.rollback();
+            }
+        } catch (SQLException ex) {
+            Exceptions.printStackTrace(ex);
+        }
     }
 }

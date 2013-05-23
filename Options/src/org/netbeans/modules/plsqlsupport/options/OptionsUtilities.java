@@ -64,6 +64,10 @@ public class OptionsUtilities {
    private OptionsUtilities() {
    } //singleton
 
+   /**
+    * 
+    * @return true if the option to auto deploy all database connections have been selected.
+    */
    public static boolean isDeployNoPromptEnabled() {
       return !NbPreferences.forModule(GeneralPanel.class).getBoolean(AUTO_DEPLOY_ALL_DATABASES_KEY, true);
    }

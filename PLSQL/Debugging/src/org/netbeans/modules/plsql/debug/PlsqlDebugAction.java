@@ -102,7 +102,9 @@ import org.openide.windows.OutputWriter;
    @ActionReference(path = "Shortcuts", name = "DS-D"),
    @ActionReference(path = "Shortcuts", name = "OS-D"),
    @ActionReference(path = "Editors/text/x-plsql/Popup", name = "org-netbeans-modules-plsql-debug-PlsqlDebugAction",
-   position = 1020, separatorAfter = 1050)
+           position = 1020, separatorAfter = 1050),
+   @ActionReference(path = "Editors/text/x-plsql/Toolbars/Default", name = "org-netbeans-modules-plsql-debug-PlsqlDebugAction",
+           position = 250)
 })
 public final class PlsqlDebugAction extends CookieAction {
 

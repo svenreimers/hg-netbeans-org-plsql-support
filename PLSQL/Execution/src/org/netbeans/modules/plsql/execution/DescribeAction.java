@@ -83,7 +83,7 @@ public class DescribeAction extends CookieAction {
     @Override
     protected void performAction(Node[] activatedNodes) {
         DataObject dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
-        EditorCookie ec = dataObject.getCookie(EditorCookie.class);
+        EditorCookie ec = dataObject.getLookup().lookup(EditorCookie.class);
         final Document doc = ec.getDocument();
         final DatabaseConnectionManager connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
         final DatabaseConnection connection = connectionProvider.getPooledDatabaseConnection(true);

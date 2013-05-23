@@ -41,9 +41,6 @@
  */
 package org.netbeans.modules.plsql.filetype;
 
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.api.db.explorer.DatabaseConnection;
-import org.netbeans.modules.plsql.annotation.PlsqlAnnotationManager;
 import java.awt.Component;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -52,70 +49,61 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JComponent;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
+import org.netbeans.modules.plsql.annotation.PlsqlAnnotationManager;
+import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionNewExecutor;
 import org.openide.awt.TabbedPaneFactory;
 import org.openide.cookies.EditorCookie;
 import org.openide.filesystems.FileUtil;
 import org.openide.loaders.DataObject;
 import org.openide.text.CloneableEditor;
 import org.openide.text.DataEditorSupport;
+import org.openide.util.Lookup;
 import org.openide.util.NbBundle;
 import org.openide.windows.TopComponent;
 
-
 public class PlsqlEditor extends CloneableEditor {
 
+   private static final Logger LOG = Logger.getLogger(PlsqlEditor.class.getName());
+   private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
    private JSplitPane splitter;
    private JTabbedPane resultComponent;
 
    public PlsqlEditor() {
    }
 
-   /** Creates new editor */
+   /**
+    * Creates new editor
+    */
    public PlsqlEditor(PlsqlEditorSupport support) {
       super(support);
    }
 
    @Override
-    protected boolean closeLast() {
-        PlsqlDataObject dataObject = (PlsqlDataObject) ((DataEditorSupport) cloneableEditorSupport()).getDataObject();
-       if (dataObject.isTemporary()) {
-           DatabaseConnection connection = dataObject.getLookup().lookup(DatabaseConnection.class);
-           if (connection.getJDBCConnection() != null) {
+   protected boolean closeLast() {
+      final DataObject dataObject = ((DataEditorSupport) cloneableEditorSupport()).getDataObject();
+      if (validator.isValidTDB(dataObject)) {
+         DatabaseConnectionNewExecutor executor = dataObject.getLookup().lookup(DatabaseConnectionNewExecutor.class);
+         if (executor.closeOpenTransaction()) {
+            FileUtil.toFile(dataObject.getPrimaryFile()).delete();
+         } else {
+            return false;
+         }
+      }
 
-               DatabaseConnectionManager connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
-               if(connectionProvider.testConnection(connection)){
-                   if (DatabaseConnectionManager.getInstance(dataObject).hasDataToCommit(connection)) {
-                       String msg = "There are pending transactions in the database. Do you want to commit?";
-                       String title = dataObject.getNodeDelegate().getDisplayName();
-                       int result = JOptionPane.showOptionDialog(null, msg, title, JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE, null, null, null);
-                       if (result == JOptionPane.YES_OPTION) {
-                           //commit
-                           connectionProvider.commitRollbackTransactions(connection, true);
-                       } else if (result == JOptionPane.NO_OPTION) {
-                           //rollback
-                           connectionProvider.commitRollbackTransactions(connection, false);
-                       } else {
-                           return false;
-                       }
-                   }
-               } 
-           }
-           FileUtil.toFile(dataObject.getPrimaryFile()).delete();
-       }
-
-
-       if (!super.closeLast()) {
-           return false;
-       }
-       return true;
-    }
+      if (!super.closeLast()) {
+         return false;
+      }
+      return true;
+   }
 
    public void closeResultSetTabs() {
       if (resultComponent != null) {
@@ -123,7 +111,10 @@ public class PlsqlEditor extends CloneableEditor {
       }
    }
 
-   /** Overrides superclass method to change the editor background color*/
+   /**
+    * Overrides superclass method to change the editor background color
+    */
+   @Override
    protected void componentShowing() {
       super.componentShowing();
 
@@ -193,7 +184,7 @@ public class PlsqlEditor extends CloneableEditor {
       }
 
       resultComponent.addPropertyChangeListener(new PropertyChangeListener() {
-
+         @Override
          public void propertyChange(PropertyChangeEvent evt) {
             if (TabbedPaneFactory.PROP_CLOSE.equals(evt.getPropertyName())) {
                int selected = resultComponent.getSelectedIndex();
@@ -269,32 +260,33 @@ public class PlsqlEditor extends CloneableEditor {
    @Override
    public void writeExternal(ObjectOutput out) throws IOException {
       super.writeExternal(out);
-      PlsqlDataObject dataObject = (PlsqlDataObject) ((DataEditorSupport) cloneableEditorSupport()).getDataObject();
-      if (dataObject.isTemporary()) {
+      DataObject dataObject = ((DataEditorSupport) cloneableEditorSupport()).getDataObject();
+      if (validator.isValidTDB(dataObject)) {
          out.writeObject(getDisplayName());
       }
    }
 
    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
-        PlsqlDataObject dataObject = (PlsqlDataObject) ((DataEditorSupport) cloneableEditorSupport()).getDataObject();
-        if (dataObject.isTemporary()) {
-            String displayName = (String) in.readObject();
-            if (displayName.equalsIgnoreCase(NbBundle.getMessage(PlsqlEditor.class, "LBL_SQLExecutionWindow"))) {
-                try {
-                    EditorCookie edCookie = dataObject.getLookup().lookup(EditorCookie.class);
-                    Document document = edCookie.openDocument();
-                    String name = document.getLength() > 30 ? document.getText(0, 30) + "..." : document.getText(0, document.getLength());
-                    name.replaceAll("\n", " ");
-                    if (name.length() > 0) {
-                        displayName = name;
-                    }
-                } catch (BadLocationException ex) {
-                }
+   public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+      super.readExternal(in);
+      DataObject dataObject = ((DataEditorSupport) cloneableEditorSupport()).getDataObject();
+      if (validator.isValidTDB(dataObject)) {
+         String displayName = (String) in.readObject();
+         if (displayName.equalsIgnoreCase(NbBundle.getMessage(PlsqlEditor.class, "LBL_SQLExecutionWindow"))) {
+            try {
+               EditorCookie edCookie = dataObject.getLookup().lookup(EditorCookie.class);
+               Document document = edCookie.openDocument();
+               String name = document.getLength() > 30 ? document.getText(0, 30) + "..." : document.getText(0, document.getLength());
+               name.replaceAll("\n", " ");
+               if (name.length() > 0) {
+                  displayName = name;
+               }
+            } catch (BadLocationException ex) {
+               LOG.log(Level.FINEST, displayName, ex);
             }
-            setDisplayName(displayName);
-            dataObject.getNodeDelegate().setDisplayName(displayName);
-        }
-    }
+         }
+         setDisplayName(displayName);
+         dataObject.getNodeDelegate().setDisplayName(displayName);
+      }
+   }
 }
