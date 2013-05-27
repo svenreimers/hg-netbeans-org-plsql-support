@@ -39,7 +39,7 @@
  *
  * Portions Copyrighted 2011 Sun Microsystems, Inc.
  */
-package org.netbeans.modules.plsqlsupport.db;
+package org.netbeans.modules.plsql.execution.impl;
 
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
@@ -51,26 +51,35 @@ import java.util.logging.Logger;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.progress.ProgressHandleFactory;
+import org.openide.filesystems.FileObject;
 import org.openide.util.Exceptions;
-import org.openide.windows.InputOutput;
 
 /**
  *
  * @author SubSLK
  * @author chrlse
  */
-public class DatabaseTransaction {
+class DatabaseTransaction {
 
     private static final Logger LOG = Logger.getLogger(DatabaseTransaction.class.getName());
     public static final String PROP_TRANSACTION = "TransactionOpen";
-    private final PropertyChangeSupport changeSupport = new PropertyChangeSupport(this);
-    private DatabaseConnection connection;
-    private final InputOutput io;
-    private boolean open = false;
 
-    public DatabaseTransaction(DatabaseConnection connection, InputOutput io) {
-        this.connection = connection;
+    static DatabaseTransaction create(DatabaseConnectionIO io, DatabaseConnection connection, FileObject fileObject) {
+        if (!fileObject.getExt().equalsIgnoreCase("tdb")) {
+            return null;
+        }
+        return new DatabaseTransaction(io, connection);
+    }
+    private final PropertyChangeSupport changeSupport;
+    private final DatabaseConnectionIO io;
+    private DatabaseConnection connection;
+    private boolean open = false;
+    private String transactionId;
+
+    DatabaseTransaction(DatabaseConnectionIO io, DatabaseConnection connection) {
+        changeSupport = new PropertyChangeSupport(this);
         this.io = io;
+        this.connection = connection;
     }
 
     void setConnection(DatabaseConnection connection) {
@@ -109,11 +118,10 @@ public class DatabaseTransaction {
                 commitRollbackTransactions(true);
             }
             close();
-            if (!io.isClosed()) {
-                io.getOut().println((new StringBuilder()).append("> Commit Statement successfully"));
-            }
+            io.println((new StringBuilder()).append("> Commit of Transaction ID = [")
+                    .append(transactionId).append("] successful"));
         } catch (Exception ex) {
-            io.getOut().println((new StringBuilder()).append(">!!! Error Commit Statement"));
+            io.println((new StringBuilder()).append(">!!! Error Commit Statement"));
             Exceptions.printStackTrace(ex);
         } finally {
             handle.finish();
@@ -133,12 +141,11 @@ public class DatabaseTransaction {
                 commitRollbackTransactions(false);
             }
             close();
-            if (!io.isClosed()) {
-                io.getOut().println((new StringBuilder()).append("> Rollback Statement successfully"));
-            }
+                io.println((new StringBuilder()).append("> Rollback of Transaction ID = [")
+                        .append(transactionId).append("] successful"));
 
         } catch (Exception ex) {
-            io.getOut().println((new StringBuilder()).append(">!!! Error Rollback Statement"));
+            io.println((new StringBuilder()).append(">!!! Error Rollback Statement"));
             Exceptions.printStackTrace(ex);
         } finally {
             handle.finish();
@@ -172,7 +179,6 @@ public class DatabaseTransaction {
      */
     public boolean hasOpenTransaction() {
         boolean isOpen = false;
-        String commitData = null;
         if (connection.getJDBCConnection() == null) {
             setOpen(isOpen);
             return isOpen;
@@ -183,16 +189,10 @@ public class DatabaseTransaction {
             CallableStatement stmt = connection.getJDBCConnection().prepareCall(sqlProc);
             stmt.registerOutParameter(1, java.sql.Types.VARCHAR);
             stmt.executeUpdate();
-            String transactionId = stmt.getString(1);
-//            System.out.println("transaction:" + transactionId);
-//            String sqlSelect = " SELECT taddr FROM   v$session WHERE  AUDsid=userenv('SESSIONID')";
-//            ResultSet rs = connection.getJDBCConnection().prepareStatement(sqlSelect).executeQuery();
-//            if (rs.next()) {
-//                commitData = rs.getString(1);
-//            }
-            io.getOut().println(("transactionId=" + transactionId));
+            transactionId = stmt.getString(1);
+//            io.getOut().println(("transactionId=" + transactionId));
             if (transactionId != null) {
-                io.getOut().println(("transactionId=" + transactionId));
+                io.println(("Transaction open with ID = [" + transactionId + "]"));
                 isOpen = true;
             } else {
                 isOpen = false;

@@ -211,9 +211,9 @@ final public class PlsqlGotoTargetFactory {
             //identity if the current.name is a package
             if (cache.isPackage(current.name, databaseConnection)) {
                return new PlsqlPackageBodyTarget(current.name, caretPosition, dataObject, project, doc);
-            } else if (cache.isTable(current.name, databaseConnection)) {
+            } else if (cache.isTable(current.name)) {
                return new PlsqlTableTarget(current.name, caretPosition, dataObject, project, doc);
-            } else if (cache.isView(current.name, databaseConnection)) {
+            } else if (cache.isView(current.name)) {
                return new PlsqlViewTarget(current.name, caretPosition, dataObject, project, doc);
             } else if (cache.isFunction(current.name) || cache.isProcedure(current.name)) {
                return new PlsqlStandaloneMethodTarget(current.name, caretPosition, dataObject, project, doc);

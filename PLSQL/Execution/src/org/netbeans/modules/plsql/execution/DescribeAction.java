@@ -41,6 +41,8 @@
  */
 package org.netbeans.modules.plsql.execution;
 
+import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObjectType;
+import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObject;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.text.Document;
@@ -149,6 +151,6 @@ public class DescribeAction extends CookieAction {
         }
 
         DatabaseContentManager dbCache = DatabaseContentManager.getInstance(connection);
-        return dbCache.isView(viewName, connection) || dbCache.isTable(viewName, connection);
+        return dbCache.isView(viewName) || dbCache.isTable(viewName);
     }
 }

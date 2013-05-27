@@ -70,8 +70,8 @@ import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.modules.db.api.sql.execute.SQLExecution;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionExecutor;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionNewExecutor;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionReferences;
@@ -137,7 +137,7 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
     public Component getToolbarPresenter() {
 
         toolbarPresenter = new ToolbarPresenter(actionContext, DatabaseConnectionManager.getInstance(dataObject));
-        toolbarPresenter.setSQLExecution(dataObject.getLookup().lookup(DatabaseConnectionNewExecutor.class));
+        toolbarPresenter.setSQLExecution(dataObject.getLookup().lookup(DatabaseConnectionExecutor.class));
         return toolbarPresenter;
 
     }
@@ -151,7 +151,7 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
 
         private final Lookup actionContext;
         private DatabaseConnectionManager connectionManager;
-        private DatabaseConnectionNewExecutor waitingSQLExecution = null;
+        private DatabaseConnectionExecutor waitingSQLExecution = null;
         private JComboBox combo;
         private JLabel comboLabel;
         private DatabaseConnectionModel model;
@@ -190,7 +190,7 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
             return new Dimension(minWidth, dim.height);
         }
 
-        public void setSQLExecution(DatabaseConnectionNewExecutor executor) {
+        public void setSQLExecution(DatabaseConnectionExecutor executor) {
             if (model != null) {
                 model.setSQLExecution(executor);
             } else {
@@ -264,7 +264,7 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
 
 //        private ConnectionListener listener;
         private List<DatabaseConnection> connectionList; // must be ArrayList
-        private DatabaseConnectionNewExecutor executor;
+        private DatabaseConnectionExecutor executor;
         private DatabaseConnectionManager connectionProvider;
 
         @SuppressWarnings("LeakingThisInConstructor")
@@ -302,7 +302,7 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
             return executor != null ? executor.getConnection() : null;
         }
 
-        public void setSQLExecution(DatabaseConnectionNewExecutor executor) {
+        public void setSQLExecution(DatabaseConnectionExecutor executor) {
             // XXX: should add listeners 
 //            if (this.executor != null) {
 //                this.executor.removePropertyChangeListener(this);

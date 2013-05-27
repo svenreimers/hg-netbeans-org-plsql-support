@@ -666,7 +666,7 @@ public class PlsqlCodeCompletionItemsProvider {
                                     token = ts.token();
                                     tokenId = token.id();
                                     if (tokenId == PlsqlTokenId.KEYWORD && token.toString().equals("ROWTYPE")) {
-                                       if (cache.isView(text, databaseConnection) || cache.isTable(text, databaseConnection)) {
+                                       if (cache.isView(text) || cache.isTable(text)) {
                                           //Table or view
                                           List<PlsqlCodeCompletionColumnItem> items = getColumnObjects(text, databaseConnection);
                                           for (int i = 0; i < items.size(); i++) {

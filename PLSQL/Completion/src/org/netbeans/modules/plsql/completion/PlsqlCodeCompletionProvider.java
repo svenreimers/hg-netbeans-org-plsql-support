@@ -157,9 +157,9 @@ public class PlsqlCodeCompletionProvider implements CompletionProvider {
            for (int i = 0; i < 2; i++) {
               if (cache.isPackage(name, connection)) {
                  return CompletionItemType.PACKAGE;
-              } else if (cache.isView(name, connection)) {
+              } else if (cache.isView(name)) {
                  return CompletionItemType.VIEW;
-              } else if (cache.isTable(name, connection)) {
+              } else if (cache.isTable(name)) {
                  return CompletionItemType.TABLE;
               } else if (cache.isSequence(name)) {
                  return CompletionItemType.SEQUENCE;
@@ -384,7 +384,7 @@ public class PlsqlCodeCompletionProvider implements CompletionProvider {
                             String alias = ((String) keys.next()).toLowerCase(Locale.ENGLISH);
                             if (alias.startsWith(filterWord)) {
                                 String realName = (String) aliasMap.get(alias);
-                                CompletionItemType type = cache.isTable(realName, databaseConnection) ? CompletionItemType.TABLE : CompletionItemType.VIEW;
+                                CompletionItemType type = cache.isTable(realName) ? CompletionItemType.TABLE : CompletionItemType.VIEW;
                                 codeCompletionItems.add(new PlsqlCodeCompletionAliasItem(alias, type, realName));
                             }
                         }

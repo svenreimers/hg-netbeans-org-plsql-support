@@ -66,7 +66,7 @@ import org.netbeans.api.debugger.jpda.ListeningDICookie;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
 import org.netbeans.modules.plsql.execution.PlsqlExecutableBlocksMaker;
-import org.netbeans.modules.plsql.execution.PlsqlExecutableObject;
+import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObject;
 import org.netbeans.modules.plsql.execution.PlsqlFileExecutor;
 import org.netbeans.modules.plsql.lexer.PlsqlBlock;
 import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
@@ -124,16 +124,16 @@ public final class PlsqlDebugAction extends CookieAction {
          Project project = FileOwnerQuery.getOwner(dataObject.getPrimaryFile());
          if (project != null) {
             PlsqlToggleBreakpointActionProvider.setProject(project);
-            DatabaseConnectionManager dbConnectionManager = DatabaseConnectionManager.getInstance(dataObject);
-            if (dbConnectionManager == null) {
+            DatabaseConnectionManager connectionManager = DatabaseConnectionManager.getInstance(dataObject);
+            if (connectionManager == null) {
                JOptionPane.showMessageDialog(null, "Connect the project to a database");
             }
-            DatabaseConnection connection = dbConnectionManager.getPooledDatabaseConnection(true);
+            DatabaseConnection connection = connectionManager.getPooledDatabaseConnection(true);
             try {
                Document doc = editorCookie.getDocument();
-               debug(dbConnectionManager, dataObject, connection.getJDBCConnection(), doc);
+               debug(connectionManager, dataObject, connection.getJDBCConnection(), doc);
             } finally {
-               dbConnectionManager.releaseDatabaseConnection(connection);
+               connectionManager.releaseDatabaseConnection(connection);
             }
          }
       }

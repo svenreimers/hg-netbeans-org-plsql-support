@@ -53,7 +53,7 @@ import javax.swing.Action;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionNewExecutor;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionExecutor;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionRegistration;
@@ -71,7 +71,7 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
     private final DataObject dataObject;
 //    private DatabaseConnectionManager connectionProvider;
-    private DatabaseConnectionNewExecutor connectionSession;
+    private DatabaseConnectionExecutor executor;
 //    private DatabaseConnection connection;
     private JButton button;
 //    private final DatabaseTransaction transaction;
@@ -87,7 +87,7 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
 
         dataObject = context.lookup(DataObject.class);
         if (dataObject != null) {
-            connectionSession = dataObject.getLookup().lookup(DatabaseConnectionNewExecutor.class);
+            executor = dataObject.getLookup().lookup(DatabaseConnectionExecutor.class);
         }
     }
 
@@ -119,7 +119,7 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
     private void prepareConnection() {
         if (dataObject != null) {
 //            connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
-            connectionSession = dataObject.getLookup().lookup(DatabaseConnectionNewExecutor.class);
+            executor = dataObject.getLookup().lookup(DatabaseConnectionExecutor.class);
         }
 //        connection = dataObject.getLookup().lookup(DatabaseConnection.class);
     }
@@ -133,7 +133,7 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
 //        }
 
         saveIfModified(dataObject);
-        connectionSession.commitTransaction();
+        executor.commitTransaction();
 //        transaction.commitTransaction(connection, connectionProvider);
     }
 
@@ -147,7 +147,7 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
         button.setAction(this);
         button.setEnabled(false);
         button.setDisabledIcon(new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/database_commit_disable.png")));
-        connectionSession.addTransactionListener(changeListener);
+        executor.addTransactionListener(changeListener);
         return button;
     }
 

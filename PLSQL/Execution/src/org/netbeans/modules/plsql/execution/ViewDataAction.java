@@ -136,7 +136,7 @@ public final class ViewDataAction extends CookieAction {
         }
 
         DatabaseContentManager dbCache = DatabaseContentManager.getInstance(connection);
-        return dbCache.isView(viewName, connection) || dbCache.isTable(viewName, connection);
+        return dbCache.isView(viewName) || dbCache.isTable(viewName);
     }
 
     public static String getSelectedViewOrTable(Node[] activatedNodes) {

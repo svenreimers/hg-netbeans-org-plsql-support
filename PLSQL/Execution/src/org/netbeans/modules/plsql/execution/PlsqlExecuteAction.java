@@ -47,11 +47,10 @@ import java.util.List;
 import java.util.Locale;
 import javax.swing.*;
 import javax.swing.text.Document;
-import org.netbeans.api.progress.ProgressHandle;
-import org.netbeans.api.progress.ProgressHandleFactory;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionNewExecutor;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionExecutor;
+import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObject;
+import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObjectType;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.awt.*;
 import org.openide.cookies.EditorCookie;
@@ -81,8 +80,7 @@ public class PlsqlExecuteAction extends CookieAction {
     private static final String TEST_BLOCK_NAME_PREFIX = "TestBlock:";
     private DataObject dataObject;
 //    private PlsqlDataObject plsqlDataobject;
-    private DatabaseConnectionManager connectionProvider;
-    private DatabaseConnectionNewExecutor connectionSession;
+    private DatabaseConnectionExecutor executor;
 //    private PopupMenuPopulator popupMenuPopulator = null;
 //    private JPopupMenu popup;
 //    private JButton button;
@@ -104,7 +102,7 @@ public class PlsqlExecuteAction extends CookieAction {
 //        if (validator.isValidTDB(dataObject)) {
 //            autoCommit = OptionsUtilities.isCommandWindowAutoCommitEnabled();
 //        }
-//        connectionSession = dataObject.getLookup().lookup(DatabaseConnectionNewExecutor.class);
+//        connectionSession = dataObject.getLookup().lookup(PlsqlExecutor.class);
     }
 
     @Override
@@ -154,43 +152,20 @@ public class PlsqlExecuteAction extends CookieAction {
         return HelpCtx.DEFAULT_HELP;
     }
 
-//    @Override
-//    public Action createContextAwareInstance(Lookup context) {
-//        return new PlsqlExecuteAction(context);
-//    }
-    private void prepareConnection() {
-        if (dataObject != null) {
-            connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
-//            if (connectionProvider != null) {
-//                if (popupMenuPopulator == null) {
-//                    popupMenuPopulator = new PopupMenuPopulator();
-//                    connectionProvider.addPropertyChangeListener(popupMenuPopulator);
-//                }
-//            }
-        }
-    }
-
     @Override
     protected void performAction(Node[] activatedNodes) {
         dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
-        if (validator.isValidTDB(dataObject)) {
-            autoCommit = OptionsUtilities.isCommandWindowAutoCommitEnabled();
-        }
-        connectionSession = dataObject.getLookup().lookup(DatabaseConnectionNewExecutor.class);
+        executor = dataObject.getLookup().lookup(DatabaseConnectionExecutor.class);
 
-        if (connectionProvider == null) {
-            prepareConnection();
-        }
-        if (connectionProvider == null) {
-            return;
-        }
+//        if (connectionProvider == null) {
+//            if (dataObject != null) {
+//                connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
+//                if (connectionProvider == null) {
+//                    return;
+//                }
+//            }
+//        }
 
-        // If autocommit OFF - take the connection from data object.
-        if (autoCommit) {
-            if (!connectionSession.updateConnection(connectionProvider.getTemplateConnection())) {
-                return;
-            }
-        }
         saveIfModified(dataObject);
 
         EditorCookie edCookie = dataObject.getLookup().lookup(EditorCookie.class);
@@ -200,10 +175,6 @@ public class PlsqlExecuteAction extends CookieAction {
 //        if (file == null) {
 //            return;
 //        }
-        //to reconnect if the connection is gone. 
-        if (connectionSession.getConnection().getJDBCConnection() == null) {
-            connectionProvider.connect(connectionSession.getConnection());
-        }
 
         PlsqlExecutableBlocksMaker blockMaker = new PlsqlExecutableBlocksMaker(document);
         List<PlsqlExecutableObject> blocks = blockMaker.makeExceutableObjects();
@@ -253,7 +224,7 @@ public class PlsqlExecuteAction extends CookieAction {
                 dataObject.getNodeDelegate().setDisplayName(str.length() > 30 ? str.substring(0, 30) + "..." : str);
             }
         }
-        RP.post(new ExecutionHandler(new PlsqlFileExecutor(connectionProvider, connectionSession), blocks, document));
+        executor.execute(blocks, document);
     }
 
     private void saveIfModified(DataObject dataObj) {
@@ -265,59 +236,6 @@ public class PlsqlExecuteAction extends CookieAction {
         } catch (IOException ex) {
             Exceptions.printStackTrace(ex);
         }
-    }
-
-    private class ExecutionHandler implements Runnable, Cancellable {
-
-        private final PlsqlFileExecutor executor;
-        private final List<PlsqlExecutableObject> blocks;
-        private final Document document;
-
-        public ExecutionHandler(PlsqlFileExecutor executor, List<PlsqlExecutableObject> blocks, Document doc) {
-            this.executor = executor;
-            this.blocks = blocks;
-            this.document = doc;
-        }
-
-        @Override
-        public void run() {
-            ProgressHandle handle = ProgressHandleFactory.createHandle("Executing database file...", this);
-            try {
-                handle.start();
-                // XXX commented out, not sure why it is needed.
-//                if (connectionSession.getConnection() == connectionProvider.getTemplateConnection()) {
-//                    connectionSession = connectionProvider.getPooledDatabaseConnection(false, true);
-//                    if (connectionSession == null) {
-//                        return;
-//                    }
-//                }
-//                final DataObject obj = FileExecutionUtil.getDataObject(document);
-//                FileObject file = obj.getPrimaryFile();
-//                if (file == null) {
-//                    return;
-//                }
-
-                executor.executePLSQL(blocks, document, false, autoCommit);
-
-            } finally {
-                handle.finish();
-            }
-        }
-
-        @Override
-        public boolean cancel() {
-            if (executor != null) {
-                executor.cancel();
-            }
-            return true;
-        }
-//        private void modifyConnection() {
-////            DatabaseConnectionNewExecutor connectionHolder = dataObject.getLookup().lookup(DatabaseConnectionNewExecutor.class);
-//            connectionSession.updateConnection(connectionSession);
-//            // will remove below if new impl is better.
-//            plsqlDataobject = (PlsqlDataObject) dataObject;
-//            plsqlDataobject.modifyLookupDatabaseConnection(connectionSession);
-//        }
     }
 //    private class ButtonListener implements ActionListener {
 //

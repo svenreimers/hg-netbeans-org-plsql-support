@@ -81,14 +81,13 @@ public class PlsqlAnnotationManager implements Observer {
    public final Map<Integer, String> errorSysCalls;
    public final Map<Integer, Set<String>> allowedTablesOrViews;
    public static Annotation annotation = new GenericPlsqlAnnotations();
-  
+
    public PlsqlAnnotationManager() {
       if (OptionsUtilities.isPlSqlAnnotationsEnabled()) {
          annotation.loadConfiguration();
-                 }
-         
-      final PreferenceChangeListener listener = new PreferenceChangeListener() {
+      }
 
+      final PreferenceChangeListener listener = new PreferenceChangeListener() {
          @Override
          public void preferenceChange(final PreferenceChangeEvent evt) {
             if (evt.getKey().startsWith("plsql.annotations.")) {
@@ -110,16 +109,16 @@ public class PlsqlAnnotationManager implements Observer {
       errorSysCalls = new ConcurrentHashMap<Integer, String>();
       allowedTablesOrViews = new ConcurrentHashMap<Integer, Set<String>>();
    }
-   
-   public String[] getAllAnnotationTypes(){
-       return annotation.getAllAnnotationTypes();
+
+   public String[] getAllAnnotationTypes() {
+      return annotation.getAllAnnotationTypes();
    }
 
    @Override
    public void update(final Observable obj1, final Object obj2) {
       if ((obj1 instanceof PlsqlBlockFactory) && (obj2 instanceof Document)) {
          final PlsqlBlockFactory blockFactory = (PlsqlBlockFactory) obj1;
-         if(doc !=null){
+         if (doc != null) {
             clearAllAnnotations();
          }
          doc = (Document) obj2;
@@ -154,7 +153,7 @@ public class PlsqlAnnotationManager implements Observer {
       errorSysCalls.clear();
       allowedTablesOrViews.clear();
    }
-   
+
    public void initAnnotations(final DataObject dataObject) {
       clearAllAnnotations();
       final EditorCookie editorCookie = dataObject.getLookup().lookup(EditorCookie.class);
@@ -193,7 +192,6 @@ public class PlsqlAnnotationManager implements Observer {
             final List<PlsqlAnnotation> lstAnnotations = plsqlAnnotations.get(offset);
             final int anoOffset = offset;
             final Position position = new Position() {
-
                @Override
                public int getOffset() {
                   return anoOffset;
@@ -212,6 +210,7 @@ public class PlsqlAnnotationManager implements Observer {
 
    /**
     * Remove annotation upon annotation action
+    *
     * @param lineOffset
     * @param type
     * @return
@@ -280,6 +279,7 @@ public class PlsqlAnnotationManager implements Observer {
 
    /**
     * Get annotations attached to the given offset
+    *
     * @param offset
     * @return
     */
@@ -317,7 +317,6 @@ public class PlsqlAnnotationManager implements Observer {
 
          final int anoOffset = offset;
          final Position position = new Position() {
-
             @Override
             public int getOffset() {
                return anoOffset;

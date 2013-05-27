@@ -752,7 +752,7 @@ public class DatabaseContentManager {
          }
       }
       synchronized (tableCacheFile) {
-         boolean isTable = isTable(view, databaseConnection);
+         boolean isTable = isTable(view);
          Map<String, DatabaseObjectInfo> map = isTable ? tableNameMap : viewNameMap;
          if (isTable) {
             if (tableSynonyms.containsKey(view)) {
@@ -1001,13 +1001,13 @@ public class DatabaseContentManager {
                         packageFound = true;
                      }
                   } else if (objectType.equals("VIEW")) {
-                     if (!isView(objectNameInCache, currentConnection)) {
+                     if (!isView(objectNameInCache)) {
                         viewNameMap.put(objectNameInCache, objectInfo);
                         ownerMap.put(objectNameInCache, objectInfo.getOwner());
                         viewFound = true;
                      }
                   } else if (objectType.equals("TABLE")) {
-                     if (!isTable(objectNameInCache, currentConnection)) {
+                     if (!isTable(objectNameInCache)) {
                         tableFound = true;
                         tableNameMap.put(objectNameInCache, objectInfo);
                         ownerMap.put(objectNameInCache, objectInfo.getOwner());
@@ -1057,7 +1057,7 @@ public class DatabaseContentManager {
       }
    }
 
-   public boolean isTable(String objectName, DatabaseConnection currentConnection) {
+   public boolean isTable(String objectName) {
       if (objectName == null) {
          return false;
       }
@@ -1067,7 +1067,7 @@ public class DatabaseContentManager {
       return tableNameMap.containsKey(objectName) || tableSynonyms.containsKey(objectName);
    }
 
-   public boolean isView(String objectName, DatabaseConnection currentConnection) {
+   public boolean isView(String objectName) {
       if (objectName == null) {
          return false;
       }

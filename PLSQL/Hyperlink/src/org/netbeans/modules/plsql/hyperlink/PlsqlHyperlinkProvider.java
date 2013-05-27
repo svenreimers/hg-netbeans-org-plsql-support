@@ -334,8 +334,8 @@ public class PlsqlHyperlinkProvider implements HyperlinkProvider {
                //identity if the parent is a package, view or table
                //...but first check if it exists in the cache (and if not update the cache)
                if (dbConnectionProvider.isOnline() && !cache.isPackage(parent, databaseConnection)
-                       && !cache.isView(parent, databaseConnection)
-                       && !cache.isTable(parent, databaseConnection)
+                       && !cache.isView(parent)
+                       && !cache.isTable(parent)
                        && !cache.isFunction(parent)
                        && !cache.isProcedure(parent)) {
                   cache.refreshItem(parent, databaseConnection);
@@ -378,7 +378,7 @@ public class PlsqlHyperlinkProvider implements HyperlinkProvider {
                         }
                      }
                   }
-               } else if (cache.isView(parent, databaseConnection)) {
+               } else if (cache.isView(parent)) {
                   String aliasOf = cache.getViewForSynonym(parent);
                   if (aliasOf != null) {
                      parent = aliasOf;
@@ -389,7 +389,7 @@ public class PlsqlHyperlinkProvider implements HyperlinkProvider {
                   } else {
                      PlsqlHyperlinkUtil.setCaretOfView(obj, parent);
                   }
-               } else if (cache.isTable(parent, databaseConnection)) {
+               } else if (cache.isTable(parent)) {
                   String aliasOf = cache.getTableForSynonym(parent);
                   if (aliasOf != null) {
                      parent = aliasOf;

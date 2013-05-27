@@ -39,7 +39,7 @@
  *
  * Portions Copyrighted 2011 Sun Microsystems, Inc.
  */
-package org.netbeans.modules.plsql.execution;
+package org.netbeans.modules.plsqlsupport.db;
 
 import java.util.List;
 

@@ -59,7 +59,7 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import org.netbeans.modules.plsql.annotation.PlsqlAnnotationManager;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionNewExecutor;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionExecutor;
 import org.openide.awt.TabbedPaneFactory;
 import org.openide.cookies.EditorCookie;
 import org.openide.filesystems.FileUtil;
@@ -91,7 +91,7 @@ public class PlsqlEditor extends CloneableEditor {
    protected boolean closeLast() {
       final DataObject dataObject = ((DataEditorSupport) cloneableEditorSupport()).getDataObject();
       if (validator.isValidTDB(dataObject)) {
-         DatabaseConnectionNewExecutor executor = dataObject.getLookup().lookup(DatabaseConnectionNewExecutor.class);
+         DatabaseConnectionExecutor executor = dataObject.getLookup().lookup(DatabaseConnectionExecutor.class);
          if (executor.closeOpenTransaction()) {
             FileUtil.toFile(dataObject.getPrimaryFile()).delete();
          } else {

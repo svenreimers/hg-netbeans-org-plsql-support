@@ -44,16 +44,13 @@ package org.netbeans.modules.plsql.filetype;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.prefs.PreferenceChangeListener;
-import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.project.FileOwnerQuery;
 import org.netbeans.api.project.Project;
 import org.netbeans.modules.plsql.annotation.PlsqlAnnotationManager;
 import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
 import org.netbeans.modules.plsql.utilities.PlsqlFileLocatorService;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionNewExecutor;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionExecutor;
 import org.openide.filesystems.FileObject;
 import org.openide.loaders.DataObjectExistsException;
 import org.openide.loaders.MultiDataObject;
@@ -68,12 +65,11 @@ public class PlsqlDataObject extends MultiDataObject {
    private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
    private static final PlsqlFileLocatorService locator = Lookup.getDefault().lookup(PlsqlFileLocatorService.class);
    private Lookup lookup;
-   private PreferenceChangeListener listener;
    private PlsqlBlockFactory blockFactory = null;
    private PlsqlAnnotationManager annotationManager = null;
    private final PlsqlEditorSupport editorSupport;
-   private DatabaseConnectionNewExecutor executor;
-   private DatabaseConnection databaseConnection;
+   private DatabaseConnectionExecutor executor;
+//   private DatabaseConnection databaseConnection;
    private StatementExecutionHistory statementExecutionHistory;
 
    public PlsqlDataObject(final FileObject fileObject, final PlsqlDataLoader loader) throws DataObjectExistsException, IOException {
@@ -97,12 +93,9 @@ public class PlsqlDataObject extends MultiDataObject {
          }
 
          blockFactory.addObserver(annotationManager);
-     }
-      // TODO: if file not in project?!?
-      if (project != null) {
-         databaseConnection = DatabaseConnectionManager.getInstance(project).getTemplateConnection();
       }
-      executor = DatabaseConnectionNewExecutor.create(databaseConnection, fileObject);
+      DatabaseConnectionExecutor.Factory factory = Lookup.getDefault().lookup(DatabaseConnectionExecutor.Factory.class);
+      executor = factory.create(fileObject);
       createLookup();
    }
 
@@ -136,34 +129,20 @@ public class PlsqlDataObject extends MultiDataObject {
       List<Object> objects = new ArrayList<Object>();
       objects.add(blockFactory);
       objects.add(statementExecutionHistory);
-      objects.add(executor);
+      if (executor != null) {
+         objects.add(executor);
+      }
 
       if (annotationManager != null) {
          objects.add(annotationManager);
       }
 
-      if (databaseConnection != null) {
-         objects.add(databaseConnection);
-      }
       Lookup fixed = Lookups.fixed(objects.toArray());
       lookup = new ProxyLookup(new Lookup[]{getCookieSet().getLookup(), fixed});
-   }
-
-   public void modifyLookupDatabaseConnection(DatabaseConnection connection) {
-      databaseConnection = connection;
-      createLookup();
    }
 
    public void modifyLookupAnnotationManager(PlsqlAnnotationManager annotationManager) {
       this.annotationManager = annotationManager;
       createLookup();
-   }
-
-   public void disposeFactoryAndManager() {
-      blockFactory = null;
-      annotationManager = null;
-      lookup = null;
-      listener = null;
-      getCookieSet().remove(editorSupport);
    }
 }

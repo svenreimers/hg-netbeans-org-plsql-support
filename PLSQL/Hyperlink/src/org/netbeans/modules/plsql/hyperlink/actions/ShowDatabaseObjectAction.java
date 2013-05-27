@@ -104,7 +104,7 @@ public class ShowDatabaseObjectAction extends CookieAction {
                objName = dbObjPanel.getInputText();
                DatabaseConnection databaseConnection = connectionProvider.getPooledDatabaseConnection(false);
                try {
-                  if (cache.isView(objName, databaseConnection)) {
+                  if (cache.isView(objName)) {
                      try {
                         DataObject obj = null;
                         String aliasOf = cache.getViewForSynonym(objName);
@@ -123,7 +123,7 @@ public class ShowDatabaseObjectAction extends CookieAction {
                   } else if (cache.isPackage(objName, databaseConnection)) {
                      PlsqlGoToImplAction action = SystemAction.get(PlsqlGoToImplAction.class);
                      action.goToPackage(objName, project, "", 1);
-                  } else if (cache.isTable(objName, databaseConnection)) {
+                  } else if (cache.isTable(objName)) {
                      try {
                         if(PlsqlFileUtil.openExistingFile(null, objName, TABLE, project)==null) {
                            PlsqlHyperlinkUtil.openAsTempFile(objName, TABLE, databaseConnection, project, null);

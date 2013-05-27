@@ -41,6 +41,8 @@
  */
 package org.netbeans.modules.plsql.execution;
 
+import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObjectType;
+import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObject;
 import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
 import org.netbeans.modules.plsql.lexer.PlsqlBlock;
 import org.netbeans.modules.plsql.lexer.PlsqlBlockType;

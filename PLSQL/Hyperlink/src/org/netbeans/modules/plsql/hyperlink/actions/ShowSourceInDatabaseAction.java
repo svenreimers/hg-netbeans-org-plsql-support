@@ -111,13 +111,13 @@ public class ShowSourceInDatabaseAction extends CookieAction {
                DatabaseConnection databaseConnection = connectionProvider.getPooledDatabaseConnection(false);
                try {
                   objName = dbObjPanel.getInputText();
-                  if (cache.isView(objName, databaseConnection)) {
+                  if (cache.isView(objName)) {
                      try {
                         PlsqlHyperlinkUtil.openAsTempFile(objName, VIEW, databaseConnection, project, null);
                      } catch (NotConnectedToDbException ex) {
                         Exceptions.printStackTrace(ex);
                      }
-                  } else if (cache.isTable(objName, databaseConnection)) {
+                  } else if (cache.isTable(objName)) {
                      try {
                         PlsqlHyperlinkUtil.openAsTempFile(objName, TABLE, databaseConnection, project, null);
                      } catch (NotConnectedToDbException ex) {
