@@ -7,6 +7,7 @@ package org.netbeans.modules.plsql.execution.impl;
 import java.beans.PropertyChangeListener;
 import java.sql.Connection;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.text.Document;
@@ -40,13 +41,14 @@ class PlsqlExecutor implements DatabaseConnectionExecutor {
     private final DatabaseConnectionIO io;
     private final DatabaseTransaction transaction;
     private DatabaseConnection connection;
+    private final StatementHolder statementHolder;
 
-    //    private final boolean isCommandWindow;
     public PlsqlExecutor(DatabaseConnectionManager connectionProvider, DatabaseConnectionIO io, DatabaseConnection connection, DatabaseTransaction transaction) {
         this.connectionProvider = connectionProvider;
         this.io = io;
         this.connection = connection;
         this.transaction = transaction;
+        this.statementHolder = new StatementHolder();
     }
 
     @Override
@@ -95,9 +97,6 @@ class PlsqlExecutor implements DatabaseConnectionExecutor {
         return transaction.hasOpenTransaction();
     }
 
-//    public void openTransaction() {
-//        transaction.open();
-//    }
     public Connection getJDBCConnection() {
         return connection.getJDBCConnection();
     }
@@ -162,11 +161,11 @@ class PlsqlExecutor implements DatabaseConnectionExecutor {
     private RequestProcessor.Task task;
 
     private boolean handleCancel() {
-        LOG.info("handleCancel");
+        LOG.log(Level.INFO, "Cancel {0}", task.toString());
         if (null == task) {
             return false;
         }
-
+        statementHolder.cancel();
         return task.cancel();
     }
 
@@ -191,7 +190,6 @@ class PlsqlExecutor implements DatabaseConnectionExecutor {
 
         @Override
         public void run() {
-//            ProgressHandle handle = ProgressHandleFactory.createHandle("Executing database file...", this);
             try {
                 handle.start();
                 // If autocommit OFF - take the connection from data object.
@@ -217,12 +215,10 @@ class PlsqlExecutor implements DatabaseConnectionExecutor {
 //                    return;
 //                }
                 reconnectIfNeeded();
-                executor = new PlsqlFileExecutor(connectionProvider, connection, io.getIO());
+                executor = new PlsqlFileExecutor(statementHolder, connection, io.getIO());
                 executor.executePLSQL(executableObjects, document);
             } catch (InterruptedException ex) {
-                LOG.info("the task was CANCELLED");
-//                return;
-
+                io.println("the task was CANCELLED");
             } finally {
                 if (autoCommit()) {
                     connectionProvider.releaseDatabaseConnection(connection);
@@ -233,16 +229,6 @@ class PlsqlExecutor implements DatabaseConnectionExecutor {
             }
         }
 
-//        @Override
-//        public boolean cancel() {
-//            if (executor != null) {
-////                executor.cancel();
-////                io.getErr().println("!!!Execution cancelled. Performing rollback");
-////                jdbcConnection.rollback();
-//            }
-//            return true;
-//        }
-//    }
         private void reconnectIfNeeded() {
             //to reconnect if the connection is gone. 
             if (connection.getJDBCConnection() == null) {

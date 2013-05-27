@@ -41,9 +41,6 @@
  */
 package org.netbeans.modules.plsql.execution.impl;
 
-import org.netbeans.modules.plsql.execution.*;
-import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObjectType;
-import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObject;
 import java.awt.Component;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
@@ -58,6 +55,8 @@ import java.math.BigDecimal;
 import java.sql.*;
 import java.util.*;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JButton;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -79,13 +78,19 @@ import org.netbeans.modules.db.sql.execute.SQLExecutionResults;
 import org.netbeans.modules.db.sql.execute.StatementInfo;
 import org.netbeans.modules.db.sql.history.SQLHistoryEntry;
 import org.netbeans.modules.db.sql.history.SQLHistoryManager;
+import org.netbeans.modules.plsql.execution.FileExecutionUtil;
+import org.netbeans.modules.plsql.execution.PlsqlErrorObject;
+import org.netbeans.modules.plsql.execution.PlsqlExecutableBlocksMaker;
+import org.netbeans.modules.plsql.execution.PlsqlOutputListener;
+import org.netbeans.modules.plsql.execution.PromptDialog;
 import org.netbeans.modules.plsql.filetype.PlsqlEditor;
 import org.netbeans.modules.plsql.filetype.StatementExecutionHistory;
 import org.netbeans.modules.plsql.lexer.PlsqlTokenId;
 import org.netbeans.modules.plsql.utilities.PlsqlFileUtil;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
+import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObject;
+import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObjectType;
 import org.openide.DialogDisplayer;
 import org.openide.NotifyDescriptor;
 import org.openide.filesystems.FileObject;
@@ -101,42 +106,24 @@ import org.openide.windows.TopComponent;
 
 public class PlsqlFileExecutor {
 
-//    private static final RequestProcessor RP = new RequestProcessor("SQLExecution", 4, true);
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
-//    private boolean cancel = false;
-//    private Connection debugConnection;
-    private final DatabaseConnectionManager connectionProvider;
+    private final StatementHolder statementHolder;
     private final DatabaseConnection connection;
     private final Connection jdbcConnection;
-//    private final List<PlsqlExecutableObject> executableObjs;
-//    private final Document doc;
     private PlsqlEditor plsqlEditor;
     private final InputOutput io;
     private final DatabaseContentManager cache;
     private final String connectionDisplayName;
 
-    PlsqlFileExecutor(DatabaseConnectionManager connectionProvider, DatabaseConnection connection, InputOutput io) {
+    PlsqlFileExecutor(StatementHolder holder, DatabaseConnection connection, InputOutput io) {
         this.connectionDisplayName = "Using DB: " + connection.getDisplayName() + " [" + connection.getName() + "]";
         this.connection = connection;
         this.jdbcConnection = connection.getJDBCConnection();
-//        this.executableObjs = executableObjects;
-//        this.doc = document;
         this.io = io;
-        this.connectionProvider = connectionProvider;
+        this.statementHolder = holder;
         this.cache = DatabaseContentManager.getInstance(connection);
     }
 
-    //    public PlsqlFileExecutor(DatabaseConnectionManager connectionProvider, Connection debugConnection, InputOutput io) {
-    //        this.connection = null;
-    //        this.connectionDisplayName = null;
-    //        this.debugConnection = debugConnection;
-    //        this.preparedIO = io;
-    //        this.connectionProvider = connectionProvider;
-    //        this.cache = DatabaseContentManager.getInstance(connection);
-    //    }
-//    public void cancel() {
-//        cancel = true;
-//    }
     /**
      * Method that will execute Dbmb_Output.Enable();
      *
@@ -166,9 +153,6 @@ public class PlsqlFileExecutor {
         DataObject obj = FileExecutionUtil.getDataObject(doc);
         SQLExecutor executor = new SQLExecutor(obj, con, formattedQuery, label);
         executor.run();
-//        RequestProcessor.Task task = RP.create(executor);
-//        executor.setTask(task);
-//        task.run();
         return false;
     }
     final static int NORMAL = 0;
@@ -384,10 +368,8 @@ public class PlsqlFileExecutor {
         if (validator.isValidTDB(dataObj)) {
             endMsg = "Finished executing command ";
         }
-//        Connection con;
         Statement stm = null;
         String firstWord = null;
-//        DatabaseTransaction transaction = DatabaseTransaction.getInstance((DataObject) object);
 
         //quick & dirty fix to avoid having output tabs for the SQL Execution window (unless there's an exception)
         //first check to see if this is a simple select statement and if so treat it separately.
@@ -419,7 +401,6 @@ public class PlsqlFileExecutor {
 
                 } catch (SQLException sqlEx) {
                     try {
-//                        io = initializeIO(fileName, dataObj.getNodeDelegate().getDisplayName(), dataObj, executableObjs.get(0));
                         int errLine = getLineNumberFromMsg(sqlEx.getMessage());
                         int outLine = executionObject.getStartLineNo() + errLine - 1;
                         String msg = getmodifiedErorrMsg(sqlEx.getMessage(), outLine);
@@ -434,7 +415,7 @@ public class PlsqlFileExecutor {
                         io.getErr().close();
                         return;
                     } catch (IOException ex) {
-                        connectionProvider.setOnline(false);
+//                        connectionProvider.setOnline(false);
                         return;
                     }
                 }
@@ -450,22 +431,17 @@ public class PlsqlFileExecutor {
             io.getOut().println(startMsg);
             io.getOut().println("-------------------------------------------------------------");
 
-//            io = initializeIO(fileName, dataObj.getNodeDelegate().getDisplayName(), dataObj, executableObjs.get(0));
-//            con = debugConnection != null ? debugConnection : connection.getJDBCConnection();
             jdbcConnection.setAutoCommit(false);
             enableDbmsOut(jdbcConnection);
 
             stm = jdbcConnection.createStatement();
+            statementHolder.setStatement(stm);
             stm.setEscapeProcessing(false);
+            LOG.log(Level.FINE, "stm={0}", stm);
             boolean firstSelectStatement = true;
 
             for (PlsqlExecutableObject exeObj : executableObjs) {
                 Thread.sleep(0); //throws InterruptedException is the task was cancelled
-                //                if (cancel) {
-                //                    io.getErr().println("!!!Execution cancelled. Performing rollback");
-                //                    jdbcConnection.rollback();
-                //                    return io;
-//                }
                 int lineNumber = exeObj.getStartLineNo();
                 String plsqlText = exeObj.getPlsqlString();
 
@@ -1003,6 +979,7 @@ public class PlsqlFileExecutor {
         }
 //        return deploymentOk ? null : io;
     }
+    private static final Logger LOG = Logger.getLogger(PlsqlFileExecutor.class.getName());
 
     public String getmodifiedErorrMsg(String msg, int lineNumber) {
         int index = msg.indexOf("\n");
@@ -1015,8 +992,6 @@ public class PlsqlFileExecutor {
 
     private List<PlsqlErrorObject> getPackageerrors(String packageName, String packageType) {
         List<PlsqlErrorObject> errorObjects = new ArrayList<PlsqlErrorObject>();
-//        Connection con = debugConnection != null ? debugConnection : connection.getJDBCConnection();
-//        if (con != null) {
         Statement stm = null;
         try {
             stm = jdbcConnection.createStatement();
@@ -1042,9 +1017,6 @@ public class PlsqlFileExecutor {
                 throw new RuntimeException(ex);
             }
         }
-//        } else {
-//            throw new RuntimeException("Not Connected to Database to Get USER_ERRORS");
-//        }
         return errorObjects;
     }
 
@@ -1358,7 +1330,6 @@ public class PlsqlFileExecutor {
         private final DatabaseConnection dbconn;
         private final String sqlStmt;
         private String label;
-//        private RequestProcessor.Task task;
         private DataObject parent;
 
         public SQLExecutor(DataObject dataObj, DatabaseConnection dbconn, String sqlStmt, String label) {
@@ -1368,12 +1339,8 @@ public class PlsqlFileExecutor {
             this.label = label;
         }
 
-//        public void setTask(RequestProcessor.Task task) {
-//            this.task = task;
-//        }
         @Override
         public void run() {
-//            assert task != null : "Should have called setTask()"; // NOI18N
 
             ProgressHandle handle = ProgressHandleFactory.createHandle("Executing Statements");
             handle.start();
