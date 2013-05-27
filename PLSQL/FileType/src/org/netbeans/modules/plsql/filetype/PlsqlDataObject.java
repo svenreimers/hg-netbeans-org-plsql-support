@@ -95,7 +95,9 @@ public class PlsqlDataObject extends MultiDataObject {
          blockFactory.addObserver(annotationManager);
       }
       DatabaseConnectionExecutor.Factory factory = Lookup.getDefault().lookup(DatabaseConnectionExecutor.Factory.class);
-      executor = factory.create(fileObject);
+      if (factory != null) {
+         executor = factory.create(fileObject);
+      }
       createLookup();
    }
 
