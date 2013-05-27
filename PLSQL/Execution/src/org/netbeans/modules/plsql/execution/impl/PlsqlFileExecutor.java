@@ -99,7 +99,7 @@ import org.openide.windows.InputOutput;
 import org.openide.windows.OutputWriter;
 import org.openide.windows.TopComponent;
 
-public class PlsqlFileExecutor implements Runnable {
+public class PlsqlFileExecutor {
 
 //    private static final RequestProcessor RP = new RequestProcessor("SQLExecution", 4, true);
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
@@ -108,19 +108,19 @@ public class PlsqlFileExecutor implements Runnable {
     private final DatabaseConnectionManager connectionProvider;
     private final DatabaseConnection connection;
     private final Connection jdbcConnection;
-    private final List<PlsqlExecutableObject> executableObjs;
-    private final Document doc;
+//    private final List<PlsqlExecutableObject> executableObjs;
+//    private final Document doc;
     private PlsqlEditor plsqlEditor;
     private final InputOutput io;
     private final DatabaseContentManager cache;
     private final String connectionDisplayName;
 
-    PlsqlFileExecutor(DatabaseConnectionManager connectionProvider, DatabaseConnection connection, List<PlsqlExecutableObject> executableObjects, Document document, InputOutput io) {
+    PlsqlFileExecutor(DatabaseConnectionManager connectionProvider, DatabaseConnection connection, InputOutput io) {
         this.connectionDisplayName = "Using DB: " + connection.getDisplayName() + " [" + connection.getName() + "]";
         this.connection = connection;
         this.jdbcConnection = connection.getJDBCConnection();
-        this.executableObjs = executableObjects;
-        this.doc = document;
+//        this.executableObjs = executableObjects;
+//        this.doc = document;
         this.io = io;
         this.connectionProvider = connectionProvider;
         this.cache = DatabaseContentManager.getInstance(connection);
@@ -355,12 +355,7 @@ public class PlsqlFileExecutor implements Runnable {
 
     }
 
-    @Override
-    public void run() {
-        executePLSQL(executableObjs, doc);
-    }
-
-    public void executePLSQL(List<PlsqlExecutableObject> executableObjs, Document doc) {
+    public void executePLSQL(List<PlsqlExecutableObject> executableObjs, Document doc) throws InterruptedException {
         Project project = null;
 
         Object object = doc.getProperty(Document.StreamDescriptionProperty);
@@ -465,10 +460,11 @@ public class PlsqlFileExecutor implements Runnable {
             boolean firstSelectStatement = true;
 
             for (PlsqlExecutableObject exeObj : executableObjs) {
-//                if (cancel) {
-//                    io.getErr().println("!!!Execution cancelled. Performing rollback");
-//                    jdbcConnection.rollback();
-//                    return io;
+                Thread.sleep(0); //throws InterruptedException is the task was cancelled
+                //                if (cancel) {
+                //                    io.getErr().println("!!!Execution cancelled. Performing rollback");
+                //                    jdbcConnection.rollback();
+                //                    return io;
 //                }
                 int lineNumber = exeObj.getStartLineNo();
                 String plsqlText = exeObj.getPlsqlString();
@@ -1323,7 +1319,7 @@ public class PlsqlFileExecutor implements Runnable {
         return null;
     }
 
-    private void executeSqlPlusStart(String plsqlText, String firstWord, Document doc, InputOutput io) {
+    private void executeSqlPlusStart(String plsqlText, String firstWord, Document doc, InputOutput io) throws InterruptedException {
         try {
             String fileName = null;
             if (firstWord.equalsIgnoreCase("START")) {

@@ -22,7 +22,7 @@ public class DatabaseConnectionExecutorFactory implements DatabaseConnectionExec
     @Override
     public DatabaseConnectionExecutor create(DatabaseConnectionManager connectionProvider, DatabaseConnection connection, FileObject fileObject) {
         DatabaseConnectionIO io = new DatabaseConnectionIO();
-        DatabaseTransaction databaseTransaction = DatabaseTransaction.create(io, connection, fileObject);
+        DatabaseTransaction databaseTransaction = DatabaseTransaction.Factory.create(io, connection, fileObject);
         return new PlsqlExecutor(connectionProvider, io, connection, databaseTransaction);
     }
 

@@ -42,7 +42,6 @@ class DatabaseConnectionIO {
         } catch (IOException ex) {
             Exceptions.printStackTrace(ex);
         }
-//        return io;
     }
 
     /*
@@ -68,6 +67,6 @@ class DatabaseConnectionIO {
     }
 
     InputOutput getIO() {
-    return io;
+        return io;
     }
 }

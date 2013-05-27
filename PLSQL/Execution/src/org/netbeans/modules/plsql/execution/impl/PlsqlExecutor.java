@@ -23,6 +23,8 @@ import org.openide.loaders.DataObject;
 import org.openide.util.Cancellable;
 import org.openide.util.Lookup;
 import org.openide.util.RequestProcessor;
+import org.openide.util.Task;
+import org.openide.util.TaskListener;
 
 /**
  * reference usage holder
@@ -36,9 +38,8 @@ class PlsqlExecutor implements DatabaseConnectionExecutor {
     private static final RequestProcessor RP = new RequestProcessor(PlsqlExecutor.class.getName(), 4, true);
     private final DatabaseConnectionManager connectionProvider;
     private final DatabaseConnectionIO io;
+    private final DatabaseTransaction transaction;
     private DatabaseConnection connection;
-    // is set to null if run from other than tdb (command window).
-    private DatabaseTransaction transaction;
 
     //    private final boolean isCommandWindow;
     public PlsqlExecutor(DatabaseConnectionManager connectionProvider, DatabaseConnectionIO io, DatabaseConnection connection, DatabaseTransaction transaction) {
@@ -143,50 +144,20 @@ class PlsqlExecutor implements DatabaseConnectionExecutor {
 
     @Override
     public void execute(List<PlsqlExecutableObject> executableObjects, Document document) {
-        ProgressHandle handle = ProgressHandleFactory.createHandle("Executing database file...", new Cancellable() {
+        final ProgressHandle handle = ProgressHandleFactory.createHandle("Executing database file...", new Cancellable() {
             @Override
             public boolean cancel() {
                 return handleCancel();
             }
         });
-//        try {
-//            handle.start();
-//            // If autocommit OFF - take the connection from data object.
-//            if (autoCommit()) {
-//                if (!updateConnection(connectionProvider.getTemplateConnection())) {
-//                    return;
-//                }
-//            }
-//
-//            if (connection == connectionProvider.getTemplateConnection()) {
-//                updateConnection(connectionProvider.getPooledDatabaseConnection(false, true));
-//                if (connection == null) {
-//                    return;
-//                }
-//            }
-//            reconnectIfNeeded();
-////                final DataObject obj = FileExecutionUtil.getDataObject(document);
-////                FileObject file = obj.getPrimaryFile();
-////                if (file == null) {
-////                    return;
-////                }
-//            DataObject dataObj = FileExecutionUtil.getDataObject(document);
-//            String fileName = dataObj.getPrimaryFile().getNameExt();
-//            InputOutput io = initializeIO(fileName, dataObj.getNodeDelegate().getDisplayName(), dataObj, executableObjects.get(0));
-
-        task = RP.post(new ExecutionTask(connection, executableObjects, document, handle));
-//            task.waitFinished();
-//                executor.executePLSQL(blocks, document);
-
-//        } finally {
-//            if (autoCommit()) {
-//                connectionProvider.releaseDatabaseConnection(connection);
-//            } else {
-//                hasOpenTransaction();
-//            }
-//            handle.finish();
-//        }
-//        task = RP.post(new ExecutionTask(connectionProvider, connection, executableObjects, document));
+        task = RP.create(new ExecutionTask(connection, executableObjects, document, handle));
+        task.addTaskListener(new TaskListener() {
+            @Override
+            public void taskFinished(Task task) {
+                handle.finish();
+            }
+        });
+        task.schedule(0); //start the task
     }
     private RequestProcessor.Task task;
 
@@ -200,7 +171,7 @@ class PlsqlExecutor implements DatabaseConnectionExecutor {
     }
 
     private boolean autoCommit() {
-        return transaction == null || OptionsUtilities.isCommandWindowAutoCommitEnabled();
+        return transaction.autoCommit();
     }
 
     private class ExecutionTask implements Runnable {
@@ -246,8 +217,11 @@ class PlsqlExecutor implements DatabaseConnectionExecutor {
 //                    return;
 //                }
                 reconnectIfNeeded();
-                executor = new PlsqlFileExecutor(connectionProvider, connection, executableObjects, document, io.getIO());
-                executor.run();
+                executor = new PlsqlFileExecutor(connectionProvider, connection, io.getIO());
+                executor.executePLSQL(executableObjects, document);
+            } catch (InterruptedException ex) {
+                LOG.info("the task was CANCELLED");
+//                return;
 
             } finally {
                 if (autoCommit()) {

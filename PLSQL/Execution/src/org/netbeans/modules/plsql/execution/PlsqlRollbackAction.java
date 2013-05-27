@@ -70,11 +70,8 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
 
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
     private final DataObject dataObject;
-//    private final DatabaseTransaction transaction;
     private DatabaseConnectionExecutor executor;
-//    private DatabaseConnectionManager connectionProvider;
     private JButton button;
-//    private DatabaseConnection connection;
     private final PropertyChangeListener propertyChangeListener = new EnableRollback();
 
     public PlsqlRollbackAction() {
@@ -122,20 +119,15 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
         if (dataObject != null) {
             executor = dataObject.getLookup().lookup(DatabaseConnectionExecutor.class);
         }
-//        connection = dataObject.getLookup().lookup(DatabaseConnection.class);
     }
 
     @Override
     public void actionPerformed(ActionEvent event) {
 
         prepareConnection();
-//        if (connectionProvider == null || connection == null) {
-//            return;
-//        }
 
         saveIfModified(dataObject);
         executor.rollbackTransaction();
-//        transaction.rollbackTransaction(connection);
     }
 
     @Override

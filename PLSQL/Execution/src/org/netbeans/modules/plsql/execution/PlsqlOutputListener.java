@@ -41,9 +41,6 @@
  */
 package org.netbeans.modules.plsql.execution;
 
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
-import org.netbeans.modules.plsql.hyperlink.PlsqlGoToDbImplAction;
 import java.io.File;
 import java.util.List;
 import javax.swing.JEditorPane;
@@ -51,11 +48,13 @@ import javax.swing.JOptionPane;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import org.netbeans.api.project.Project;
+import org.netbeans.modules.plsql.hyperlink.PlsqlGoToDbImplAction;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
+import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
 import org.openide.cookies.EditorCookie;
 import org.openide.cookies.OpenCookie;
 import org.openide.filesystems.FileUtil;
 import org.openide.loaders.*;
-import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
 import org.openide.util.actions.SystemAction;
 import org.openide.windows.OutputEvent;
@@ -93,10 +92,10 @@ public class PlsqlOutputListener implements OutputListener {
                 File file = new File(originalFileName);
                 if (file.exists()) {
                     DataObject dObject = DataFolder.find(FileUtil.toFileObject(file));
-                    OpenCookie openCookie = dObject.getCookie(OpenCookie.class);
+                    OpenCookie openCookie = dObject.getLookup().lookup(OpenCookie.class);
                     openCookie.open();
-                    Node n = dObject.getNodeDelegate();
-                    EditorCookie ec = dObject.getCookie(EditorCookie.class);
+                    dObject.getNodeDelegate();
+                    EditorCookie ec = dObject.getLookup().lookup(EditorCookie.class);
                     if (ec != null) {
                         JEditorPane panes[] = ec.getOpenedPanes();
                         if (panes.length > 0) {

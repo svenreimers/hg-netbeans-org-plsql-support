@@ -72,37 +72,15 @@ import org.openide.util.actions.CookieAction;
 })
 public class PlsqlExecuteAction extends CookieAction {
 
-//    private static final Logger LOG = Logger.getLogger(PlsqlExecuteAction.class.getName());
     private static final String ICON_PATH = "org/netbeans/modules/plsql/execution/execute.png";
-    private static final RequestProcessor RP = new RequestProcessor(PlsqlExecuteAction.class.getName(), 4);
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
-//    private static final String DATABASE_CONNECTION_KEY = "databaseConnection";
     private static final String TEST_BLOCK_NAME_PREFIX = "TestBlock:";
     private DataObject dataObject;
-//    private PlsqlDataObject plsqlDataobject;
     private DatabaseConnectionExecutor executor;
-//    private PopupMenuPopulator popupMenuPopulator = null;
-//    private JPopupMenu popup;
-//    private JButton button;
-//    private ActionListener buttonListener = new ButtonListener();
-    private boolean autoCommit = true;
 
     public PlsqlExecuteAction() {
         super();
-//        this(Utilities.actionsGlobalContext());
-//    }
-
-//    public PlsqlExecuteAction(Lookup context) {
-//        putValue(NAME, NbBundle.getMessage(PlsqlExecuteAction.class, "CTL_PlsqlExecute"));
         putValue(SHORT_DESCRIPTION, NbBundle.getMessage(PlsqlExecuteAction.class, "CTL_PlsqlExecuteDescription"));
-//        putValue(SMALL_ICON, new ImageIcon(ImageUtilities.loadImage(ICON_PATH)));
-
-//        dataObject = context.lookup(DataObject.class);
-
-//        if (validator.isValidTDB(dataObject)) {
-//            autoCommit = OptionsUtilities.isCommandWindowAutoCommitEnabled();
-//        }
-//        connectionSession = dataObject.getLookup().lookup(PlsqlExecutor.class);
     }
 
     @Override
@@ -157,24 +135,10 @@ public class PlsqlExecuteAction extends CookieAction {
         dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
         executor = dataObject.getLookup().lookup(DatabaseConnectionExecutor.class);
 
-//        if (connectionProvider == null) {
-//            if (dataObject != null) {
-//                connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
-//                if (connectionProvider == null) {
-//                    return;
-//                }
-//            }
-//        }
-
         saveIfModified(dataObject);
 
         EditorCookie edCookie = dataObject.getLookup().lookup(EditorCookie.class);
         Document document = edCookie.getDocument();
-//        DataObject obj = FileExecutionUtil.getDataObject(document);
-//        FileObject file = obj.getPrimaryFile();
-//        if (file == null) {
-//            return;
-//        }
 
         PlsqlExecutableBlocksMaker blockMaker = new PlsqlExecutableBlocksMaker(document);
         List<PlsqlExecutableObject> blocks = blockMaker.makeExceutableObjects();
@@ -237,27 +201,4 @@ public class PlsqlExecuteAction extends CookieAction {
             Exceptions.printStackTrace(ex);
         }
     }
-//    private class ButtonListener implements ActionListener {
-//
-//        @Override
-//        public void actionPerformed(ActionEvent e) {
-//
-//            JMenuItem item = (JMenuItem) e.getSource();
-//            DatabaseConnection newConnection = (DatabaseConnection) item.getClientProperty(DATABASE_CONNECTION_KEY);
-//            if (connectionSession.updateConnection(newConnection)) {
-//                connectionProvider.setModuleInOracle(connectionSession.getConnection());
-//                saveAndExecute();
-//            }
-//        }
-//    };
-//    private class PopupMenuPopulator implements PropertyChangeListener {
-//
-//        @Override
-//        public void propertyChange(PropertyChangeEvent event) {
-//            if (popup != null) {
-//                prepareConnection();
-//                populatePopupMenu();
-//            }
-//        }
-//    }
 }

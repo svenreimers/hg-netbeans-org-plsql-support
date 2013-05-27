@@ -41,14 +41,14 @@
  */
 package org.netbeans.modules.plsql.execution;
 
-import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObjectType;
-import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObject;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.text.Document;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
+import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObject;
+import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObjectType;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionRegistration;
@@ -65,7 +65,7 @@ import org.openide.util.actions.CookieAction;
  * @author YADHLK
  */
 @ActionID(id = "org.netbeans.modules.plsql.execution.DescribeAction", category = "PLSQL")
-@ActionRegistration(displayName = "#CTL_DescribeAction")
+@ActionRegistration(displayName = "#CTL_DescribeAction", lazy = true)
 @ActionReference(path = "Editors/text/x-plsql/Popup", position = 440, separatorAfter = 450)
 public class DescribeAction extends CookieAction {
 

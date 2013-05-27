@@ -70,11 +70,8 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
 
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
     private final DataObject dataObject;
-//    private DatabaseConnectionManager connectionProvider;
     private DatabaseConnectionExecutor executor;
-//    private DatabaseConnection connection;
     private JButton button;
-//    private final DatabaseTransaction transaction;
     private final PropertyChangeListener changeListener = new EnableCommit();
 
     public PlsqlCommitAction() {
@@ -118,23 +115,17 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
 
     private void prepareConnection() {
         if (dataObject != null) {
-//            connectionProvider = DatabaseConnectionManager.getInstance(dataObject);
             executor = dataObject.getLookup().lookup(DatabaseConnectionExecutor.class);
         }
-//        connection = dataObject.getLookup().lookup(DatabaseConnection.class);
     }
 
     @Override
     public void actionPerformed(ActionEvent event) {
 
         prepareConnection();
-//        if (connectionProvider == null || connection == null) {
-//            return;
-//        }
 
         saveIfModified(dataObject);
         executor.commitTransaction();
-//        transaction.commitTransaction(connection, connectionProvider);
     }
 
     @Override
