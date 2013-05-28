@@ -149,7 +149,7 @@ public class DatabaseConnectionManager {
         }
 
         DatabaseConnectionManager provider = new DatabaseConnectionManager();
-        if (!GraphicsEnvironment.isHeadless() && provider.getDatabaseConnection(true) == null) { // prompt connection dialog for files outside the project structure
+        if (provider.getDatabaseConnection(true) == null) { // prompt connection dialog for files outside the project structure
             return null;
         }
         instances.put(fileObject, provider);
@@ -308,7 +308,7 @@ public class DatabaseConnectionManager {
         if (!online && !force) {
             return null;
         }
-        if (prompt) {
+        if (prompt && !GraphicsEnvironment.isHeadless()) {
             if (templateConnection == null) {
                 templateConnection = new DatabaseConnectionPanel().showDialog();
                 connections.clear();
