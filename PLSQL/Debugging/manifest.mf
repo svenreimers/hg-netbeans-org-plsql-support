@@ -5,6 +5,6 @@ OpenIDE-Module: org.netbeans.modules.plsql.debug
 OpenIDE-Module-Layer: org/netbeans/modules/plsql/debug/layer.xml
 OpenIDE-Module-Localizing-Bundle: org/netbeans/modules/plsql/debug/Bun
  dle.properties
-OpenIDE-Module-Specification-Version: 8.72.42.105
+OpenIDE-Module-Specification-Version: 8.72.48.140
 AutoUpdate-Show-In-Client: false
 
