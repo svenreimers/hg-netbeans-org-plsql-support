@@ -46,14 +46,13 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.DefaultFocusTraversalPolicy;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import javax.swing.AbstractAction;
 import javax.swing.AbstractListModel;
@@ -238,7 +237,7 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
             combo.setModel(new DefaultComboBoxModel(
                     new String[]{NbBundle.getMessage(ToolbarPresenter.class, "ConnectionAction.ToolbarPresenter.LoadingConnections")}));
             setEnabled(false);
-            combo.setRenderer(new DatabaseConnectionRenderer());
+            combo.setRenderer(new DatabaseConnectionRenderer(connectionManager));
             String accessibleName = NbBundle.getMessage(ConnectionAction.class, "LBL_DatabaseConnection");
             combo.getAccessibleContext().setAccessibleName(accessibleName);
             combo.getAccessibleContext().setAccessibleDescription(accessibleName);
@@ -277,7 +276,7 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
             connectionList = new ArrayList<DatabaseConnection>();
             connectionList.addAll(connectionProvider.getDatabaseConnections());
 //            connectionList.addAll(Arrays.asList(ConnectionManager.getDefault().getConnections()));
-            sortConnections();
+//            sortConnections();
         }
 
         @Override
@@ -326,7 +325,6 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
                 });
             }
         }
-
 //        @Override
 //        public void connectionsChanged() {
 //            Mutex.EVENT.readAccess(new Runnable() {
@@ -346,25 +344,32 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
 //                }
 //            });
 //        }
-        void sortConnections() {
-            Collections.sort(connectionList, new Comparator<DatabaseConnection>() {
-                @Override
-                public int compare(DatabaseConnection o1, DatabaseConnection o2) {
-                    return o1.getDisplayName().compareTo(o2.getDisplayName());
-                }
-            });
-        }
+//        void sortConnections() {
+//            Collections.sort(connectionList, new Comparator<DatabaseConnection>() {
+//                @Override
+//                public int compare(DatabaseConnection o1, DatabaseConnection o2) {
+//                    return o1.getDisplayName().compareTo(o2.getDisplayName());
+//                }
+//            });
+//        }
     }
 
     private static final class DatabaseConnectionRenderer extends DefaultListCellRenderer {
+
+        private final DatabaseConnectionManager connectionManager;
+
+        public DatabaseConnectionRenderer(DatabaseConnectionManager connectionManager) {
+            this.connectionManager = connectionManager;
+        }
 
         @Override
         public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
             Object displayName;
             String tooltipText = null;
 
+            DatabaseConnection connection = null;
             if (value instanceof DatabaseConnection) {
-                DatabaseConnection connection = (DatabaseConnection) value;
+                connection = (DatabaseConnection) value;
                 //XXX: should have url instead, see execution action dropdownbutton
                 String url = connection.getDatabaseURL();
                 String schema = connection.getUser();
@@ -377,10 +382,6 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
                 if (alias != null && !alias.equals(connection.getName())) {
                     url = alias + " [" + url + "]";
                 }
-//            JMenuItem item = new JMenuItem(url);
-//            if (connectionProvider.isDefaultDatabase(c)) {
-//                item.setFont(item.getFont().deriveFont(Font.BOLD));
-//            }
                 displayName = connection.getDisplayName();
                 tooltipText = url;
             } else {
@@ -388,6 +389,9 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
             }
             JLabel component = (JLabel) super.getListCellRendererComponent(list, displayName, index, isSelected, cellHasFocus);
             component.setToolTipText(tooltipText);
+            if (connectionManager.isDefaultDatabase(connection)) {
+                component.setFont(component.getFont().deriveFont(Font.BOLD));
+            }
 
             return component;
         }
