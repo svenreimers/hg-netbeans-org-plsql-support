@@ -125,7 +125,10 @@ public class DatabaseConnectionManager {
     }
 
     public static DatabaseConnectionManager getInstance(DataObject dataObject) {
-        FileObject fileObject = dataObject.getPrimaryFile();
+        return getInstance(dataObject.getPrimaryFile());
+    }
+
+    public static DatabaseConnectionManager getInstance(FileObject fileObject) {
         Project project = FileOwnerQuery.getOwner(fileObject);
         if (project != null) {
             DatabaseConnectionManager provider = project.getLookup().lookup(DatabaseConnectionManager.class);

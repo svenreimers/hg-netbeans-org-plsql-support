@@ -53,6 +53,7 @@ import java.awt.event.ItemListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import javax.swing.AbstractAction;
 import javax.swing.AbstractListModel;
@@ -67,6 +68,7 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
+import org.netbeans.api.db.explorer.ConnectionManager;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.modules.db.api.sql.execute.SQLExecution;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionExecutor;
@@ -134,8 +136,11 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
 //    }
     @Override
     public Component getToolbarPresenter() {
-
-        toolbarPresenter = new ToolbarPresenter(actionContext, DatabaseConnectionManager.getInstance(dataObject));
+        final DatabaseConnectionManager manager = DatabaseConnectionManager.getInstance(dataObject);
+        if (manager == null) {
+            return null;
+        }
+        toolbarPresenter = new ToolbarPresenter(actionContext, manager);
         toolbarPresenter.setSQLExecution(dataObject.getLookup().lookup(DatabaseConnectionExecutor.class));
         return toolbarPresenter;
 
@@ -264,18 +269,21 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
 //        private ConnectionListener listener;
         private List<DatabaseConnection> connectionList; // must be ArrayList
         private DatabaseConnectionExecutor executor;
-        private DatabaseConnectionManager connectionProvider;
+        private DatabaseConnectionManager connectionManager;
 
         @SuppressWarnings("LeakingThisInConstructor")
-        public DatabaseConnectionModel(DatabaseConnectionManager connectionProvider) {
-            this.connectionProvider = connectionProvider;
+        public DatabaseConnectionModel(DatabaseConnectionManager manager) {
+            this.connectionManager = manager;
 //            listener = WeakListeners.create(ConnectionListener.class, this, ConnectionManager.getDefault());
 //            ConnectionManager.getDefault().addConnectionListener(listener);
 //                                connectionProvider.addPropertyChangeListener(listener);
 
             connectionList = new ArrayList<DatabaseConnection>();
-            connectionList.addAll(connectionProvider.getDatabaseConnections());
-//            connectionList.addAll(Arrays.asList(ConnectionManager.getDefault().getConnections()));
+            if (connectionManager != null) {
+                connectionList.addAll(connectionManager.getDatabaseConnections());
+            } else {
+                connectionList.addAll(Arrays.asList(ConnectionManager.getDefault().getConnections()));
+            }
 //            sortConnections();
         }
 
@@ -389,7 +397,7 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
             }
             JLabel component = (JLabel) super.getListCellRendererComponent(list, displayName, index, isSelected, cellHasFocus);
             component.setToolTipText(tooltipText);
-            if (connectionManager.isDefaultDatabase(connection)) {
+            if (connectionManager != null && connectionManager.isDefaultDatabase(connection)) {
                 component.setFont(component.getFont().deriveFont(Font.BOLD));
             }
 
