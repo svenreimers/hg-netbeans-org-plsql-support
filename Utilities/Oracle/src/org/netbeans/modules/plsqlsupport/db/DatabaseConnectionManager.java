@@ -81,6 +81,7 @@ import org.openide.util.RequestProcessor.Task;
 
 public class DatabaseConnectionManager {
 
+    private static final boolean NB_IN_TEST_MODE = Boolean.getBoolean("netbeans.full.hack"); //NOI18N
     public static final String ORACLE_DRIVER_CLASS_NAME = "oracle.jdbc.OracleDriver";
     public static final String PROP_DATABASE_CONNECTIONS = "databaseConnections";
     public static final String PROP_CW_DATABASE_CONNECTIONS = "commandWindowDatabaseConnections";
@@ -148,7 +149,7 @@ public class DatabaseConnectionManager {
         }
 
         DatabaseConnectionManager provider = new DatabaseConnectionManager();
-        if (provider.getDatabaseConnection(true) == null) { // prompt connection dialog for files outside the project structure
+        if (!NB_IN_TEST_MODE && provider.getDatabaseConnection(true) == null) { // prompt connection dialog for files outside the project structure
             return null;
         }
         instances.put(fileObject, provider);
