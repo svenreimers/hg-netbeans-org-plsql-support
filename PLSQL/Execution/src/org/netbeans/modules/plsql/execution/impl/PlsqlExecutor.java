@@ -143,7 +143,7 @@ class PlsqlExecutor implements DatabaseConnectionExecutor {
 
     @Override
     public void execute(List<PlsqlExecutableObject> executableObjects, Document document) {
-        final ProgressHandle handle = ProgressHandleFactory.createHandle("Executing database file...", new Cancellable() {
+        final ProgressHandle handle = ProgressHandleFactory.createHandle(executableObjects.get(0).getSummery(), new Cancellable() {
             @Override
             public boolean cancel() {
                 return handleCancel();

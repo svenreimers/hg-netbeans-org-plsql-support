@@ -51,8 +51,7 @@ class DatabaseConnectionIO {
     private String getIOTabName(PlsqlExecutableObject executionObject, String fileName, String displayName) {
         if (fileName.equals(displayName)) {
             if (executionObject != null && fileName.endsWith(".tdb")) {
-                String str = executionObject.getPlsqlString().replaceAll("\n", " ");
-                fileName = str.length() > 30 ? str.substring(0, 30) + "..." : str;
+                fileName = executionObject.getSummery();
             }
         } else if (displayName != null) {
             fileName = displayName;

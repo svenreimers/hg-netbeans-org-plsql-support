@@ -94,6 +94,15 @@ public class PlsqlExecutableObject {
     public int getEndOffset() {
         return endoffset;
     }
+
+    /**
+     *
+     * @return first part of the PLSQL statement text.
+     */
+    public String getSummery() {
+        String str = getPlsqlString().replaceAll("\n", " ");
+        return str.length() > 30 ? str.substring(0, 30) + "..." : str;
+    }
     private String plsqlString;
     private int startLineNo;
     private int startOffset;
