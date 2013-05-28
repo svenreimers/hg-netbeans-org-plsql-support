@@ -41,6 +41,7 @@
  */
 package org.netbeans.modules.plsqlsupport.db;
 
+import java.awt.GraphicsEnvironment;
 import java.beans.ExceptionListener;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
@@ -81,7 +82,6 @@ import org.openide.util.RequestProcessor.Task;
 
 public class DatabaseConnectionManager {
 
-    private static final boolean NB_IN_TEST_MODE = Boolean.getBoolean("netbeans.full.hack"); //NOI18N
     public static final String ORACLE_DRIVER_CLASS_NAME = "oracle.jdbc.OracleDriver";
     public static final String PROP_DATABASE_CONNECTIONS = "databaseConnections";
     public static final String PROP_CW_DATABASE_CONNECTIONS = "commandWindowDatabaseConnections";
@@ -149,7 +149,7 @@ public class DatabaseConnectionManager {
         }
 
         DatabaseConnectionManager provider = new DatabaseConnectionManager();
-        if (!NB_IN_TEST_MODE && provider.getDatabaseConnection(true) == null) { // prompt connection dialog for files outside the project structure
+        if (!GraphicsEnvironment.isHeadless() && provider.getDatabaseConnection(true) == null) { // prompt connection dialog for files outside the project structure
             return null;
         }
         instances.put(fileObject, provider);
