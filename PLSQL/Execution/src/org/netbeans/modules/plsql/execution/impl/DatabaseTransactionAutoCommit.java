@@ -12,31 +12,18 @@ import org.netbeans.api.db.explorer.DatabaseConnection;
  *
  * @author ChrLSE
  */
-class DatabaseTransactionAutoCommit implements DatabaseTransaction {
+class DatabaseTransactionAutoCommit extends DatabaseTransactionDefault {
+
+    public DatabaseTransactionAutoCommit(DatabaseConnectionIO io, DatabaseConnection connection) {
+        super(io, connection);
+    }
 
     @Override
     public void addPropertyChangeListener(PropertyChangeListener listener) {
     }
 
     @Override
-    public void commitTransaction() {
-    }
-
-    @Override
-    public boolean hasOpenTransaction() {
-        return false;
-    }
-
-    @Override
-    public void rollbackTransaction() {
-    }
-
-    @Override
     public boolean autoCommit() {
         return true;
-    }
-
-    @Override
-    public void setConnection(DatabaseConnection connection) {
     }
 }

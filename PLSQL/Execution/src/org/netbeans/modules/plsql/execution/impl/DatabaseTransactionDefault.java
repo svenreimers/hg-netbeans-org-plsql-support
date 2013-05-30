@@ -107,10 +107,10 @@ class DatabaseTransactionDefault implements DatabaseTransaction {
         try {
             if (hasOpenTransaction()) {
                 commitRollbackTransactions(true);
+                io.println((new StringBuilder()).append("> Commit of Transaction ID = [")
+                        .append(transactionId).append("] successful"));
             }
             close();
-            io.println((new StringBuilder()).append("> Commit of Transaction ID = [")
-                    .append(transactionId).append("] successful"));
         } catch (Exception ex) {
             io.println((new StringBuilder()).append(">!!! Error Commit Statement"));
             Exceptions.printStackTrace(ex);
@@ -131,11 +131,10 @@ class DatabaseTransactionDefault implements DatabaseTransaction {
         try {
             if (hasOpenTransaction()) {
                 commitRollbackTransactions(false);
+                io.println((new StringBuilder()).append("> Rollback of Transaction ID = [")
+                        .append(transactionId).append("] successful"));
             }
             close();
-            io.println((new StringBuilder()).append("> Rollback of Transaction ID = [")
-                    .append(transactionId).append("] successful"));
-
         } catch (Exception ex) {
             io.println((new StringBuilder()).append(">!!! Error Rollback Statement"));
             Exceptions.printStackTrace(ex);
@@ -222,5 +221,14 @@ class DatabaseTransactionDefault implements DatabaseTransaction {
     @Override
     public boolean autoCommit() {
         return OptionsUtilities.isCommandWindowAutoCommitEnabled();
+    }
+
+    @Override
+    public void checkForOpenTransaction() {
+        if (autoCommit()) {
+            commitTransaction();
+        } else {
+            hasOpenTransaction();
+        }
     }
 }

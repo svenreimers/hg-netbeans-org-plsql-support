@@ -192,12 +192,6 @@ class PlsqlExecutor implements DatabaseConnectionExecutor {
         public void run() {
             try {
                 handle.start();
-                // If autocommit OFF - take the connection from data object.
-                if (autoCommit()) {
-                    if (!updateConnection(connectionProvider.getTemplateConnection())) {
-                        return;
-                    }
-                }
 
                 DataObject dataObj = FileExecutionUtil.getDataObject(document);
                 String fileName = dataObj.getPrimaryFile().getNameExt();
@@ -209,22 +203,13 @@ class PlsqlExecutor implements DatabaseConnectionExecutor {
                     }
                     startConnection(connection);
                 }
-//                final DataObject obj = FileExecutionUtil.getDataObject(document);
-//                FileObject file = obj.getPrimaryFile();
-//                if (file == null) {
-//                    return;
-//                }
                 reconnectIfNeeded();
                 executor = new PlsqlFileExecutor(statementHolder, connection, io.getIO());
                 executor.executePLSQL(executableObjects, document);
             } catch (InterruptedException ex) {
                 io.println("the task was CANCELLED");
             } finally {
-                if (autoCommit()) {
-                    connectionProvider.releaseDatabaseConnection(connection);
-                } else {
-                    hasOpenTransaction();
-                }
+                transaction.checkForOpenTransaction();
                 handle.finish();
             }
         }

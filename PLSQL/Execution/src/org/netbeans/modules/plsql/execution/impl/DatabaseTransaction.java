@@ -17,7 +17,7 @@ public interface DatabaseTransaction {
     void addPropertyChangeListener(PropertyChangeListener listener);
 
     /**
-     *
+     * Commit transaction if connection has Open Transaction
      *
      */
     void commitTransaction();
@@ -30,7 +30,7 @@ public interface DatabaseTransaction {
     boolean hasOpenTransaction();
 
     /**
-     *
+     * Rollback transaction if connection has Open Transaction
      *
      */
     void rollbackTransaction();
@@ -43,11 +43,13 @@ public interface DatabaseTransaction {
 
     public void setConnection(DatabaseConnection connection);
 
+    public void checkForOpenTransaction();
+
     static class Factory {
 
         static DatabaseTransaction create(DatabaseConnectionIO io, DatabaseConnection connection, FileObject fileObject) {
             if (!fileObject.getExt().equalsIgnoreCase("tdb")) {
-                return new DatabaseTransactionAutoCommit();
+                return new DatabaseTransactionAutoCommit(io, connection);
             }
             return new DatabaseTransactionDefault(io, connection);
         }
