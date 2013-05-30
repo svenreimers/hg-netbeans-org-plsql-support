@@ -399,6 +399,98 @@ EXCEPTION
       Error_SYS.Item_Format(lu_name_, name_, value_);
 END Unpack_Check_Update___;
 
+-- This should not give any error
+FUNCTION Create_Voucher_Internal___ (
+   creator_ IN     VARCHAR2) RETURN BOOLEAN
+IS   
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Create_Voucher_Internal___', TRUE);     
+   
+   Advance_Inv_Reference_API.Set_Parent_Inv_Id(NULL,NULL);
+
+   RETURN TRUE;
+
+EXCEPTION
+   WHEN posting_fault THEN
+      err_msg_ := 'Posting fault on Invoice No: ' || head_rec_.invoice_no;
+      -- Transaction_Statement_Approved 20090522 AsHelk
+      ROLLBACK to Create_Vouchers;
+      RETURN FALSE;
+   WHEN act_closed THEN
+      err_msg_ := 'At least one of the activities are closed. Creating an invoice is not allowed on closed activities.';      
+      ROLLBACK TO Create_Vouchers;
+      RETURN FALSE;
+   WHEN others THEN
+      err_msg_ := SQLERRM;
+      -- Transaction_Statement_Approved 20090522 AsHelk
+         ROLLBACK to Create_Vouchers;
+      RETURN FALSE;
+END Create_Voucher_Internal___;
+
+
+
+FUNCTION Unreachable_Test___ (
+   creator_ IN     VARCHAR2) RETURN BOOLEAN
+IS   
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Create_Voucher_Internal___', TRUE);     
+   
+   Advance_Inv_Reference_API.Set_Parent_Inv_Id(NULL,NULL);
+
+   RETURN TRUE;
+   RETURN FALSE;
+
+END Unreachable_Test___;
+
+FUNCTION Unreachable_Test___2 (
+   creator_ IN     VARCHAR2) RETURN BOOLEAN
+IS   
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Create_Voucher_Internal___', TRUE);     
+   
+   Advance_Inv_Reference_API.Set_Parent_Inv_Id(NULL,NULL);
+
+   RETURN TRUE;
+   lu_name_ := null;
+
+END Unreachable_Test___2;
+
+-- this shouldnt give any annotations
+FUNCTION Count_Binds___ (
+   stmt_ IN VARCHAR2 ) RETURN NUMBER
+IS
+   i_ NUMBER := 1;
+   column_ VARCHAR2(100);
+   bind_ VARCHAR2(100);
+   
+   binds_ args_array;
+BEGIN
+   bind_ := Upper(REPLACE(Regexp_Substr(stmt_, ':[[:alnum:]$]+', 1, i), ':', ''));
+   WHILE (bind_ IS NOT NULL) LOOP
+      BEGIN
+         binds_(bind_) := binds_(bind_) + 1;
+      EXCEPTION
+         WHEN no_data_found THEN
+            binds_(bind_) := 1;
+      END;
+      i_ := i_ + 1;
+      bind_ := Upper(REPLACE(Regexp_Substr(stmt_, ':[[:alnum:]$]+', 1, i), ':', ''));
+   END LOOP;
+   bind_ := binds_.first;
+   LOOP
+      EXIT WHEN bind_ IS NULL;
+      BEGIN
+         IF (arguments_(bind_) < 1) THEN
+            RAISE mismatch_of_binds;
+         END IF;
+      EXCEPTION
+         WHEN no_data_found THEN
+         RAISE mismatch_of_binds;
+      END;
+      bind_ := binds_.next(bind_);
+   END LOOP;
+   RETURN(binds_.count);
+END Count_Binds___;
 
 PROCEDURE Update___ (
    objid_      IN     VARCHAR2,

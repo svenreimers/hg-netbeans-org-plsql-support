@@ -282,7 +282,7 @@ public class PlsqlMethodAnnotationUtil {
             if (child.getType() != PlsqlBlockType.CURSOR
                     && child.getType() != PlsqlBlockType.CUSTOM_FOLD
                     && startOffset < child.getStartOffset()) {
-                if (!isReturnMissing(startOffset, child.getStartOffset(), doc, true)) {
+                if (!isReturnMissing(startOffset, child.getStartOffset(), doc, block, true)) {
                     isReturn = true;
                     break;
                 }
@@ -300,7 +300,7 @@ public class PlsqlMethodAnnotationUtil {
             startOffset = children.get(children.size() - 1).getEndOffset();
         }
 
-        isReturn = !isReturnMissing(startOffset, block.getEndOffset(), doc, !isReturn);
+        isReturn = !isReturnMissing(startOffset, block.getEndOffset(), doc, block, !isReturn);
 
         return isReturn;
     }
@@ -353,7 +353,7 @@ public class PlsqlMethodAnnotationUtil {
         return false;
     }
 
-    private static boolean isReturnMissing(final int startOffset, final int endOffset, final Document doc, boolean isReturnMissing) {
+    private static boolean isReturnMissing(final int startOffset, final int endOffset, final Document doc, PlsqlBlock block, boolean isReturnMissing) {
         final TokenHierarchy tokenHierarchy = TokenHierarchy.get(doc);
         @SuppressWarnings("unchecked")
         final TokenSequence<PlsqlTokenId> ts = tokenHierarchy.tokenSequence(PlsqlTokenId.language());
@@ -368,7 +368,7 @@ public class PlsqlMethodAnnotationUtil {
 
                 if (token.toString().equalsIgnoreCase("RETURN")
                         || token.toString().equalsIgnoreCase("RAISE")) {
-                    if (moveToReturnEnd(ts, endOffset)) {
+                    if (moveToReturnEnd(ts, endOffset, doc, block)) {
                         isReturnMissing = false;
                         hasReturn = HAS_RETURNS;
                     }
@@ -380,7 +380,7 @@ public class PlsqlMethodAnnotationUtil {
                             if (ts.moveNext()) {
                                 token = ts.token();
                                 if (!token.toString().toLowerCase(Locale.ENGLISH).startsWith("check")) {
-                                    if (moveToReturnEnd(ts, endOffset)) {
+                                    if (moveToReturnEnd(ts, endOffset, doc, block)) {
                                         isReturnMissing = false;
                                         hasReturn = HAS_RETURNS;
                                     }
@@ -421,9 +421,9 @@ public class PlsqlMethodAnnotationUtil {
         int startOffset = findBlockImplStart(doc, block);
         for (PlsqlBlock child : children) {
             if (child.getType() != PlsqlBlockType.CURSOR
-                    && child.getType() != PlsqlBlockType.CUSTOM_FOLD) {
+                    && child.getType() != PlsqlBlockType.CUSTOM_FOLD && child.getType() != PlsqlBlockType.COMMENT) {
                 if (startOffset < child.getStartOffset()) {
-                    if (getUnreachableOffsets(startOffset, child.getStartOffset(), doc, lstUnreachable, isReturn, isException)) {
+                    if (getUnreachableOffsets(startOffset, child.getStartOffset(), doc, block, lstUnreachable, isReturn, isException)) {
                         isReturn = true;
                     } else {
                         isReturn = false;
@@ -455,7 +455,7 @@ public class PlsqlMethodAnnotationUtil {
         if (checkExceptionBlock(doc, block) < startOffset) {
             isException = true;
         }
-        isConstrusctReturn = getUnreachableOffsets(startOffset, block.getEndOffset(), doc, lstUnreachable, isReturn, isException);
+        isConstrusctReturn = getUnreachableOffsets(startOffset, block.getEndOffset(), doc, block, lstUnreachable, isReturn, isException);
         if (!isReturn) {
             isReturn = isConstrusctReturn;
         }
@@ -463,7 +463,7 @@ public class PlsqlMethodAnnotationUtil {
         return isReturn;
     }
 
-    private static boolean getUnreachableOffsets(final int startOffset, final int endOffset, final Document doc, final List<Integer> lstUnreachable, boolean isReturn, boolean isException) throws BadLocationException {
+    private static boolean getUnreachableOffsets(final int startOffset, final int endOffset, final Document doc, PlsqlBlock block, final List<Integer> lstUnreachable, boolean isReturn, boolean isException) throws BadLocationException {
         final TokenHierarchy tokenHierarchy = TokenHierarchy.get(doc);
         @SuppressWarnings("unchecked")
         final TokenSequence<PlsqlTokenId> ts = tokenHierarchy.tokenSequence(PlsqlTokenId.language());
@@ -478,11 +478,15 @@ public class PlsqlMethodAnnotationUtil {
                 token = ts.token();
 
                 if (token.toString().equalsIgnoreCase("RETURN")) {
-                    if (moveToReturnEnd(ts, endOffset)) {
+                    if(isReturn && endLineCount > 0){
+                        lstUnreachable.add(ts.offset());
+                        endLineCount = 0;
+                    }
+                    else if (moveToReturnEnd(ts, endOffset, doc, block)) {
                         isReturn = true;
                     }
                 } else if (token.toString().equalsIgnoreCase("RAISE")) {
-                    if (moveToReturnEnd(ts, endOffset)) {
+                    if (moveToReturnEnd(ts, endOffset, doc, block)) {
                         isRaised = true;
                     }
                 } else if (token.toString().equalsIgnoreCase("EXCEPTION")) {
@@ -504,7 +508,7 @@ public class PlsqlMethodAnnotationUtil {
                     }
                 } else if ((isReturn || isRaised) && token.toString().contains("\n")) {
                     endLineCount++;
-                } else if (endLineCount > 0 && token.toString().toUpperCase(Locale.ENGLISH).contains("END") || isRaised) {
+                } else if (endLineCount > 0 && token.toString().toUpperCase(Locale.ENGLISH).contains("END") || isRaised ) {
                     endLineCount = 0;
                 } else if (endLineCount > 0 && token.toString().contains(";")) {
                     lstUnreachable.add(ts.offset());
@@ -544,11 +548,35 @@ public class PlsqlMethodAnnotationUtil {
         return startOffset;
     }
 
-    private static boolean moveToReturnEnd(final TokenSequence<PlsqlTokenId> ts, final int endOffset) {
+    private static boolean moveToReturnEnd(final TokenSequence<PlsqlTokenId> ts, final int endOffset, final Document doc, final PlsqlBlock block) {
         Token<PlsqlTokenId> token = ts.token();
-        while (ts.moveNext() && ts.offset() < endOffset) {
+             while (ts.moveNext() && ts.offset() <  block.getEndOffset()) {
             token = ts.token();
-            if (token.toString().equals(";")) {
+            
+            // to handle scenarios like Return CASE 'a' THEN 'A'
+            if (token.toString().equalsIgnoreCase("CASE") || token.toString().equalsIgnoreCase("IF")) {
+                final TokenHierarchy tokenHierarchy = TokenHierarchy.get(doc);
+                int startOffset = token.offset(tokenHierarchy);
+                final TokenSequence<PlsqlTokenId> tsChild = tokenHierarchy.tokenSequence(PlsqlTokenId.language());
+                boolean caseReturned = false;
+                if (tsChild != null) {
+                    tsChild.move(startOffset);
+                    Token<PlsqlTokenId> tokenChild = tsChild.token();
+                    while (tsChild.moveNext() && tsChild.offset() < block.getEndOffset()) {
+                        tokenChild = tsChild.token();
+
+                        if (tokenChild.toString().equalsIgnoreCase("ELSE") || tokenChild.toString().equalsIgnoreCase("DEFAULT")) {
+                            caseReturned = true;
+                        }
+
+                        if (tokenChild.toString().equals(";")) {
+                            ts.move(tokenChild.offset(tokenHierarchy));
+                            return caseReturned;
+                        }
+                    }
+                }
+            }
+            else if (token.toString().equals(";")) {
                 return true;
             }
         }

@@ -84,9 +84,10 @@ public class PlsqlAnnotationsTest {
     private static final String WRONG_END_NAME = "Plsql-wrong-end-name-annotation";
     private static final String IF_NULL = "Plsql-if-null-annotation";
     private static final String CURSOR_WHERE = "Plsql-cursor-where-clause-annotation";
+    private static final String FUNCTION_RETURN = "Plsql-function-return-annotation";
     
     
-    private String testApyClass = "resources/appsrv/TechnicalSpecification.apy";
+    //private String testApyClass = "resources/appsrv/TechnicalSpecification.apy";
     private String testCursorWhere = "resources/shpord/ShopOrd.apy";
     private String testIfNull = "resources/appsrv/Formula.apy";
     private String testMissingEnd = "resources/appsrv/FormulaItem.apy";
@@ -94,6 +95,7 @@ public class PlsqlAnnotationsTest {
     private String testWrongEnd = "resources/shpord/MachOperationLoad.apy";
     private String testWFuncParam = "resources/shpord/ShopOperClocking.apy";
     private String testWParamOrd = "resources/shpord/ShopMaterialAlloc.apy";
+    private String testFunctionReturn = "resources/appsrv/IsoUnit.apy";
     
     private DataObject dataObject = null;
     private FileObject fileObject = null;
@@ -341,10 +343,11 @@ public class PlsqlAnnotationsTest {
             Map<Integer, List<PlsqlAnnotation>> annotations = annotationManager.getAnnotations();
             assertNotNull(annotations);
             //printAnnotations(annotations);
-            assertTrue(annotations.size() == 1);
+            assertTrue(annotations.size() == 3);
 
-          //  assertAnnotation(annotations, 4589, UNREACHABLE);
             assertAnnotation(annotations, 5917, UNREACHABLE);
+            assertAnnotation(annotations, 13940, UNREACHABLE);
+            assertAnnotation(annotations, 14255, UNREACHABLE);
         } finally {
             if (parentObject != null) {
                 parentObject.delete();
@@ -423,6 +426,36 @@ public class PlsqlAnnotationsTest {
 
             assertAnnotation(annotations, 18912, WRONG_PARAM_ORDER);
             assertAnnotation(annotations, 61701, WRONG_PARAM_ORDER);
+        } finally {
+            if (parentObject != null) {
+                parentObject.delete();
+            }
+        }
+    }
+    
+     @Test
+    public void testFunctionReturn() throws IOException, BadLocationException {
+        try {
+            System.out.println("Testing annotations for missing function return");
+            createFile("appsrv", "IsoUnit.apy");
+            assertNull(dataObject);
+            dataObject = loadAsTmpFile(fileObject, testFunctionReturn);
+            assertNotNull(dataObject);
+
+            PlsqlAnnotationManager annotationManager = new PlsqlAnnotationManager();
+            annotationManager.initAnnotations(dataObject);
+
+            Map<Integer, List<PlsqlAnnotation>> annotations = annotationManager.getAnnotations();
+            assertNotNull(annotations);
+            //printAnnotations(annotations);
+            assertTrue(annotations.size() == 5);
+
+            assertAnnotation(annotations, 38958, FUNCTION_RETURN);
+            assertAnnotation(annotations, 52699, FUNCTION_RETURN);
+            assertAnnotation(annotations, 34868, FUNCTION_RETURN);
+            assertAnnotation(annotations, 54095, FUNCTION_RETURN);
+            assertAnnotation(annotations, 55223, FUNCTION_RETURN);
+            
         } finally {
             if (parentObject != null) {
                 parentObject.delete();

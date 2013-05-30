@@ -1,0 +1,1793 @@
+-----------------------------------------------------------------------------
+--
+--  Logical unit: IsoUnit
+--
+--  Purpose:      Handle of ISO-standarized units of measure.
+--
+--  IFS/Design Template Version 2.2
+--
+--  Date    Sign     History
+--  ------  ----     -----------------------------------------------------------
+
+DEFINE MODULE        = APPSRV
+DEFINE LU            = IsoUnit
+DEFINE VIEW          = ISO_UNIT
+DEFINE PKG           = ISO_UNIT_API
+DEFINE TABLE         = ISO_UNIT_TAB
+
+DEFINE OBJID         = rowid
+DEFINE OBJKEY        = rowkey
+DEFINE OBJVERSION    = LTRIM(LPAD(TO_CHAR(rowversion),2000))
+
+DEFINE TRUE          = TRUE
+DEFINE FALSE         = FALSE
+
+DEFINE VIEWDEF       = ISO_UNIT_DEF
+DEFINE VIEWBASE      = ISO_UNIT_BASE
+DEFINE VIEW_WEIGHT   = ISO_UNIT_WEIGHT
+
+-----------------------------------------------------------------------------
+-------------------- VIEWS FOR SELECTS --------------------------------------
+-----------------------------------------------------------------------------
+
+PROMPT Creating &VIEW view
+
+
+CREATE OR REPLACE VIEW &VIEW AS
+SELECT unit_code                                          unit_code,
+       NVL(Basic_Data_Translation_API.Get_Basic_Data_Translation('&MODULE', '&LU', unit_code ),description)     description,
+       &PKG..Get_Present_Factor__(unit_code)              present_factor,
+       base_unit                                          base_unit,
+       multi_factor                                       multi_factor,
+       div_factor                                         div_factor,
+       ten_power                                          ten_power,
+       user_defined                                       user_defined,
+       Iso_Unit_Type_API.Decode(unit_type)                unit_type,
+       unit_type                                          unit_type_db,
+       uom_constant                                       uom_constant,
+       &OBJID                                             objid,
+       &OBJVERSION                                        objversion,
+       &OBJKEY                                            objkey
+FROM   &TABLE
+WHERE  used_in_appl = '&TRUE'
+WITH   read only;
+
+COMMENT ON TABLE &VIEW
+   IS 'LU=&LU^PROMPT=Iso Unit^MODULE=&MODULE^OBJVERSION=&OBJVERSION^';
+
+COMMENT ON COLUMN &VIEW..unit_code
+   IS 'FLAGS=KMI-L^DATATYPE=STRING(30)^PROMPT=Unit Code^';
+COMMENT ON COLUMN &VIEW..description
+   IS 'FLAGS=AMIUL^DATATYPE=STRING(50)^PROMPT=Description^';
+COMMENT ON COLUMN &VIEW..present_factor
+   IS 'FLAGS=A---L^DATATYPE=STRING(20)^PROMPT=Factor^';
+COMMENT ON COLUMN &VIEW..base_unit
+   IS 'FLAGS=AMI-L^DATATYPE=STRING(30)^PROMPT=Base Unit^REF=IsoUnit^';
+COMMENT ON COLUMN &VIEW..multi_factor
+   IS 'FLAGS=AMI--^DATATYPE=NUMBER^PROMPT=Multiplication Factor^';
+COMMENT ON COLUMN &VIEW..div_factor
+   IS 'FLAGS=AMI--^DATATYPE=NUMBER^PROMPT=Division Factor^';
+COMMENT ON COLUMN &VIEW..ten_power
+   IS 'FLAGS=AMI--^DATATYPE=NUMBER^PROMPT=Power of Ten^';
+COMMENT ON COLUMN &VIEW..user_defined
+   IS 'FLAGS=A----^DATATYPE=BOOLEAN^PROMPT=User Defined^';
+COMMENT ON COLUMN &VIEW..unit_type
+   IS 'FLAGS=AMI-L^DATATYPE=STRING(200)^ENUMERATION=IsoUnitType^PROMPT=Unit Type^REF=IsoUnitType^';
+COMMENT ON COLUMN &VIEW..unit_type_db
+   IS 'FLAGS=A----^DATATYPE=STRING(20)^PROMPT=Unit Type^';
+COMMENT ON COLUMN &VIEW..uom_constant
+   IS 'FLAGS=AMI--^DATATYPE=NUMBER^PROMPT=Constant^';
+
+PROMPT Creating &VIEWDEF view
+
+
+CREATE OR REPLACE VIEW &VIEWDEF AS
+SELECT unit_code                                          unit_code,
+       NVL(Basic_Data_Translation_API.Get_Basic_Data_Translation('&MODULE', '&LU', unit_code ),description)     description,
+       description                                        db_description,
+       &PKG..Get_Present_Factor__(unit_code)              present_factor,
+       base_unit                                          base_unit,
+       multi_factor                                       multi_factor,
+       div_factor                                         div_factor,
+       ten_power                                          ten_power,
+       user_defined                                       user_defined,
+       used_in_appl                                       used_in_appl,
+       Iso_Unit_Type_API.Decode(unit_type)                unit_type,
+       unit_type                                          unit_type_db,
+       uom_constant                                       uom_constant,
+       &OBJID                                             objid,
+       &OBJVERSION                                        objversion,
+       &OBJKEY                                            objkey
+FROM   &TABLE
+WITH   read only;
+
+COMMENT ON TABLE &VIEWDEF
+   IS 'LU=&LU^PROMPT=Iso Unit^MODULE=&MODULE^';
+
+COMMENT ON COLUMN &VIEWDEF..unit_code
+   IS 'FLAGS=KMI-L^DATATYPE=STRING(30)^PROMPT=Unit Code^';
+COMMENT ON COLUMN &VIEWDEF..description
+   IS 'FLAGS=AMIUL^DATATYPE=STRING(50)^PROMPT=Description^';
+COMMENT ON COLUMN &VIEWDEF..db_description
+   IS 'FLAGS=A---L^DATATYPE=STRING^PROMPT=Db description^';
+COMMENT ON COLUMN &VIEWDEF..present_factor
+   IS 'FLAGS=A---L^DATATYPE=STRING(20)^PROMPT=Factor^';
+COMMENT ON COLUMN &VIEWDEF..base_unit
+   IS 'FLAGS=A-I-L^DATATYPE=STRING(30)^PROMPT=Base Unit^';
+COMMENT ON COLUMN &VIEWDEF..multi_factor
+   IS 'FLAGS=AMI--^DATATYPE=NUMBER^PROMPT=Multiplication Factor^';
+COMMENT ON COLUMN &VIEWDEF..div_factor
+   IS 'FLAGS=AMI--^DATATYPE=NUMBER^PROMPT=Division Factor^';
+COMMENT ON COLUMN &VIEWDEF..ten_power
+   IS 'FLAGS=AMI--^DATATYPE=NUMBER^PROMPT=Power of Ten^';
+COMMENT ON COLUMN &VIEWDEF..user_defined
+   IS 'FLAGS=A----^DATATYPE=BOOLEAN^PROMPT=User Defined^';
+COMMENT ON COLUMN &VIEWDEF..used_in_appl
+   IS 'FLAGS=A--U-^DATATYPE=BOOLEAN^PROMPT=Used in Application^';
+COMMENT ON COLUMN &VIEWDEF..unit_type
+   IS 'FLAGS=AMI-L^DATATYPE=STRING(200)^PROMPT=Unit Type^REF=IsoUnitType/NOCHECK^';
+COMMENT ON COLUMN &VIEW..uom_constant
+   IS 'FLAGS=AMI--^DATATYPE=NUMBER^PROMPT=Constant^';
+
+PROMPT Creating &VIEWBASE view
+
+CREATE OR REPLACE VIEW &VIEWBASE AS
+SELECT unit_code                                          unit_code,
+       NVL(Basic_Data_Translation_API.Get_Basic_Data_Translation('&MODULE', '&LU', unit_code ),description)     description,
+       &OBJID                                             objid,
+       &OBJVERSION                                        objversion
+FROM   &TABLE
+WHERE  used_in_appl = '&TRUE'
+AND    unit_code = base_unit
+WITH   read only;
+
+COMMENT ON TABLE &VIEWBASE
+   IS 'LU=&LU^PROMPT=Base Unit^MODULE=&MODULE^';
+
+COMMENT ON COLUMN &VIEWBASE..unit_code
+   IS 'FLAGS=KMI-L^DATATYPE=STRING(30)^PROMPT=Unit Code^';
+COMMENT ON COLUMN &VIEWBASE..description
+   IS 'FLAGS=AMIUL^DATATYPE=STRING(50)^PROMPT=Description^';
+
+PROMPT Creating &VIEW_WEIGHT view
+
+
+CREATE OR REPLACE VIEW &VIEW_WEIGHT AS
+SELECT unit_code                                          unit_code,
+       NVL(Basic_Data_Translation_API.Get_Basic_Data_Translation('&MODULE', '&LU', unit_code ),description)     description,
+       base_unit                                          base_unit,
+       Iso_Unit_Type_API.Decode(unit_type)                unit_type,
+       &OBJID                                             objid,
+       &OBJVERSION                                        objversion,
+       &OBJKEY                                            objkey
+FROM   &TABLE
+WHERE  used_in_appl = '&TRUE'
+AND    unit_type = 'WEIGHT'
+WITH   read only;
+
+COMMENT ON TABLE &VIEW_WEIGHT
+   IS 'LU=&LU^PROMPT=Iso Unit^MODULE=&MODULE^';
+
+COMMENT ON COLUMN &VIEW_WEIGHT..unit_code
+   IS 'FLAGS=KMI-L^DATATYPE=STRING(30)^PROMPT=Unit Code^';
+COMMENT ON COLUMN &VIEW_WEIGHT..description
+   IS 'FLAGS=AMIUL^DATATYPE=STRING(50)^PROMPT=Description^';
+COMMENT ON COLUMN &VIEW_WEIGHT..unit_type
+   IS 'FLAGS=AMI-L^DATATYPE=STRING(200)^PROMPT=Unit Type^';
+
+-----------------------------------------------------------------------------
+-------------------- PACKAGES FOR METHODS -----------------------------------
+-----------------------------------------------------------------------------
+
+PROMPT Creating &PKG implementation
+
+CREATE OR REPLACE PACKAGE BODY &PKG IS
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC IMPLEMENTATION METHOD DECLARATIONS ---------
+-----------------------------------------------------------------------------
+
+FUNCTION Check_Not_Activated___ (
+   unit_code_ IN VARCHAR2 ) RETURN BOOLEAN;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS ----------------------------
+-----------------------------------------------------------------------------
+-- Lock___
+--    Client-support to lock a specific instance of the logical unit.
+--
+-- Get_Record___
+--    Get LU-record from the database with a specified object identity.
+--
+-- Get_Instance___
+--    Get LU-record from the database with specified key columns.
+--
+-- Check_Exist___
+--    Check if a specific LU-instance already exist in the database.
+--
+-- Get_Objversion___
+--    Get the current OBJVERSION for a specific LU-instance.
+-----------------------------------------------------------------------------
+
+PROCEDURE Lock___ (
+   objid_      IN VARCHAR2,
+   objversion_ IN VARCHAR2 )
+IS
+   row_changed EXCEPTION;
+   row_deleted EXCEPTION;
+   row_locked  EXCEPTION;
+   PRAGMA      exception_init(row_locked, -0054);
+   dummy_      NUMBER;
+   CURSOR lock_control IS
+      SELECT 1
+      FROM   &TABLE
+      WHERE  &OBJID = objid_
+      AND    &OBJVERSION = objversion_
+      FOR UPDATE NOWAIT;
+   CURSOR exist_control IS
+      SELECT 1
+      FROM   &TABLE
+      WHERE  &OBJID = objid_;
+BEGIN
+   OPEN lock_control;
+   FETCH lock_control INTO dummy_;
+   IF (lock_control%FOUND) THEN
+      CLOSE lock_control;
+      RETURN;
+   ELSE
+      CLOSE lock_control;
+   END IF;
+
+   --CLOSE lock_control;
+   OPEN exist_control;
+   FETCH exist_control INTO dummy_;
+   IF (exist_control%FOUND) THEN
+      CLOSE exist_control;
+      RAISE row_changed;
+   ELSE
+      CLOSE exist_control;
+      RAISE row_deleted;
+   END IF;
+EXCEPTION
+   WHEN row_locked THEN
+      Error_SYS.Record_Locked(lu_name_);
+   WHEN row_changed THEN
+      Error_SYS.Record_Modified(lu_name_);
+   WHEN row_deleted THEN
+      Error_SYS.Record_Removed(lu_name_);
+END Lock___;
+
+
+FUNCTION Get_Record___ (
+   objid_ IN VARCHAR2 ) RETURN &TABLE%ROWTYPE
+IS
+   lu_rec_ &TABLE%ROWTYPE;
+   CURSOR getrec IS
+      SELECT *
+      FROM   &TABLE
+      WHERE  &OBJID = objid_;
+BEGIN
+   OPEN getrec;
+   FETCH getrec INTO lu_rec_;
+   IF (getrec%NOTFOUND) THEN
+      CLOSE getrec;
+      Error_SYS.Record_Removed(lu_name_);
+   ELSE
+      CLOSE getrec;
+   END IF;
+   RETURN(lu_rec_);
+END Get_Record___;
+
+
+FUNCTION Get_Instance___ (
+   unit_code_ IN VARCHAR2 ) RETURN &VIEW%ROWTYPE
+IS
+   lu_rec_ &VIEW%ROWTYPE;
+   CURSOR getrec IS
+      SELECT *
+      FROM   &VIEW
+      WHERE  unit_code = unit_code_;
+BEGIN
+   OPEN getrec;
+   FETCH getrec INTO lu_rec_;
+   CLOSE getrec;
+   RETURN(lu_rec_);
+END Get_Instance___;
+
+
+
+PROCEDURE Get_Objversion___ (
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT VARCHAR2 )
+IS
+BEGIN
+   SELECT OBJVERSION
+      INTO  objversion_
+      FROM  &VIEWDEF
+      WHERE OBJID = objid_;
+END Get_Objversion___;
+
+
+FUNCTION Get_Objid_By_Keys___(
+    unit_code_  IN VARCHAR2) RETURN VARCHAR2
+IS
+   CURSOR get_objid IS
+      SELECT ROWID
+      FROM  &TABLE
+      WHERE unit_code = unit_code_;
+   objid_  VARCHAR2(2000);
+BEGIN
+   OPEN get_objid;
+   FETCH get_objid INTO objid_;
+   CLOSE get_objid;
+   RETURN objid_;
+END Get_Objid_By_Keys___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR INSERT -----------------
+-----------------------------------------------------------------------------
+-- Prepare_Insert___
+--    Set all default values for a new instance (ON-NEW-RECORD) of this
+--    logical unit by calling procedure Add_Attr.
+--
+-- Unpack_Check_Insert___
+--    Unpack the attribute list, check all attributes from the client
+--    and generate all default values before creation of the new object.
+--
+-- Insert___
+--    Insert a new LU-instance into the database and return the values
+--    for OBJID and OBJVERSION.
+-----------------------------------------------------------------------------
+
+PROCEDURE Prepare_Insert___ (
+   attr_ IN OUT VARCHAR2 )
+IS
+   base_unit_     &VIEW..base_unit%TYPE;
+   unit_type_     &VIEW..unit_type%TYPE;
+BEGIN
+   base_unit_     := Client_SYS.Get_Item_Value('BASE_UNIT', attr_);
+   Client_SYS.Clear_Attr(attr_);
+   Client_SYS.Add_To_Attr('USER_DEFINED', '&TRUE', attr_);
+   Client_SYS.Add_To_Attr('PRESENT_FACTOR', '1', attr_);
+   IF (base_unit_ IS NOT NULL) THEN
+      unit_type_ := Get_Unit_Type(base_unit_);
+   ELSE
+      unit_type_ := Iso_Unit_Type_API.Decode('NOTUSED');
+   END IF;
+   Client_SYS.Add_To_Attr('UNIT_TYPE', unit_type_, attr_);
+   Client_SYS.Add_To_Attr('UOM_CONSTANT', '0', attr_);
+END Prepare_Insert___;
+
+
+PROCEDURE Unpack_Check_Insert___ (
+   attr_   IN OUT VARCHAR2,
+   newrec_ IN OUT &TABLE%ROWTYPE )
+IS
+   ptr_       NUMBER;
+   name_      VARCHAR2(30);
+   value_     VARCHAR2(2000);
+   lang_      VARCHAR2(10);
+   unit_type_ &VIEWDEF..unit_type%TYPE;
+BEGIN
+   newrec_.multi_factor := 1;
+   newrec_.div_factor := 1;
+   newrec_.ten_power := 0;
+   ptr_ := NULL;
+   WHILE (Client_SYS.Get_Next_From_Attr(attr_, ptr_, name_, value_)) LOOP
+      IF (name_ = 'UNIT_CODE') THEN
+         Attribute_Definition_API.Check_Value(value_, lu_name_, name_);
+         newrec_.unit_code := value_;
+      ELSIF (name_ = 'DESCRIPTION') THEN
+         lang_ := Language_SYS.Get_Language;
+         IF (lang_ = 'PROG') THEN
+            lang_ := 'en';
+         ELSE
+            Iso_Language_API.Exist(lang_);
+         END IF;
+         newrec_.description := value_;
+      ELSIF (name_ = 'PRESENT_FACTOR') THEN
+         newrec_.multi_factor := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'BASE_UNIT') THEN
+         newrec_.base_unit := value_;
+         IF (value_ IS NOT NULL) THEN
+            Iso_Unit_API.Check_Base(newrec_.base_unit);
+         END IF;
+      ELSIF (name_ = 'MULTI_FACTOR') THEN
+         newrec_.multi_factor := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'DIV_FACTOR') THEN
+         newrec_.div_factor := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'TEN_POWER') THEN
+         newrec_.ten_power := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'USER_DEFINED') THEN
+         NULL;
+      ELSIF (name_ = 'UNIT_TYPE') THEN
+         newrec_.unit_type := Iso_Unit_Type_API.Encode(value_);
+         IF (value_ IS NOT NULL) THEN
+            Iso_Unit_Type_API.Exist(value_);
+         END IF;
+      ELSIF (name_ = 'UNIT_TYPE_DB') THEN
+         newrec_.unit_type := value_;
+         IF (value_ IS NOT NULL) THEN
+            Iso_Unit_Type_API.Exist_Db(value_);
+         END IF;
+      ELSIF (name_ = 'UOM_CONSTANT') THEN
+         newrec_.uom_constant := Client_SYS.Attr_Value_To_Number(value_);
+      ELSE
+         Error_SYS.Item_Not_Exist(lu_name_, name_, value_);
+      END IF;
+   END LOOP;
+   Client_SYS.Clear_Attr(attr_);
+   Error_SYS.Check_Not_Null(lu_name_, 'UNIT_CODE', newrec_.unit_code);
+   Error_SYS.Check_Not_Null(lu_name_, 'DESCRIPTION', newrec_.description);
+   Error_SYS.Check_Not_Null(lu_name_, 'MULTI_FACTOR', newrec_.multi_factor);
+   Error_SYS.Check_Not_Null(lu_name_, 'DIV_FACTOR', newrec_.div_factor);
+   Error_SYS.Check_Not_Null(lu_name_, 'TEN_POWER', newrec_.ten_power);
+   Error_SYS.Check_Not_Null(lu_name_, 'UNIT_TYPE', newrec_.unit_type);
+   Error_SYS.Check_Not_Null(lu_name_, 'UOM_CONSTANT', newrec_.uom_constant);
+
+   unit_type_ := Iso_Unit_Type_API.Encode(Get_Unit_Type(newrec_.base_unit));
+   IF (NVL(unit_type_, newrec_.unit_type) <> newrec_.unit_type) THEN
+      newrec_.unit_type := unit_type_;
+      Client_SYS.Add_To_Attr('UNIT_TYPE', unit_type_, attr_);
+      Client_SYS.Add_Info(lu_name_, 'DERIVED_UNIT_TYPE: Unit type has been set to :P1. Derived from the base unit.', unit_type_);
+   END IF;
+EXCEPTION
+   WHEN value_error THEN
+      Error_SYS.Item_Format(lu_name_, name_, value_);
+END Unpack_Check_Insert___;
+
+
+PROCEDURE Insert___ (
+   objid_      OUT    VARCHAR2,
+   objversion_ OUT    VARCHAR2,
+   newrec_     IN OUT &TABLE%ROWTYPE,
+   attr_       IN OUT VARCHAR2 )
+IS
+BEGIN
+   IF (NVL(newrec_.base_unit, newrec_.unit_code) = newrec_.unit_code) THEN
+      IF (newrec_.base_unit IS NULL) THEN
+         newrec_.base_unit := newrec_.unit_code;
+         Client_SYS.Add_To_Attr('BASE_UNIT', newrec_.base_unit, attr_);
+      END IF;
+      IF (newrec_.multi_factor <> 1) THEN
+         newrec_.multi_factor := 1;
+         Client_SYS.Add_To_Attr('MULTI_FACTOR', newrec_.multi_factor, attr_);
+      END IF;
+      IF (newrec_.div_factor <> 1) THEN
+         newrec_.div_factor := 1;
+         Client_SYS.Add_To_Attr('DIV_FACTOR', newrec_.div_factor, attr_);
+      END IF;
+      IF (newrec_.ten_power <> 0) THEN
+         newrec_.ten_power := 0;
+         Client_SYS.Add_To_Attr('TEN_POWER', newrec_.ten_power, attr_);
+      END IF;
+      IF (newrec_.uom_constant <> 0) THEN
+         newrec_.uom_constant := 0;
+         Client_SYS.Add_To_Attr('UOM_CONSTANT', newrec_.uom_constant, attr_);
+      END IF;
+   END IF;
+
+   INSERT
+      INTO &TABLE (
+         unit_code,
+         description,
+         base_unit,
+         multi_factor,
+         div_factor,
+         ten_power,
+         user_defined,
+         unit_type,
+         used_in_appl,
+         uom_constant,
+         rowversion)
+      VALUES (
+         newrec_.unit_code,
+         newrec_.description,
+         newrec_.base_unit,
+         newrec_.multi_factor,
+         newrec_.div_factor,
+         newrec_.ten_power,
+         '&TRUE',
+         newrec_.unit_type,
+         '&TRUE',
+         newrec_.uom_constant,
+         1);
+   SELECT OBJID, OBJVERSION
+      INTO  objid_, objversion_
+      FROM  &VIEWDEF
+      WHERE unit_code = newrec_.unit_code;
+   Client_SYS.Add_To_Attr('PRESENT_FACTOR', SUBSTR(Get_Present_Factor__(newrec_.unit_code), 1, 20), attr_);
+   Basic_Data_Translation_API.Insert_Prog_Translation('&MODULE',
+                                                      '&LU',newrec_.unit_code,
+                                                      newrec_.description);
+
+EXCEPTION
+   WHEN dup_val_on_index THEN
+      IF Check_Not_Activated___(newrec_.unit_code) THEN
+         Error_SYS.Record_General(lu_name_, 'UNITNACTIV: Unit code [:P1] exists but is not activated.', newrec_.unit_code);
+      ELSE
+         Error_SYS.Record_Exist(lu_name_);
+      END IF;
+END Insert___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR UPDATE -----------------
+-----------------------------------------------------------------------------
+-- Unpack_Check_Update___
+--    Unpack the attribute list, check all attributes from the client
+--    and generate all default values before modifying the object.
+--
+-- Update___
+--    Update an existing LU-instance in the database and return the
+--    the new OBJVERSION.
+-----------------------------------------------------------------------------
+
+PROCEDURE Unpack_Check_Update___ (
+   attr_   IN OUT VARCHAR2,
+   newrec_ IN OUT &TABLE%ROWTYPE,
+   objid_  IN     VARCHAR2 )
+IS
+   ptr_   NUMBER;
+   name_  VARCHAR2(30);
+   value_ VARCHAR2(2000);
+   lang_  VARCHAR2(10);
+BEGIN
+   ptr_ := NULL;
+   WHILE (Client_SYS.Get_Next_From_Attr(attr_, ptr_, name_, value_)) LOOP
+      IF (name_ = 'UNIT_CODE') THEN
+         Error_SYS.Item_Update(lu_name_, 'UNIT_CODE');
+      ELSIF (name_ = 'DESCRIPTION') THEN
+         lang_ := Language_SYS.Get_Language;
+         IF (lang_ = 'PROG') THEN
+            lang_ := 'en';
+         ELSE
+            Iso_Language_API.Exist(lang_);
+         END IF;
+         newrec_.description := value_;
+      ELSIF (name_ = 'PRESENT_FACTOR') THEN
+         Error_SYS.Item_Update(lu_name_, 'PRESENT_FACTOR');
+      ELSIF (name_ = 'BASE_UNIT') THEN
+         Error_SYS.Item_Update(lu_name_, 'BASE_UNIT');
+      ELSIF (name_ = 'MULTI_FACTOR') THEN
+         Error_SYS.Item_Update(lu_name_, 'MULTI_FACTOR');
+      ELSIF (name_ = 'DIV_FACTOR') THEN
+         Error_SYS.Item_Update(lu_name_, 'DIV_FACTOR');
+      ELSIF (name_ = 'TEN_POWER') THEN
+         Error_SYS.Item_Update(lu_name_, 'TEN_POWER');
+      ELSIF (name_ = 'USER_DEFINED') THEN
+         Error_SYS.Item_Update(lu_name_, 'USER_DEFINED');
+      ELSIF (name_ = 'UNIT_TYPE') THEN
+         Error_SYS.Item_Update(lu_name_, 'UNIT_TYPE');
+      ELSIF (name_ = 'UNIT_TYPE_DB') THEN
+         Error_SYS.Item_Update(lu_name_, 'UNIT_TYPE');
+      ELSIF (name_ = 'USED_IN_APPL') THEN
+         newrec_.used_in_appl := value_;
+         IF (NVL(newrec_.user_defined, '&FALSE') = '&TRUE') THEN
+            Error_SYS.Item_Update(lu_name_, 'USED_IN_APPL', 'ERRUPDUSED: The field [:P1] is not valid for update for user defined codes.', 'USED_IN_APPL');
+         END IF;
+      ELSIF (name_ = 'UOM_CONSTANT') THEN
+         newrec_.uom_constant := Client_SYS.Attr_Value_To_Number(value_);
+      ELSE
+         Error_SYS.Item_Not_Exist(lu_name_, name_, value_);
+      END IF;
+   END LOOP;
+   Client_SYS.Clear_Attr(attr_);
+   Error_SYS.Check_Not_Null(lu_name_, 'UNIT_CODE', newrec_.unit_code);
+   Error_SYS.Check_Not_Null(lu_name_, 'DESCRIPTION', newrec_.description);
+   Error_SYS.Check_Not_Null(lu_name_, 'BASE_UNIT', newrec_.base_unit);
+   Error_SYS.Check_Not_Null(lu_name_, 'MULTI_FACTOR', newrec_.multi_factor);
+   Error_SYS.Check_Not_Null(lu_name_, 'DIV_FACTOR', newrec_.div_factor);
+   Error_SYS.Check_Not_Null(lu_name_, 'TEN_POWER', newrec_.ten_power);
+   Error_SYS.Check_Not_Null(lu_name_, 'UNIT_TYPE', newrec_.unit_type);
+   Error_SYS.Check_Not_Null(lu_name_, 'UOM_CONSTANT', newrec_.uom_constant);
+EXCEPTION
+   WHEN value_error THEN
+      Error_SYS.Item_Format(lu_name_, name_, value_);
+END Unpack_Check_Update___;
+
+
+PROCEDURE Update___ (
+   objid_      IN     VARCHAR2,
+   oldrec_     IN     &TABLE%ROWTYPE,
+   newrec_     IN OUT &TABLE%ROWTYPE,
+   attr_       IN OUT VARCHAR2 )
+IS
+   used_in_appl_     &VIEWDEF..used_in_appl%TYPE;
+   curr_user_lang_   VARCHAR2(10);
+BEGIN
+   curr_user_lang_ := Fnd_Session_Api.Get_Language;
+   IF ((newrec_.used_in_appl = '&TRUE') OR (newrec_.user_defined = '&TRUE')) THEN
+      used_in_appl_ := '&TRUE';
+   ELSE
+      used_in_appl_ := '&FALSE';
+   END IF;
+   UPDATE &TABLE
+      SET unit_code = newrec_.unit_code,
+          description = newrec_.description,
+          base_unit = newrec_.base_unit,
+          multi_factor = newrec_.multi_factor,
+          div_factor = newrec_.div_factor,
+          ten_power = newrec_.ten_power,
+          user_defined = newrec_.user_defined,
+          unit_type = newrec_.unit_type,
+          used_in_appl = used_in_appl_,
+          uom_constant = newrec_.uom_constant,
+          rowversion = rowversion+1
+      WHERE &OBJID = objid_;
+
+   Basic_Data_Translation_API.Insert_Basic_Data_Translation('&MODULE',
+                                                            '&LU',
+                                                            newrec_.unit_code,
+                                                            curr_user_lang_,
+                                                            newrec_.description,
+                                                            oldrec_.description);
+
+
+EXCEPTION
+   WHEN dup_val_on_index THEN
+      Error_SYS.Record_Exist(lu_name_);
+END Update___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR DELETE -----------------
+-----------------------------------------------------------------------------
+-- Check_Delete___
+--    Checks whether a specific LU-record may be removed or not.
+--    The procedure should check business rules like attribute values
+--    as well as database constraints (defined or not).
+--
+-- Delete___
+--    Deletion of the specific LU-object from the database.
+-----------------------------------------------------------------------------
+
+PROCEDURE Check_Delete___ (
+   remrec_ IN &TABLE%ROWTYPE )
+IS
+   key_ VARCHAR2(2000);
+BEGIN
+   key_ := remrec_.unit_code || '^';
+   IF (NVL(remrec_.user_defined, '&FALSE') <> '&TRUE') THEN
+      Error_SYS.Record_General(lu_name_, 'ISODELERR: Can not remove ISO-unit.');
+   ELSIF (remrec_.unit_code = remrec_.base_unit) THEN
+      -- dirty solution due to bug in FND
+      SAVEPOINT check_delete_base_iso_code;
+      UPDATE &TABLE
+      SET base_unit = '*'
+      WHERE unit_code = remrec_.unit_code;
+   END IF;
+   Reference_SYS.Check_Restricted_Delete(lu_name_, key_);
+END Check_Delete___;
+
+
+PROCEDURE Delete___ (
+   objid_  IN VARCHAR2,
+   remrec_ IN &TABLE%ROWTYPE )
+IS
+   key_ VARCHAR2(2000);
+BEGIN
+   key_ := remrec_.unit_code || '^';
+   Reference_SYS.Do_Cascade_Delete(lu_name_, key_);
+   DELETE
+      FROM  &TABLE
+      WHERE &OBJID = objid_;
+   Basic_Data_Translation_API.Remove_Basic_Data_Translation('&MODULE',
+                                                       '&LU',
+                                                       remrec_.unit_code);
+
+END Delete___;
+
+-----------------------------------------------------------------------------
+-------------------- PRIVATE BASE METHODS -----------------------------------
+-----------------------------------------------------------------------------
+-- Lock__
+--    Client-support to lock a specific instance of the logical unit.
+--
+-- New__
+--    Client-support interface to create LU instances.
+--       action_ = 'PREPARE'
+--          Default values and handle of information to client.
+--          The default values are set in procedure Prepare_Insert___.
+--       action_ = 'CHECK'
+--          Check all attributes before creating new object and handle of
+--          information to client. The attribute list is unpacked, checked
+--          and prepared (defaults) in procedure Unpack_Check_Insert___.
+--       action_ = 'DO'
+--          Creation of new instances of the logical unit and handle of
+--          information to client. The attribute list is unpacked, checked
+--          and prepared (defaults) in procedure Unpack_Check_Insert___
+--          before calling procedure Insert___.
+--
+-- Modify__
+--    Client-support interface to modify attributes for LU instances.
+--       action_ = 'CHECK'
+--          Check all attributes before modifying an existing object and
+--          handle of information to client. The attribute list is unpacked,
+--          checked and prepared(defaults) in procedure Unpack_Check_Update___.
+--       action_ = 'DO'
+--          Modification of an existing instance of the logical unit. The
+--          procedure unpacks the attributes, checks all values before
+--          procedure Update___ is called.
+--
+-- Remove__
+--    Client-support interface to remove LU instances.
+--       action_ = 'CHECK'
+--          Check whether a specific LU-instance may be removed or not.
+--          The procedure fetches the complete record by calling procedure
+--          Get_Record___. Then the check is made by calling procedure
+--          Check_Delete___.
+--       action_ = 'DO'
+--          Remove an existing instance of the logical unit. The procedure
+--          fetches the complete LU-record, checks for a delete and then
+--          deletes the record by calling procedure Delete___.
+-- Insert_Lu_Data_Rec__
+--     Inserts data to Language_Sys table for translation support.
+--     called from IsoUnit.ins
+-----------------------------------------------------------------------------
+
+PROCEDURE Lock__ (
+   info_       OUT VARCHAR2,
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2 )
+IS
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Lock__');
+   Lock___(objid_, objversion_);
+   info_ := Client_SYS.Get_All_Info;
+END Lock__;
+
+
+PROCEDURE New__ (
+   info_       OUT    VARCHAR2,
+   objid_      OUT    VARCHAR2,
+   objversion_ OUT    VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   newrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'New__');
+   IF (action_ = 'PREPARE') THEN
+      Prepare_Insert___(attr_);
+   ELSIF (action_ = 'CHECK') THEN
+      Unpack_Check_Insert___(attr_, newrec_);
+   ELSIF (action_ = 'DO') THEN
+      Unpack_Check_Insert___(attr_, newrec_);
+      Insert___(objid_, objversion_, newrec_, attr_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END New__;
+
+
+PROCEDURE Modify__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   oldrec_ &TABLE%ROWTYPE;
+   newrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Modify__');
+   IF (action_ = 'CHECK') THEN
+      newrec_ := Get_Record___(objid_);
+      Unpack_Check_Update___(attr_, newrec_, objid_);
+   ELSIF (action_ = 'DO') THEN
+      Lock___(objid_, objversion_);
+      oldrec_ := Get_Record___(objid_);
+      newrec_ := oldrec_;
+      Unpack_Check_Update___(attr_, newrec_, objid_);
+      Update___(objid_, oldrec_, newrec_, attr_);
+      Get_Objversion___(objid_, objversion_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Modify__;
+
+
+PROCEDURE Remove__ (
+   info_       OUT VARCHAR2,
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2,
+   action_     IN  VARCHAR2 )
+IS
+   remrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Remove__');
+   IF (action_ = 'CHECK') THEN
+      remrec_ := Get_Record___(objid_);
+      Check_Delete___(remrec_);
+   ELSIF (action_ = 'DO') THEN
+      Lock___(objid_, objversion_);
+      remrec_ := Get_Record___(objid_);
+      Check_Delete___(remrec_);
+      Delete___(objid_, remrec_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Remove__;
+
+-----------------------------------------------------------------------------
+-------------------- PUBLIC BASE METHODS ------------------------------------
+-----------------------------------------------------------------------------
+-- Exist
+--   Checks if given pointer (e.g. primary key) to an instance of this
+--   logical unit exists. If not an exception will be raised.
+-----------------------------------------------------------------------------
+
+PROCEDURE Exist (
+   unit_code_ IN VARCHAR2 )
+IS
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Exist', TRUE);
+   IF (NOT Check_Exist___(unit_code_)) THEN
+      Error_SYS.Record_Not_Exist(lu_name_);
+   END IF;
+END Exist;
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC IMPLEMENTATION METHODS ---------------------
+-----------------------------------------------------------------------------
+
+-- Check_Not_Activated___
+--    Checks if the unit code is used in the application.
+
+FUNCTION Check_Not_Activated___ (
+   unit_code_ IN VARCHAR2 ) RETURN BOOLEAN
+IS
+   dummy_ NUMBER;
+   CURSOR exist_control IS
+      SELECT 1
+      FROM &VIEWDEF
+      WHERE unit_code = unit_code_
+      AND NVL(used_in_appl, '&FALSE') = '&FALSE';
+BEGIN
+   OPEN exist_control;
+   FETCH exist_control INTO dummy_;
+   IF (exist_control%FOUND) THEN
+      CLOSE exist_control;
+      RETURN TRUE;
+   ELSE
+      CLOSE exist_control;
+      RETURN FALSE;
+   END IF;
+END Check_Not_Activated___;
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PRIVATE METHODS ----------------------------
+-----------------------------------------------------------------------------
+
+-- Check_Application_Use__
+--    A private routine that controls marked codes on module update.
+
+FUNCTION Check_Application_Use__ (
+   used_in_appl_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+BEGIN
+   IF (UPPER(used_in_appl_) LIKE 'T%') THEN
+      RETURN '&TRUE';
+   ELSE
+      RETURN '&FALSE';
+   END IF;
+END Check_Application_Use__;
+
+
+-- Set_Unit__
+--    A private procedure that creates or modifies ISO-units.
+--    Input parameters:
+--    Description - unit description in language DbLangCode
+--    MultiFactor - multiplication factor
+--    DivFactor - divisions factor
+--    TenPower - power of ten for convert factor
+--    BaseUnit - code for base unit for the actual unit
+--    DbLangCode - language code for the description. Server language if NULL
+
+PROCEDURE Set_Unit__ (
+   unit_code_    IN VARCHAR2,
+   description_  IN VARCHAR2,
+   multi_factor_ IN NUMBER DEFAULT 1,
+   div_factor_   IN NUMBER DEFAULT 1,
+   ten_power_    IN NUMBER DEFAULT 0,
+   base_unit_    IN VARCHAR2 DEFAULT NULL,
+   db_lang_code_ IN VARCHAR2 DEFAULT NULL,
+   uom_constant_ IN NUMBER DEFAULT 0 )
+IS
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Set_Unit__');
+   INSERT
+      INTO &TABLE (
+         unit_code,
+         description,
+         base_unit,
+         multi_factor,
+         div_factor,
+         ten_power,
+         user_defined,
+         unit_type,
+         used_in_appl,
+         uom_constant,
+         rowversion)
+      VALUES (
+         unit_code_,
+         description_,
+         NVL(base_unit_, unit_code_),
+         multi_factor_,
+         div_factor_,
+         ten_power_,
+         '&FALSE',
+         'NOTUSED',
+         '&FALSE',
+         uom_constant_,
+         1);
+EXCEPTION
+   WHEN dup_val_on_index THEN
+      UPDATE &TABLE
+         SET description  = description_,
+             base_unit = NVL(base_unit_, unit_code_),
+             multi_factor = multi_factor_,
+             div_factor = div_factor_,
+             ten_power = ten_power_,
+             user_defined = '&FALSE',
+             used_in_appl = &PKG..Check_Application_Use__(used_in_appl),
+             rowversion = rowversion+1
+         WHERE unit_code = unit_code_;
+END Set_Unit__;
+
+
+-- Set_Description__
+--    Creates a unit description in additional language or modifies the existing one.
+--    If DbLangCode is NULL the actual language from server is taken (Language_SYS.Get_Language).
+
+PROCEDURE Set_Description__ (
+   unit_code_    IN VARCHAR2,
+   description_  IN VARCHAR2,
+   db_lang_code_ IN VARCHAR2 DEFAULT NULL )
+IS
+   lang_ VARCHAR2(2);
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Set_Description__');
+   IF NVL(LENGTH(db_lang_code_),0) = 2 THEN
+      lang_ := db_lang_code_;
+   ELSE
+      lang_ := Iso_Language_API.Encode(db_lang_code_);
+   END IF;
+
+   UPDATE &TABLE
+      SET description  = SUBSTR(Basic_Data_Translation_API.Get_Basic_Data_Translation('&MODULE',
+                                                                          '&LU',
+                                                                          unit_code_,
+                                                                          lang_ ),1,50),
+
+          used_in_appl = &PKG..Check_Application_Use__(used_in_appl),
+          rowversion = rowversion+1
+      WHERE unit_code = unit_code_;
+END Set_Description__;
+
+
+-- Wrong
+-- Get_Present_Factor__
+--    A private method (used in the view) that shows convert factor in the 'user friendly' manner.
+
+FUNCTION Get_Present_Factor__ (
+   unit_code_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+   factor_ NUMBER;
+   multi_  NUMBER;
+   power_  NUMBER;
+
+   FUNCTION Trim_Dec___(
+      num_ IN NUMBER ) RETURN VARCHAR2
+   IS
+      nls_mask_ VARCHAR2(81) := LPAD(RPAD('D', 31, '9'), 62, '9');
+      nls_fmt_  VARCHAR2(30) := 'NLS_NUMERIC_CHARACTERS=''.,''';
+   BEGIN
+      RETURN RTRIM(RTRIM(TO_CHAR(num_, nls_mask_, nls_fmt_), '0'), '.');
+   END Trim_Dec___;
+
+   FUNCTION Fix_Num___ (
+      num_ IN NUMBER,
+      dec_ IN NUMBER,
+      pow_ IN NUMBER ) RETURN VARCHAR2
+   IS
+      notation_  VARCHAR2(15);
+      max_power_ NUMBER;
+   BEGIN
+      notation_ := NVL(Object_Property_API.Get_Value('IsoUnit', '*', 'NOTATION'), 'DEFAULT');
+      max_power_ := TO_NUMBER(NVL(Object_Property_API.Get_Value('IsoUnit', '*', 'MAX_POWER'), '2'));
+      IF (notation_ = 'SCIENTIFIC') THEN
+         notation_ := ' E ';
+      ELSE
+         notation_ := '*10^';
+      END IF;
+      IF (pow_ BETWEEN 0 AND max_power_) THEN
+         RETURN LPAD(Trim_Dec___(ROUND(num_ * POWER(10, pow_), dec_)), dec_ + 2) || '       ';
+      ELSIF (pow_ BETWEEN -1 * (max_power_ - 1) AND -1) THEN
+         RETURN LPAD('0' || Trim_Dec___(ROUND(num_ * POWER(10, pow_), dec_)), dec_ + 2) || '       ';
+      ELSE
+         RETURN LPAD(Trim_Dec___(ROUND(num_, dec_)), dec_ + 2) || notation_ || RPAD(TO_CHAR(power_), 3);
+      END IF;
+   END Fix_Num___;
+BEGIN
+   SELECT div_factor, multi_factor, ten_power
+   INTO factor_, multi_, power_
+   FROM &VIEWDEF
+   WHERE unit_code = unit_code_;
+
+   IF (factor_ = 0) THEN
+      RETURN NULL;
+   ELSE
+      factor_ := multi_ / factor_;
+      LOOP
+         IF (factor_ >= 10) THEN
+            factor_ := factor_ / 10;
+            power_ := power_ + 1;
+         ELSIF (factor_ < 1) THEN
+            factor_ := factor_ * 10;
+            power_ := power_ - 1;
+         ELSE
+            RETURN Fix_Num___(factor_, 8, power_);
+         END IF;
+      END LOOP;
+   END IF;
+EXCEPTION
+   WHEN no_data_found THEN
+      RETURN NULL;
+END Get_Present_Factor__;
+
+--Correct
+FUNCTION Get_Present_Factor__2 (
+   unit_code_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+   factor_ NUMBER;
+   multi_  NUMBER;
+   power_  NUMBER;
+
+   FUNCTION Trim_Dec___(
+      num_ IN NUMBER ) RETURN VARCHAR2
+   IS
+      nls_mask_ VARCHAR2(81) := LPAD(RPAD('D', 31, '9'), 62, '9');
+      nls_fmt_  VARCHAR2(30) := 'NLS_NUMERIC_CHARACTERS=''.,''';
+   BEGIN
+      RETURN RTRIM(RTRIM(TO_CHAR(num_, nls_mask_, nls_fmt_), '0'), '.');
+   END Trim_Dec___;
+
+   FUNCTION Fix_Num___ (
+      num_ IN NUMBER,
+      dec_ IN NUMBER,
+      pow_ IN NUMBER ) RETURN VARCHAR2
+   IS
+      notation_  VARCHAR2(15);
+      max_power_ NUMBER;
+   BEGIN
+      notation_ := NVL(Object_Property_API.Get_Value('IsoUnit', '*', 'NOTATION'), 'DEFAULT');
+      max_power_ := TO_NUMBER(NVL(Object_Property_API.Get_Value('IsoUnit', '*', 'MAX_POWER'), '2'));
+      IF (notation_ = 'SCIENTIFIC') THEN
+         notation_ := ' E ';
+      ELSE
+         notation_ := '*10^';
+      END IF;
+      IF (pow_ BETWEEN 0 AND max_power_) THEN
+         RETURN LPAD(Trim_Dec___(ROUND(num_ * POWER(10, pow_), dec_)), dec_ + 2) || '       ';
+      ELSIF (pow_ BETWEEN -1 * (max_power_ - 1) AND -1) THEN
+         RETURN LPAD('0' || Trim_Dec___(ROUND(num_ * POWER(10, pow_), dec_)), dec_ + 2) || '       ';
+      ELSE
+         RETURN LPAD(Trim_Dec___(ROUND(num_, dec_)), dec_ + 2) || notation_ || RPAD(TO_CHAR(power_), 3);
+      END IF;
+   END Fix_Num___;
+BEGIN
+   SELECT div_factor, multi_factor, ten_power
+   INTO factor_, multi_, power_
+   FROM &VIEWDEF
+   WHERE unit_code = unit_code_;
+
+   IF (factor_ = 0) THEN
+      RETURN NULL;
+   ELSE
+      factor_ := multi_ / factor_;
+      LOOP
+         IF (factor_ >= 10) THEN
+            factor_ := factor_ / 10;
+            power_ := power_ + 1;
+         ELSIF (factor_ < 1) THEN
+            factor_ := factor_ * 10;
+            power_ := power_ - 1;
+         ELSE
+            RETURN Fix_Num___(factor_, 8, power_);
+         END IF;
+      END LOOP;
+   END IF;
+RETURN NULL;
+EXCEPTION
+   WHEN no_data_found THEN
+      RETURN NULL;
+END Get_Present_Factor__2;
+
+--wrong
+
+FUNCTION Return_Test_1 (
+   codestring_rec_      IN    Accounting_Codestr_API.CodestrRec,
+   code_part_           IN    VARCHAR2) RETURN VARCHAR2
+IS
+BEGIN
+   RETURN   CASE WHEN code_part_ = 'A' THEN
+               codestring_rec_.code_a
+            WHEN code_part_ = 'B' THEN
+               codestring_rec_.code_b
+            WHEN code_part_ = 'C' THEN
+               codestring_rec_.code_c
+            WHEN code_part_ = 'D' THEN
+               codestring_rec_.code_d
+            WHEN code_part_ = 'E' THEN
+               codestring_rec_.code_e
+            WHEN code_part_ = 'F' THEN
+               codestring_rec_.code_f
+            WHEN code_part_ = 'G' THEN
+               codestring_rec_.code_g
+            WHEN code_part_ = 'H' THEN
+               codestring_rec_.code_h
+            WHEN code_part_ = 'I' THEN
+               codestring_rec_.code_i
+            WHEN code_part_ = 'J' THEN
+               codestring_rec_.code_j
+            END;
+END Return_Test_1;
+--correct
+FUNCTION Return_Test_2 (
+   codestring_rec_      IN    Accounting_Codestr_API.CodestrRec,
+   code_part_           IN    VARCHAR2) RETURN VARCHAR2
+IS
+BEGIN
+   RETURN   CASE WHEN code_part_ = 'A' THEN
+               codestring_rec_.code_a
+            WHEN code_part_ = 'B' THEN
+               codestring_rec_.code_b
+            WHEN code_part_ = 'C' THEN
+               codestring_rec_.code_c
+            WHEN code_part_ = 'D' THEN
+               codestring_rec_.code_d
+            WHEN code_part_ = 'E' THEN
+               codestring_rec_.code_e
+            WHEN code_part_ = 'F' THEN
+               codestring_rec_.code_f
+            WHEN code_part_ = 'G' THEN
+               codestring_rec_.code_g
+            WHEN code_part_ = 'H' THEN
+               codestring_rec_.code_h
+            WHEN code_part_ = 'I' THEN
+               codestring_rec_.code_i
+            WHEN code_part_ = 'J' THEN
+               codestring_rec_.code_j
+            ELSE
+               RETURN NULL;
+            END;
+END Return_Test_2;
+
+-- Insert_Lu_Data_Rec__
+--    Inserts data into it's LU and to the Language_Sys_Tab.
+--    Basically used in IsoUnit.ins.
+
+PROCEDURE Insert_Lu_Data_Rec__ (
+   newrec_  IN &TABLE%ROWTYPE)
+IS
+   dummy_      VARCHAR2(1);
+   CURSOR Exist IS
+      SELECT 'X'
+      FROM &TABLE
+      WHERE unit_code = newrec_.unit_code;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Insert_Lu_Data_Rec__');
+   OPEN Exist;
+   FETCH Exist INTO dummy_;
+   IF (Exist%NOTFOUND) THEN
+      CLOSE Exist;
+      INSERT
+         INTO &TABLE (
+            unit_code,
+            description,
+            base_unit,
+            multi_factor,
+            div_factor,
+            ten_power,
+            user_defined,
+            unit_type,
+            used_in_appl,
+            uom_constant,
+            rowversion)
+         VALUES (
+            newrec_.unit_code,
+            newrec_.description,
+            newrec_.base_unit,
+            newrec_.multi_factor,
+            newrec_.div_factor,
+            newrec_.ten_power,
+            '&FALSE',
+            newrec_.unit_type,
+            '&TRUE',
+            newrec_.uom_constant,
+            1);
+      Basic_Data_Translation_API.Insert_Prog_Translation( '&MODULE',
+                                                         '&LU',newrec_.unit_code,
+                                                         newrec_.description);
+
+   ELSE
+      CLOSE Exist;
+      Basic_Data_Translation_API.Insert_Prog_Translation( '&MODULE',
+                                                         '&LU',newrec_.unit_code,
+                                                         newrec_.description);
+
+      UPDATE &TABLE
+         SET description = newrec_.description
+         WHERE unit_code = newrec_.unit_code;
+   END IF;
+END Insert_Lu_Data_Rec__;
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PROTECTED METHODS --------------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PUBLIC METHODS -----------------------------
+-----------------------------------------------------------------------------
+
+FUNCTION Get_Unit_Type (
+   unit_code_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+   temp_ &VIEW..unit_type%TYPE;
+   CURSOR get_attr IS
+      SELECT unit_type
+      FROM &VIEW
+      WHERE unit_code = unit_code_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Unit_Type;
+
+
+FUNCTION Get_Base_Unit (
+   unit_code_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+   temp_ &VIEW..base_unit%TYPE;
+   CURSOR get_attr IS
+      SELECT base_unit
+      FROM &VIEW
+      WHERE unit_code = unit_code_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Base_Unit;
+
+-- Get_Description
+--    Gives the description of the unit taking the user's language code
+--    into consideration.
+
+FUNCTION Get_Description (
+   unit_code_     IN VARCHAR2,
+   language_code_ IN VARCHAR2 DEFAULT NULL ) RETURN VARCHAR2
+IS
+   desc_ &TABLE..description%TYPE;
+   lang_ VARCHAR2(2);
+   CURSOR get_attr IS
+      SELECT description
+      FROM &TABLE
+      WHERE unit_code = unit_code_
+      AND used_in_appl = 'TRUE';
+BEGIN
+   IF NVL(LENGTH(language_code_),0) = 2 THEN
+      lang_ := language_code_;
+   ELSE
+      lang_ := Iso_Language_API.Encode(language_code_);
+   END IF;
+
+   desc_ := SUBSTR(Basic_Data_Translation_API.Get_Basic_Data_Translation('&MODULE', '&LU', unit_code_,lang_ ),1,50);
+   IF desc_ IS NOT NULL THEN
+      RETURN desc_;
+   ELSE
+      OPEN get_attr;
+      FETCH get_attr INTO desc_;
+      IF (get_attr%NOTFOUND) THEN
+         CLOSE get_attr;
+         RETURN NULL;
+      ELSE
+         CLOSE get_attr;
+         RETURN desc_;
+      END IF;
+   END IF;
+
+END Get_Description;
+
+
+-- Activate_Code
+--    Activate the code to use it in the current installation of IFS APPLICATIONS.
+--    The only input parameter is just the code.
+
+PROCEDURE Activate_Code (
+   unit_code_ IN VARCHAR2 )
+IS
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Activate_Code');
+   UPDATE &TABLE
+      SET used_in_appl = '&TRUE',
+          rowversion = rowversion+1
+      WHERE unit_code = unit_code_
+      AND NVL(used_in_appl, '&FALSE') <> '&TRUE';
+END Activate_Code;
+
+
+-- Get_Factor
+--    Returns convert factor for the unit in relation to the base unit.
+--    The factor is calculated as:
+--    ( MultiFactor / DivFactor ) * power(10, TenPower)
+
+FUNCTION Get_Factor (
+   unit_code_ IN VARCHAR2 ) RETURN NUMBER
+IS
+   CURSOR get_attr IS
+      SELECT div_factor, ten_power, multi_factor
+      FROM &VIEWDEF
+      WHERE unit_code = unit_code_;
+   rec_ get_attr%ROWTYPE;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO rec_;
+   CLOSE get_attr;
+   IF (rec_.div_factor = 0) THEN
+      RETURN NULL;
+   ELSE
+      RETURN POWER(10, rec_.ten_power) * rec_.multi_factor / rec_.div_factor;
+   END IF;
+END Get_Factor;
+
+
+-- Get_Unit_Converted_Quantity
+--    Returns a quantity converted from one unit of measure to another where
+--    both have the same base unit.
+--    The factor is calculated as:
+--    ( MultiFactor / DivFactor ) * power(10, TenPower)
+
+FUNCTION Get_Unit_Converted_Quantity (
+   from_quantity_  IN NUMBER,
+   from_unit_code_ IN VARCHAR2,
+   to_unit_code_   IN VARCHAR2 ) RETURN NUMBER
+IS
+   from_factor_      NUMBER;
+   to_factor_        NUMBER;
+   to_quantity_      NUMBER;
+   from_base_unit_   &VIEW..base_unit%TYPE;
+   to_base_unit_     &VIEW..base_unit%TYPE;
+   from_constant_    NUMBER;
+   to_constant_      NUMBER;
+   base_quantity_    NUMBER;
+
+   CURSOR get_attr(unit_code_ VARCHAR2) IS
+      SELECT base_unit, div_factor, ten_power, multi_factor, uom_constant
+      FROM &VIEWDEF
+      WHERE unit_code = unit_code_;
+   rec_ get_attr%ROWTYPE;
+BEGIN
+   -- Get information about from_unit_code_
+   OPEN get_attr(from_unit_code_);
+   FETCH get_attr INTO rec_;
+   IF (get_attr%NOTFOUND) THEN
+      CLOSE get_attr;
+      RETURN NULL;
+   ELSIF (rec_.div_factor = 0) THEN
+      CLOSE get_attr;
+      RETURN NULL;
+   END IF;
+   CLOSE get_attr;
+   from_base_unit_ := rec_.base_unit;
+   from_constant_  := rec_.uom_constant;
+   -- The following calculation should exactly match the one in Get_Factor.
+   -- It is here for performance reasons
+   from_factor_ := POWER(10, rec_.ten_power) * rec_.multi_factor / rec_.div_factor;
+   -- Get information about to_unit_code_
+   OPEN get_attr(to_unit_code_);
+   FETCH get_attr INTO rec_;
+   IF (get_attr%NOTFOUND) THEN
+      CLOSE get_attr;
+      RETURN NULL;
+   ELSIF (rec_.div_factor = 0) THEN
+      CLOSE get_attr;
+      RETURN NULL;
+   END IF;
+   CLOSE get_attr;
+   to_base_unit_ := rec_.base_unit;
+   to_constant_  := rec_.uom_constant;
+   -- The following calculation should exactly match the one in Get_Factor.
+   -- It is here for performance reasons
+   to_factor_ := POWER(10, rec_.ten_power) * rec_.multi_factor / rec_.div_factor;
+   IF (to_factor_ = 0) THEN
+      RETURN NULL;
+   END IF;
+   -- Check to see if both units of measure have same base unit. If so convert, else return null
+   IF (to_base_unit_ = from_base_unit_) THEN
+      IF from_constant_ != 0 OR to_constant_ != 0 THEN
+         base_quantity_ := 1/from_factor_ * (from_quantity_ - from_constant_);
+         to_quantity_   := to_factor_ * base_quantity_ + to_constant_;
+      ELSE
+         to_quantity_ := from_quantity_ * from_factor_ / to_factor_;
+      END IF;
+   ELSE
+      RETURN NULL;
+   END IF;
+   RETURN to_quantity_;
+END Get_Unit_Converted_Quantity;
+
+-- Set_Unit
+--    A public method to create user or module specific units.
+--    Such units will be marked as 'user defined'.
+--    Input parameters:
+--    Description - unit description in language DbLangCode
+--    Factor - convert factor
+--    BaseUnit - code for base unit for the actual unit
+--    DbLangCode - language code for the description. Server language if NULL.
+
+PROCEDURE Set_Unit (
+   unit_code_    IN VARCHAR2,
+   description_  IN VARCHAR2,
+   factor_       IN NUMBER DEFAULT 1,
+   base_unit_    IN VARCHAR2 DEFAULT NULL,
+   db_lang_code_ IN VARCHAR2 DEFAULT NULL,
+   uom_constant_ IN NUMBER DEFAULT 0 )
+IS
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Set_Unit');
+   INSERT
+      INTO &TABLE (
+         unit_code,
+         description,
+         base_unit,
+         multi_factor,
+         div_factor,
+         ten_power,
+         user_defined,
+         unit_type,
+         used_in_appl,
+         uom_constant,
+         rowversion)
+      VALUES (
+         unit_code_,
+         description_,
+         NVL(base_unit_, unit_code_),
+         DECODE(NVL(base_unit_,unit_code_), unit_code_, 1, factor_),
+         1,
+         0,
+         '&TRUE',
+         'NOTUSED',
+         '&TRUE',
+         uom_constant_,
+         1);
+
+EXCEPTION
+   WHEN dup_val_on_index THEN
+      UPDATE &TABLE
+         SET description  = description_,
+             base_unit = NVL(base_unit_, unit_code_),
+             multi_factor = DECODE(NVL(base_unit_, unit_code_), unit_code_, 1, factor_),
+             div_factor = 1,
+             ten_power = 0,
+             used_in_appl = '&TRUE',
+             rowversion = rowversion+1
+         WHERE unit_code    = unit_code_
+         AND   user_defined = '&TRUE';
+END Set_Unit;
+
+
+-- Set_Description
+--    Creates a unit description in additional language or modifies the existing one.
+--    If DbLangCode is NULL the actual language from server is taken 
+--    (Language_SYS.Get_Language).
+
+PROCEDURE Set_Description (
+   unit_code_    IN VARCHAR2,
+   description_  IN VARCHAR2,
+   db_lang_code_ IN VARCHAR2 DEFAULT NULL )
+IS
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Set_Description');
+   Set_Description__(unit_code_, description_, db_lang_code_);
+END Set_Description;
+
+
+FUNCTION Check_Exist (
+   unit_code_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+BEGIN
+   IF Check_Exist___(unit_code_) THEN
+      RETURN '&TRUE';
+   ELSE
+      RETURN '&FALSE';
+   END IF;
+END Check_Exist;
+
+
+-- Set_Unit_Type
+--    Sets the base unit's unit type and updates all units using the same 
+--    base unit. If it's not the base unit an error is displayed.
+
+PROCEDURE Set_Unit_Type (
+   base_unit_ IN VARCHAR2,
+   unit_type_ IN VARCHAR2 )
+IS
+   dummy_  NUMBER;
+
+   CURSOR exist_control IS
+      SELECT 1
+      FROM &TABLE
+      WHERE unit_code = base_unit_
+      AND base_unit = base_unit_;
+
+   CURSOR get_record IS
+      SELECT *
+      FROM &TABLE
+      WHERE base_unit = base_unit_;
+
+   oldrec_  &TABLE%ROWTYPE;
+   newrec_  &TABLE%ROWTYPE;
+   attr_    VARCHAR2(2000);
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Set_Unit_Type');
+   OPEN exist_control;
+   FETCH exist_control INTO dummy_;
+   IF (exist_control%NOTFOUND) THEN
+      CLOSE exist_control;
+      Error_SYS.Record_General(lu_name_, 'NOT_BASE: :P1 is not a base unit!', base_unit_);
+   ELSE
+      CLOSE exist_control;
+      FOR oldrec_ IN get_record LOOP
+         -- skip Unpack_Check_Update___ since unit type is not updateable
+         newrec_ := oldrec_;
+         newrec_.unit_type := Iso_Unit_Type_API.Encode(unit_type_);
+         Update___(Get_Objid_By_Keys___(newrec_.unit_code), oldrec_, newrec_, attr_);
+      END LOOP;
+   END IF;
+END Set_Unit_Type;
+
+-- Check_Base
+--    Checks and gives an error if the input unit code is not the base unit.
+
+PROCEDURE Check_Base (
+   unit_code_ IN VARCHAR2 )
+IS
+   dummy_ NUMBER;
+   CURSOR exist_control IS
+      SELECT 1
+      FROM   &VIEWBASE
+      WHERE  unit_code = unit_code_;
+BEGIN
+
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Check_Base');
+   OPEN exist_control;
+   FETCH exist_control INTO dummy_;
+   IF (exist_control%FOUND) THEN
+      CLOSE exist_control;
+   ELSE
+      CLOSE exist_control;
+      Error_SYS.Record_Not_Exist('Base Unit');
+   END IF;
+END Check_Base;
+
+
+--Wrong
+FUNCTION Return_Test_3 ( company_      IN     VARCHAR2,
+                        code_d_       IN     VARCHAR2,
+                        voucher_date_ IN     DATE ) RETURN BOOLEAN
+IS
+BEGIN
+    General_SYS.Init_Method(lu_name_, '&PKG', 'Code_Exists');
+    IF code_d_ IS NOT NULL THEN
+      IF Accounting_Code_Part_Value_API.Validate_Code_Part(
+         company_, 'D', code_d_, voucher_date_ ) THEN
+            RETURN TRUE;
+      ELSE
+            RETURN FALSE;
+      END IF;
+    END IF;
+ END Return_Test_3;
+
+
+-- Correct
+ FUNCTION Return_Test_4 ( company_      IN     VARCHAR2,
+                        code_d_       IN     VARCHAR2,
+                        voucher_date_ IN     DATE ) RETURN BOOLEAN
+IS
+BEGIN
+    General_SYS.Init_Method(lu_name_, '&PKG', 'Code_Exists');
+    IF code_d_ IS NOT NULL THEN
+      IF Accounting_Code_Part_Value_API.Validate_Code_Part(
+         company_, 'D', code_d_, voucher_date_ ) THEN
+            RETURN TRUE;
+      ELSE
+            RETURN FALSE;
+      END IF;
+    END IF;
+    RETURN FALSE;
+ END Return_Test_4;
+
+-- Wrong
+
+-----------------------------------------------------------------
+-- Get_Definition_Type
+--    This returns "USER_DEFINED" if the given ISO unit is
+--    an user defined unit. If the given unit is an SYSTEM DEFINED unit
+--    it returns 'SYSTEM_DEFINED' . Returns null otherwise.
+-----------------------------------------------------------------
+
+FUNCTION Get_Definition_Type (
+   unit_code_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+   temp_ ISO_UNIT.user_defined%TYPE;
+   CURSOR get_attr IS
+      SELECT user_defined
+      FROM ISO_UNIT
+      WHERE unit_code = unit_code_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+
+   IF temp_ = 'TRUE' THEN
+      RETURN 'USER_DEFINED';
+   ELSIF temp_ = 'FALSE' THEN
+      RETURN 'SYSTEM_DEFINED';
+   END IF;
+
+   -- if entererd unit_code does not exist
+   IF temp_ IS NULL THEN
+      RETURN NULL;
+   END IF;
+
+END Get_Definition_Type;
+
+--- correct
+FUNCTION Get_Definition_Type_2 (
+   unit_code_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+   temp_ ISO_UNIT.user_defined%TYPE;
+   CURSOR get_attr IS
+      SELECT user_defined
+      FROM ISO_UNIT
+      WHERE unit_code = unit_code_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+
+   IF temp_ = 'TRUE' THEN
+      RETURN 'USER_DEFINED';
+   ELSIF temp_ = 'FALSE' THEN
+      RETURN 'SYSTEM_DEFINED';
+   END IF;
+
+   -- if entererd unit_code does not exist
+   IF temp_ IS NULL THEN
+      RETURN NULL;
+   END IF;
+RETURN NULL;
+END Get_Definition_Type_2;
+
+--Wrong
+FUNCTION Codepart_Exist_In_Cons_Company (
+   cons_company_         IN VARCHAR2,
+   code_part_            IN VARCHAR2,
+   code_part_value_      IN VARCHAR2 ) RETURN BOOLEAN
+IS
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Codepart_Exist_In_Cons_Company');
+-- Modifications 8.50 [ Move Codeparts ]
+   IF    (code_part_ = 'B') THEN
+      RETURN CODE_B_API.Codepart_Exist_In_Cons_Company(cons_company_, code_part_value_);
+   ELSIF (code_part_ = 'C') THEN
+      RETURN CODE_C_API.Codepart_Exist_In_Cons_Company(cons_company_, code_part_value_);
+   ELSIF (code_part_ = 'D') THEN
+      RETURN CODE_D_API.Codepart_Exist_In_Cons_Company(cons_company_, code_part_value_);
+   ELSIF (code_part_ = 'E') THEN
+      RETURN CODE_E_API.Codepart_Exist_In_Cons_Company(cons_company_, code_part_value_);
+   ELSIF (code_part_ = 'F') THEN
+      RETURN CODE_F_API.Codepart_Exist_In_Cons_Company(cons_company_, code_part_value_);
+   ELSIF (code_part_ = 'G') THEN
+      RETURN CODE_G_API.Codepart_Exist_In_Cons_Company(cons_company_, code_part_value_);
+   ELSIF (code_part_ = 'H') THEN
+      RETURN CODE_H_API.Codepart_Exist_In_Cons_Company(cons_company_, code_part_value_);
+   ELSIF (code_part_ = 'I') THEN
+      RETURN CODE_I_API.Codepart_Exist_In_Cons_Company(cons_company_, code_part_value_);
+   ELSIF (code_part_ = 'J') THEN
+      RETURN CODE_J_API.Codepart_Exist_In_Cons_Company(cons_company_, code_part_value_);
+   END IF;
+END Codepart_Exist_In_Cons_Company;
+
+--correct
+FUNCTION Codepart_Exist_In_Cons_Company_2 (
+   cons_company_         IN VARCHAR2,
+   code_part_            IN VARCHAR2,
+   code_part_value_      IN VARCHAR2 ) RETURN BOOLEAN
+IS
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Codepart_Exist_In_Cons_Company');
+-- Modifications 8.50 [ Move Codeparts ]
+   IF    (code_part_ = 'B') THEN
+      RETURN CODE_B_API.Codepart_Exist_In_Cons_Company(cons_company_, code_part_value_);
+   ELSIF (code_part_ = 'C') THEN
+      RETURN CODE_C_API.Codepart_Exist_In_Cons_Company(cons_company_, code_part_value_);
+   ELSIF (code_part_ = 'D') THEN
+      RETURN CODE_D_API.Codepart_Exist_In_Cons_Company(cons_company_, code_part_value_);
+   ELSIF (code_part_ = 'E') THEN
+      RETURN CODE_E_API.Codepart_Exist_In_Cons_Company(cons_company_, code_part_value_);
+   ELSIF (code_part_ = 'F') THEN
+      RETURN CODE_F_API.Codepart_Exist_In_Cons_Company(cons_company_, code_part_value_);
+   ELSIF (code_part_ = 'G') THEN
+      RETURN CODE_G_API.Codepart_Exist_In_Cons_Company(cons_company_, code_part_value_);
+   ELSIF (code_part_ = 'H') THEN
+      RETURN CODE_H_API.Codepart_Exist_In_Cons_Company(cons_company_, code_part_value_);
+   ELSIF (code_part_ = 'I') THEN
+      RETURN CODE_I_API.Codepart_Exist_In_Cons_Company(cons_company_, code_part_value_);
+   ELSIF (code_part_ = 'J') THEN
+      RETURN CODE_J_API.Codepart_Exist_In_Cons_Company(cons_company_, code_part_value_);
+   ELSE
+      RETURN FALSE;
+   END IF;
+END Codepart_Exist_In_Cons_Company_2;
+
+
+FUNCTION Get_Uom_Constant (
+   unit_code_ IN VARCHAR2 ) RETURN NUMBER
+IS
+   temp_ &VIEW..uom_constant%TYPE;
+   CURSOR get_attr IS
+      SELECT uom_constant
+      FROM &VIEW
+      WHERE unit_code = unit_code_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Uom_Constant;
+
+-----------------------------------------------------------------------------
+-------------------- FOUNDATION1 METHODS ------------------------------------
+-----------------------------------------------------------------------------
+-- Init
+--   Dummy procedure that can be called at database startup to ensure that
+--   this package is loaded into memory for performance reasons only.
+-----------------------------------------------------------------------------
+
+PROCEDURE Init
+IS
+BEGIN
+   NULL;
+END Init;
+
+END &PKG;
+/
+
+SHOW ERROR
+-----------------------------------------------------------------------------
+
+----------------------------------------------------------
+-- <UNDEFINE_SECTION>
+----------------------------------------------------------
+-- This section is reserved for undefine statements
+-- nothing should be manually written below because
+-- that would be overwritten everytime the IFS / Undefine
+-- tool is run.
+-- Also do NOT make any changes to the above tag because
+-- this will result in duplicated code
+----------------------------------------------------------
+UNDEFINE MODULE
+UNDEFINE LU
+UNDEFINE VIEW
+UNDEFINE PKG
+UNDEFINE TABLE
+UNDEFINE OBJID
+UNDEFINE OBJKEY
+UNDEFINE OBJVERSION
+UNDEFINE TRUE
+UNDEFINE FALSE
+UNDEFINE VIEWDEF
+UNDEFINE VIEWBASE
+UNDEFINE VIEW_WEIGHT
