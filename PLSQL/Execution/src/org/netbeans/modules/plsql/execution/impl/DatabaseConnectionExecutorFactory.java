@@ -28,25 +28,17 @@ public class DatabaseConnectionExecutorFactory implements DatabaseConnectionExec
 
     @Override
     public DatabaseConnectionExecutor create(FileObject fileObject) {
-        final Project project = FileOwnerQuery.getOwner(fileObject);
-
-        DatabaseConnectionManager connectionManager;
-        if (project != null) {
-            connectionManager = DatabaseConnectionManager.getInstance(project);
+        DatabaseConnectionManager connectionManager = DatabaseConnectionManager.getInstance(fileObject, false);
+        DatabaseConnection connection = null;
+        if (connectionManager != null) {
+            connection = connectionManager.getDatabaseConnection(false);
         } else {
-            connectionManager = DatabaseConnectionManager.getInstance(fileObject);
+            LOG.log(Level.FINE, "connectionManager is null for fileObject={0}", fileObject);
         }
-        if (connectionManager == null) {
-            LOG.log(Level.WARNING, "connectionManager is null for project={0}", project);
-            return null;
-        }
-
-        final DatabaseConnection connection = connectionManager.getTemplateConnection();
         if (connection == null) {
-            LOG.log(Level.WARNING, "connection is null for connectionManager={0}", connectionManager);
-            return null;
+            LOG.log(Level.FINE, "connection is null for connectionManager={0}", connectionManager);
         }
-
         return create(connectionManager, connection, fileObject);
+
     }
 }

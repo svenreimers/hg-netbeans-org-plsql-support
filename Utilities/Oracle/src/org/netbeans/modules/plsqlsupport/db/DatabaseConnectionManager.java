@@ -41,7 +41,6 @@
  */
 package org.netbeans.modules.plsqlsupport.db;
 
-import java.awt.GraphicsEnvironment;
 import java.beans.ExceptionListener;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
@@ -126,10 +125,10 @@ public class DatabaseConnectionManager {
     }
 
     public static DatabaseConnectionManager getInstance(DataObject dataObject) {
-        return getInstance(dataObject.getPrimaryFile());
+        return getInstance(dataObject.getPrimaryFile(), true);
     }
 
-    public static DatabaseConnectionManager getInstance(FileObject fileObject) {
+    public static DatabaseConnectionManager getInstance(FileObject fileObject, boolean prompt) {
         Project project = FileOwnerQuery.getOwner(fileObject);
         if (project != null) {
             DatabaseConnectionManager provider = project.getLookup().lookup(DatabaseConnectionManager.class);
@@ -149,7 +148,7 @@ public class DatabaseConnectionManager {
         }
 
         DatabaseConnectionManager provider = new DatabaseConnectionManager();
-        if (provider.getDatabaseConnection(true) == null) { // prompt connection dialog for files outside the project structure
+        if (provider.getDatabaseConnection(prompt) == null) { // prompt connection dialog for files outside the project structure
             return null;
         }
         instances.put(fileObject, provider);
@@ -308,7 +307,7 @@ public class DatabaseConnectionManager {
         if (!online && !force) {
             return null;
         }
-        if (prompt && !GraphicsEnvironment.isHeadless()) {
+        if (prompt) {
             if (templateConnection == null) {
                 templateConnection = new DatabaseConnectionPanel().showDialog();
                 connections.clear();
