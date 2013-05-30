@@ -496,7 +496,7 @@ public class PlsqlFileExecutor {
                             continue;
                         } else {
                             io.select();
-                            io.getOut().println((new StringBuilder()).append("> Executing Statement "));
+                            io.getOut().println((new StringBuilder()).append("\n> Executing Statement "));
                             io.getOut().println("   " + plsqlText.replaceAll("\n", "\n   "));
                             stm.execute(plsqlText);
                         }
@@ -510,7 +510,8 @@ public class PlsqlFileExecutor {
                         io.getOut().println(plsqlText);
                         io.getErr().println(msg, outList);
                         deploymentOk = false;
-                        break;
+                       // break;
+                        continue;
                     }
                 }
                 if (exeObj.getType() == PlsqlExecutableObjectType.TRIGGER) {
