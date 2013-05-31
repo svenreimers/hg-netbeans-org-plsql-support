@@ -415,6 +415,7 @@ public class PlsqlFileExecutor {
         DataObject dataObj = FileExecutionUtil.getDataObject(doc);
         plsqlEditor = getPlsqlEditor(dataObj);
         String endMsg = "Done deploying " + FileExecutionUtil.getActivatedFileName(dataObj);
+        boolean error = false;
         long startTime = System.currentTimeMillis();
         String fileName = dataObj.getPrimaryFile().getNameExt();
         boolean moreRowsToBeFetched = false;
@@ -549,7 +550,7 @@ public class PlsqlFileExecutor {
                             continue;
                         } else {
                             io.select();
-                            io.getOut().println((new StringBuilder()).append("> Executing Statement "));
+                            io.getOut().println((new StringBuilder()).append("\n> Executing Statement "));
                             io.getOut().println("   " + plsqlText.replaceAll("\n", "\n   "));
                             stm.execute(plsqlText);
                         }
@@ -563,7 +564,9 @@ public class PlsqlFileExecutor {
                         io.getOut().println(plsqlText);
                         io.getErr().println(msg, outList);
                         deploymentOk = false;
-                        break;
+                        error = true;
+                        //break;
+                        continue;
                     }
                 }
                 if (exeObj.getType() == PlsqlExecutableObjectType.TRIGGER) {
@@ -988,7 +991,7 @@ public class PlsqlFileExecutor {
 ////                    connectionSession.openTransaction();
 //                }
 //            } else {
-                con.commit();
+            con.commit();
 //            }
 
             if (!moreRowsToBeFetched) {
@@ -1000,7 +1003,11 @@ public class PlsqlFileExecutor {
                 }
                 if (preparedIO == null) {
                     io.getOut().println("-------------------------------------------------------------");
-                    io.getOut().println(endMsg + " (Total times: " + totalTime + "s)");
+                    if (error) {
+                        io.getErr().println(endMsg + " with errors" + " (Total times: " + totalTime + "s)");
+                    } else {
+                        io.getOut().println(endMsg + " (Total times: " + totalTime + "s)");
+                    }
                     io.getOut().println(connectionDisplayName);
                     io.getOut().println(new Timestamp(endTime).toString());
                 }

@@ -354,6 +354,7 @@ public class PlsqlFileExecutor {
 //        cancel = false;
 //        InputOutput io = null;
         boolean deploymentOk = true;
+        boolean error = false;
 
         //Defines and define
         HashMap<String, String> definesMap = new HashMap<String, String>();
@@ -510,7 +511,8 @@ public class PlsqlFileExecutor {
                         io.getOut().println(plsqlText);
                         io.getErr().println(msg, outList);
                         deploymentOk = false;
-                       // break;
+                        error = true;
+                        //break;
                         continue;
                     }
                 }
@@ -948,7 +950,11 @@ public class PlsqlFileExecutor {
                 }
 //                if (io == null) {
                 io.getOut().println("-------------------------------------------------------------");
-                io.getOut().println(endMsg + " (Total times: " + totalTime + "s)");
+                if (error) {
+                    io.getErr().println(endMsg + " with errors" + " (Total times: " + totalTime + "s)");
+                } else {
+                    io.getOut().println(endMsg + " (Total times: " + totalTime + "s)");
+                }
                 io.getOut().println(connectionDisplayName);
                 io.getOut().println(new Timestamp(endTime).toString());
 //                }
