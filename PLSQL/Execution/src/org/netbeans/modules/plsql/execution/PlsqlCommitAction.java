@@ -53,7 +53,7 @@ import javax.swing.Action;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionExecutor;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionMediator;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionRegistration;
@@ -70,7 +70,7 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
 
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
     private final DataObject dataObject;
-    private DatabaseConnectionExecutor executor;
+    private DatabaseConnectionMediator mediator;
     private JButton button;
     private final PropertyChangeListener changeListener = new EnableCommit();
 
@@ -84,7 +84,7 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
 
         dataObject = context.lookup(DataObject.class);
         if (dataObject != null) {
-            executor = dataObject.getLookup().lookup(DatabaseConnectionExecutor.class);
+            mediator = dataObject.getLookup().lookup(DatabaseConnectionMediator.class);
         }
     }
 
@@ -115,7 +115,7 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
 
     private void prepareConnection() {
         if (dataObject != null) {
-            executor = dataObject.getLookup().lookup(DatabaseConnectionExecutor.class);
+            mediator = dataObject.getLookup().lookup(DatabaseConnectionMediator.class);
         }
     }
 
@@ -125,7 +125,7 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
         prepareConnection();
 
         saveIfModified(dataObject);
-        executor.commitTransaction();
+        mediator.commitTransaction();
     }
 
     @Override
@@ -138,7 +138,7 @@ public class PlsqlCommitAction extends AbstractAction implements ContextAwareAct
         button.setAction(this);
         button.setEnabled(false);
         button.setDisabledIcon(new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/database_commit_disable.png")));
-        executor.addTransactionListener(changeListener);
+        mediator.addTransactionListener(changeListener);
         return button;
     }
 

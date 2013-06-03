@@ -50,7 +50,7 @@ import org.netbeans.modules.plsql.annotation.PlsqlAnnotationManager;
 import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
 import org.netbeans.modules.plsql.utilities.PlsqlFileLocatorService;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionExecutor;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionMediator;
 import org.openide.filesystems.FileObject;
 import org.openide.loaders.DataObjectExistsException;
 import org.openide.loaders.MultiDataObject;
@@ -68,8 +68,7 @@ public class PlsqlDataObject extends MultiDataObject {
    private PlsqlBlockFactory blockFactory = null;
    private PlsqlAnnotationManager annotationManager = null;
    private final PlsqlEditorSupport editorSupport;
-   private DatabaseConnectionExecutor executor;
-//   private DatabaseConnection databaseConnection;
+   private DatabaseConnectionMediator mediator;
    private StatementExecutionHistory statementExecutionHistory;
 
    public PlsqlDataObject(final FileObject fileObject, final PlsqlDataLoader loader) throws DataObjectExistsException, IOException {
@@ -94,9 +93,9 @@ public class PlsqlDataObject extends MultiDataObject {
 
          blockFactory.addObserver(annotationManager);
       }
-      DatabaseConnectionExecutor.Factory factory = Lookup.getDefault().lookup(DatabaseConnectionExecutor.Factory.class);
+      DatabaseConnectionMediator.Factory factory = Lookup.getDefault().lookup(DatabaseConnectionMediator.Factory.class);
       if (factory != null) {
-         executor = factory.create(fileObject);
+         mediator = factory.create(fileObject);
       }
       createLookup();
    }
@@ -131,8 +130,8 @@ public class PlsqlDataObject extends MultiDataObject {
       List<Object> objects = new ArrayList<Object>();
       objects.add(blockFactory);
       objects.add(statementExecutionHistory);
-      if (executor != null) {
-         objects.add(executor);
+      if (mediator != null) {
+         objects.add(mediator);
       }
 
       if (annotationManager != null) {

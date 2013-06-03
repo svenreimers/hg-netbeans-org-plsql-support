@@ -295,10 +295,22 @@ public class DatabaseConnectionManager {
         return getDatabaseConnection(prompt, force, false);
     }
 
+    /**
+     *
+     * @param prompt if user should be prompted when templateConnection is missing. will not force to connect, if not
+     * online.
+     * @return DatabaseConnection from pool of connections.
+     */
     public DatabaseConnection getPooledDatabaseConnection(boolean prompt) {
         return getDatabaseConnection(prompt, false, true);
     }
 
+    /**
+     *
+     * @param prompt if user should be prompted when templateConnection is missing.
+     * @param force if it should to connect if not online.
+     * @return DatabaseConnection from pool of connections.
+     */
     public DatabaseConnection getPooledDatabaseConnection(boolean prompt, boolean force) {
         return getDatabaseConnection(prompt, force, true);
     }

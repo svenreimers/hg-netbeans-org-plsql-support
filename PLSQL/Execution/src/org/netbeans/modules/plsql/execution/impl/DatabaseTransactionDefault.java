@@ -44,13 +44,13 @@ package org.netbeans.modules.plsql.execution.impl;
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.sql.CallableStatement;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.progress.ProgressHandleFactory;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionAdapter;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.util.Exceptions;
 
@@ -65,20 +65,14 @@ class DatabaseTransactionDefault implements DatabaseTransaction {
     static final String PROP_TRANSACTION = "TransactionOpen";
     private final PropertyChangeSupport changeSupport;
     private final DatabaseConnectionIO io;
-    private DatabaseConnection connection;
+    private DatabaseConnectionAdapter connection;
     private boolean open = false;
     private String transactionId;
 
-    DatabaseTransactionDefault(DatabaseConnectionIO io, DatabaseConnection connection) {
+    DatabaseTransactionDefault(DatabaseConnectionIO io, DatabaseConnectionAdapter connection) {
         changeSupport = new PropertyChangeSupport(this);
         this.io = io;
         this.connection = connection;
-    }
-
-    @Override
-    public void setConnection(DatabaseConnection connection) {
-        this.connection = connection;
-        close();
     }
 
     private void close() {
@@ -106,9 +100,8 @@ class DatabaseTransactionDefault implements DatabaseTransaction {
 
         try {
             if (hasOpenTransaction()) {
-                commitRollbackTransactions(true);
-                io.println((new StringBuilder()).append("> Commit of Transaction ID = [")
-                        .append(transactionId).append("] successful"));
+                connection.commitTransactions();
+                io.println((new StringBuilder()).append("> Commit of Transaction ID = [").append(transactionId).append("] successful"));
             }
             close();
         } catch (Exception ex) {
@@ -130,7 +123,7 @@ class DatabaseTransactionDefault implements DatabaseTransaction {
 
         try {
             if (hasOpenTransaction()) {
-                commitRollbackTransactions(false);
+                connection.rollbackTransactions();
                 io.println((new StringBuilder()).append("> Rollback of Transaction ID = [")
                         .append(transactionId).append("] successful"));
             }
@@ -172,14 +165,14 @@ class DatabaseTransactionDefault implements DatabaseTransaction {
     @Override
     public boolean hasOpenTransaction() {
         boolean isOpen = false;
-        if (connection.getJDBCConnection() == null) {
+        if (!connection.isConnected()) {
             setOpen(isOpen);
             return isOpen;
         }
 
         try {
             String sqlProc = "{call ? := DBMS_TRANSACTION.local_transaction_id}";
-            CallableStatement stmt = connection.getJDBCConnection().prepareCall(sqlProc);
+            CallableStatement stmt = connection.prepareCall(sqlProc);
             stmt.registerOutParameter(1, java.sql.Types.VARCHAR);
             stmt.executeUpdate();
             transactionId = stmt.getString(1);
@@ -197,38 +190,8 @@ class DatabaseTransactionDefault implements DatabaseTransaction {
         return isOpen;
     }
 
-    /**
-     *
-     * @param commit the value of commit
-     */
-    private void commitRollbackTransactions(boolean commit) {
-        try {
-            if (connection.getJDBCConnection() == null) {
-                return;
-            }
-            Connection con = connection.getJDBCConnection();
-
-            if (commit) {
-                con.commit();
-            } else {
-                con.rollback();
-            }
-        } catch (SQLException ex) {
-            Exceptions.printStackTrace(ex);
-        }
-    }
-
     @Override
     public boolean autoCommit() {
         return OptionsUtilities.isCommandWindowAutoCommitEnabled();
-    }
-
-    @Override
-    public void checkForOpenTransaction() {
-        if (autoCommit()) {
-            commitTransaction();
-        } else {
-            hasOpenTransaction();
-        }
     }
 }

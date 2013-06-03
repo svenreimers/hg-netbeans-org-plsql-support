@@ -49,6 +49,7 @@ import javax.swing.*;
 import javax.swing.text.Document;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionExecutor;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionMediator;
 import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObject;
 import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObjectType;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
@@ -76,7 +77,6 @@ public class PlsqlExecuteAction extends CookieAction {
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
     private static final String TEST_BLOCK_NAME_PREFIX = "TestBlock:";
     private DataObject dataObject;
-    private DatabaseConnectionExecutor executor;
 
     public PlsqlExecuteAction() {
         super();
@@ -133,7 +133,7 @@ public class PlsqlExecuteAction extends CookieAction {
     @Override
     protected void performAction(Node[] activatedNodes) {
         dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
-        executor = dataObject.getLookup().lookup(DatabaseConnectionExecutor.class);
+        final DatabaseConnectionExecutor executor = dataObject.getLookup().lookup(DatabaseConnectionMediator.class).getExecutor();
 
         saveIfModified(dataObject);
 

@@ -5,7 +5,7 @@
 package org.netbeans.modules.plsql.execution.impl;
 
 import java.beans.PropertyChangeListener;
-import org.netbeans.api.db.explorer.DatabaseConnection;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionAdapter;
 import org.openide.filesystems.FileObject;
 
 /**
@@ -41,13 +41,9 @@ public interface DatabaseTransaction {
      */
     boolean autoCommit();
 
-    public void setConnection(DatabaseConnection connection);
-
-    public void checkForOpenTransaction();
-
     static class Factory {
 
-        static DatabaseTransaction create(DatabaseConnectionIO io, DatabaseConnection connection, FileObject fileObject) {
+        static DatabaseTransaction create(DatabaseConnectionIO io, DatabaseConnectionAdapter connection, FileObject fileObject) {
             if (!fileObject.getExt().equalsIgnoreCase("tdb")) {
                 return new DatabaseTransactionAutoCommit(io, connection);
             }

@@ -71,7 +71,7 @@ import javax.swing.border.EmptyBorder;
 import org.netbeans.api.db.explorer.ConnectionManager;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.modules.db.api.sql.execute.SQLExecution;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionExecutor;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionMediator;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
@@ -141,7 +141,7 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
             return null;
         }
         toolbarPresenter = new ToolbarPresenter(actionContext, manager);
-        toolbarPresenter.setSQLExecution(dataObject.getLookup().lookup(DatabaseConnectionExecutor.class));
+        toolbarPresenter.setSQLExecution(dataObject.getLookup().lookup(DatabaseConnectionMediator.class));
         return toolbarPresenter;
 
     }
@@ -155,7 +155,7 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
 
         private final Lookup actionContext;
         private DatabaseConnectionManager connectionManager;
-        private DatabaseConnectionExecutor waitingSQLExecution = null;
+        private DatabaseConnectionMediator waitingMediator = null;
         private JComboBox combo;
         private JLabel comboLabel;
         private DatabaseConnectionModel model;
@@ -170,9 +170,9 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
                 @Override
                 public void run() {
                     model = new DatabaseConnectionModel(connectionManager);
-                    if (waitingSQLExecution != null) {
-                        model.setSQLExecution(waitingSQLExecution);
-                        waitingSQLExecution = null;
+                    if (waitingMediator != null) {
+                        model.setSQLExecution(waitingMediator);
+                        waitingMediator = null;
                     }
                     SwingUtilities.invokeLater(new Runnable() {
                         @Override
@@ -194,11 +194,11 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
             return new Dimension(minWidth, dim.height);
         }
 
-        public void setSQLExecution(DatabaseConnectionExecutor executor) {
+        public void setSQLExecution(DatabaseConnectionMediator mediator) {
             if (model != null) {
-                model.setSQLExecution(executor);
+                model.setSQLExecution(mediator);
             } else {
-                waitingSQLExecution = executor;
+                waitingMediator = mediator;
             }
         }
 
@@ -268,7 +268,7 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
 
 //        private ConnectionListener listener;
         private List<DatabaseConnection> connectionList; // must be ArrayList
-        private DatabaseConnectionExecutor executor;
+        private DatabaseConnectionMediator mediator;
         private DatabaseConnectionManager connectionManager;
 
         @SuppressWarnings("LeakingThisInConstructor")
@@ -299,22 +299,22 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
 
         @Override
         public void setSelectedItem(Object object) {
-            if (executor != null) {
-                executor.updateConnection((DatabaseConnection) object);
+            if (mediator != null) {
+                mediator.updateConnection((DatabaseConnection) object);
             }
         }
 
         @Override
         public Object getSelectedItem() {
-            return executor != null ? executor.getConnection() : null;
+            return mediator != null ? mediator.getConnection().getConnection() : null;
         }
 
-        public void setSQLExecution(DatabaseConnectionExecutor executor) {
+        public void setSQLExecution(DatabaseConnectionMediator executor) {
             // XXX: should add listeners 
 //            if (this.executor != null) {
 //                this.executor.removePropertyChangeListener(this);
 //            }
-            this.executor = executor;
+            this.mediator = executor;
 //            if (this.executor != null) {
 //                this.executor.addPropertyChangeListener(this);
 //            }

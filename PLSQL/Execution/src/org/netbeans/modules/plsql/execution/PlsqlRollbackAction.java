@@ -53,7 +53,7 @@ import javax.swing.Action;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionExecutor;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionMediator;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionRegistration;
@@ -70,7 +70,7 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
 
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
     private final DataObject dataObject;
-    private DatabaseConnectionExecutor executor;
+    private DatabaseConnectionMediator mediator;
     private JButton button;
     private final PropertyChangeListener propertyChangeListener = new EnableRollback();
 
@@ -85,7 +85,7 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
 
         dataObject = context.lookup(DataObject.class);
         if (dataObject != null) {
-            executor = dataObject.getLookup().lookup(DatabaseConnectionExecutor.class);
+            mediator = dataObject.getLookup().lookup(DatabaseConnectionMediator.class);
         }
     }
 
@@ -117,7 +117,7 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
 
     private void prepareConnection() {
         if (dataObject != null) {
-            executor = dataObject.getLookup().lookup(DatabaseConnectionExecutor.class);
+            mediator = dataObject.getLookup().lookup(DatabaseConnectionMediator.class);
         }
     }
 
@@ -127,7 +127,7 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
         prepareConnection();
 
         saveIfModified(dataObject);
-        executor.rollbackTransaction();
+        mediator.rollbackTransaction();
     }
 
     @Override
@@ -140,7 +140,7 @@ public class PlsqlRollbackAction extends AbstractAction implements ContextAwareA
         button.setAction(this);
         button.setEnabled(false);
         button.setDisabledIcon(new ImageIcon(ImageUtilities.loadImage("org/netbeans/modules/plsql/execution/database_rollback_disable.png")));
-        executor.addTransactionListener(propertyChangeListener);
+        mediator.addTransactionListener(propertyChangeListener);
         return button;
     }
 

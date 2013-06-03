@@ -5,7 +5,7 @@
 package org.netbeans.modules.plsql.execution.impl;
 
 import java.beans.PropertyChangeListener;
-import org.netbeans.api.db.explorer.DatabaseConnection;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionAdapter;
 
 /**
  * Implementation that always has auto commit enabled.
@@ -14,7 +14,7 @@ import org.netbeans.api.db.explorer.DatabaseConnection;
  */
 class DatabaseTransactionAutoCommit extends DatabaseTransactionDefault {
 
-    public DatabaseTransactionAutoCommit(DatabaseConnectionIO io, DatabaseConnection connection) {
+    public DatabaseTransactionAutoCommit(DatabaseConnectionIO io, DatabaseConnectionAdapter connection) {
         super(io, connection);
     }
 

@@ -64,10 +64,6 @@ public class OptionsUtilities {
    private OptionsUtilities() {
    } //singleton
 
-   /**
-    * 
-    * @return true if the option to auto deploy all database connections have been selected.
-    */
    public static boolean isDeployNoPromptEnabled() {
       return !NbPreferences.forModule(GeneralPanel.class).getBoolean(AUTO_DEPLOY_ALL_DATABASES_KEY, true);
    }
@@ -80,6 +76,10 @@ public class OptionsUtilities {
       return NbPreferences.forModule(GeneralPanel.class).getBoolean(PLSQL_EXPAND_FOLDS_KEY, false);
    }
 
+   /**
+    * 
+    * @return true if the option to auto deploy all database connections have been selected.
+    */
    public static boolean isCommandWindowAutoCommitEnabled() {
       return NbPreferences.forModule(GeneralPanel.class).getBoolean(COMMAND_WINDOW_AUTO_COMMIT_KEY, false);
    }
