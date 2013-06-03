@@ -53,7 +53,6 @@ import java.awt.event.ItemListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import javax.swing.AbstractAction;
 import javax.swing.AbstractListModel;
@@ -68,11 +67,9 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
-import org.netbeans.api.db.explorer.ConnectionManager;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.modules.db.api.sql.execute.SQLExecution;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionMediator;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
 import org.openide.awt.ActionReferences;
@@ -136,12 +133,11 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
 //    }
     @Override
     public Component getToolbarPresenter() {
-        final DatabaseConnectionManager manager = DatabaseConnectionManager.getInstance(dataObject);
-        if (manager == null) {
+        final DatabaseConnectionMediator mediator = dataObject.getLookup().lookup(DatabaseConnectionMediator.class);
+        if (mediator == null) {
             return null;
         }
-        toolbarPresenter = new ToolbarPresenter(actionContext, manager);
-        toolbarPresenter.setSQLExecution(dataObject.getLookup().lookup(DatabaseConnectionMediator.class));
+        toolbarPresenter = new ToolbarPresenter(actionContext, mediator);
         return toolbarPresenter;
 
     }
@@ -154,26 +150,21 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
     private static final class ToolbarPresenter extends JPanel {
 
         private final Lookup actionContext;
-        private DatabaseConnectionManager connectionManager;
-        private DatabaseConnectionMediator waitingMediator = null;
+        private final DatabaseConnectionMediator mediator;
         private JComboBox combo;
         private JLabel comboLabel;
         private DatabaseConnectionModel model;
         private boolean waiting;
         private static final RequestProcessor RP = new RequestProcessor(ToolbarPresenter.class);
 
-        public ToolbarPresenter(final Lookup actionContext, DatabaseConnectionManager manager) {
-            this.connectionManager = manager;
+        public ToolbarPresenter(final Lookup actionContext, DatabaseConnectionMediator connectionMediator) {
+            this.mediator = connectionMediator;
             initComponents();
             waiting = true;
             RP.post(new Runnable() {
                 @Override
                 public void run() {
-                    model = new DatabaseConnectionModel(connectionManager);
-                    if (waitingMediator != null) {
-                        model.setSQLExecution(waitingMediator);
-                        waitingMediator = null;
-                    }
+                    model = new DatabaseConnectionModel(mediator);
                     SwingUtilities.invokeLater(new Runnable() {
                         @Override
                         public void run() {
@@ -192,14 +183,6 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
             Dimension dim = super.getMinimumSize();
             int minWidth = comboLabel.getWidth() * 2;
             return new Dimension(minWidth, dim.height);
-        }
-
-        public void setSQLExecution(DatabaseConnectionMediator mediator) {
-            if (model != null) {
-                model.setSQLExecution(mediator);
-            } else {
-                waitingMediator = mediator;
-            }
         }
 
         private void initComponents() {
@@ -242,7 +225,7 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
             combo.setModel(new DefaultComboBoxModel(
                     new String[]{NbBundle.getMessage(ToolbarPresenter.class, "ConnectionAction.ToolbarPresenter.LoadingConnections")}));
             setEnabled(false);
-            combo.setRenderer(new DatabaseConnectionRenderer(connectionManager));
+            combo.setRenderer(new DatabaseConnectionRenderer(mediator));
             String accessibleName = NbBundle.getMessage(ConnectionAction.class, "LBL_DatabaseConnection");
             combo.getAccessibleContext().setAccessibleName(accessibleName);
             combo.getAccessibleContext().setAccessibleDescription(accessibleName);
@@ -269,21 +252,21 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
 //        private ConnectionListener listener;
         private List<DatabaseConnection> connectionList; // must be ArrayList
         private DatabaseConnectionMediator mediator;
-        private DatabaseConnectionManager connectionManager;
+//        private DatabaseConnectionManager connectionManager;
 
         @SuppressWarnings("LeakingThisInConstructor")
-        public DatabaseConnectionModel(DatabaseConnectionManager manager) {
-            this.connectionManager = manager;
+        public DatabaseConnectionModel(DatabaseConnectionMediator connectionMediator) {
+            this.mediator = connectionMediator;
 //            listener = WeakListeners.create(ConnectionListener.class, this, ConnectionManager.getDefault());
 //            ConnectionManager.getDefault().addConnectionListener(listener);
 //                                connectionProvider.addPropertyChangeListener(listener);
 
             connectionList = new ArrayList<DatabaseConnection>();
-            if (connectionManager != null) {
-                connectionList.addAll(connectionManager.getDatabaseConnections());
-            } else {
-                connectionList.addAll(Arrays.asList(ConnectionManager.getDefault().getConnections()));
-            }
+//            if (mediator.hasProjectDatabaseConnections()) {
+            connectionList.addAll(mediator.getDatabaseConnections());
+//            } else {
+//                connectionList.addAll(Arrays.asList(ConnectionManager.getDefault().getConnections()));
+//            }
 //            sortConnections();
         }
 
@@ -309,17 +292,17 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
             return mediator != null ? mediator.getConnection().getConnection() : null;
         }
 
-        public void setSQLExecution(DatabaseConnectionMediator executor) {
-            // XXX: should add listeners 
-//            if (this.executor != null) {
-//                this.executor.removePropertyChangeListener(this);
-//            }
-            this.mediator = executor;
-//            if (this.executor != null) {
-//                this.executor.addPropertyChangeListener(this);
-//            }
-            fireContentsChanged(this, 0, 0); // because the selected item might have changed
-        }
+//        public void setSQLExecution(DatabaseConnectionMediator connectionMediator) {
+//            // XXX: should add listeners 
+////            if (this.executor != null) {
+////                this.executor.removePropertyChangeListener(this);
+////            }
+//            this.mediator = connectionMediator;
+////            if (this.executor != null) {
+////                this.executor.addPropertyChangeListener(this);
+////            }
+//            fireContentsChanged(this, 0, 0); // because the selected item might have changed
+//        }
 
         @Override
         public void propertyChange(PropertyChangeEvent evt) {
@@ -364,10 +347,10 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
 
     private static final class DatabaseConnectionRenderer extends DefaultListCellRenderer {
 
-        private final DatabaseConnectionManager connectionManager;
+        private final DatabaseConnectionMediator mediator;
 
-        public DatabaseConnectionRenderer(DatabaseConnectionManager connectionManager) {
-            this.connectionManager = connectionManager;
+        public DatabaseConnectionRenderer(DatabaseConnectionMediator connectionMediator) {
+            this.mediator = connectionMediator;
         }
 
         @Override
@@ -397,7 +380,7 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
             }
             JLabel component = (JLabel) super.getListCellRendererComponent(list, displayName, index, isSelected, cellHasFocus);
             component.setToolTipText(tooltipText);
-            if (connectionManager != null && connectionManager.isDefaultDatabase(connection)) {
+            if (mediator != null && mediator.isDefaultDatabase(connection)) {
                 component.setFont(component.getFont().deriveFont(Font.BOLD));
             }
 

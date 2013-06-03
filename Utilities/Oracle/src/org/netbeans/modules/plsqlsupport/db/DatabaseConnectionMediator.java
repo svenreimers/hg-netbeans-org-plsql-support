@@ -1,11 +1,14 @@
 package org.netbeans.modules.plsqlsupport.db;
 
 import java.beans.PropertyChangeListener;
+import java.util.List;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.openide.filesystems.FileObject;
 import org.openide.windows.InputOutput;
 
 /**
+ * One DatabaseConnectionMediator per DataObject is responsible for DatabaseConnections (such as what to take from pool,
+ * transactions).
  *
  * @author chrlse
  */
@@ -23,18 +26,34 @@ public interface DatabaseConnectionMediator {
      *
      * @return will return DatabaseConnectionAdapter for selected used by UI.
      */
-    DatabaseConnectionAdapter getConnection();
+    public DatabaseConnectionAdapter getConnection();
+
+    /**
+     * Returns true is method {@link getDatabaseConnections()} returns a list of {@link DatabaseConnection}s based on
+     * the project the DataObject contains in.
+     *
+     * @return a List of {@link DatabaseConnection}s either based on project or NetBeans.
+     */
+    public boolean hasProjectDatabaseConnections();
+
+    /**
+     * Returns a list of {@link DatabaseConnection}s. Either based on the project the DataObject contains in, or the
+     * list of connections registered in NetBeans.
+     *
+     * Use {@link hasProjectDatabaseConnections()} to find out which.
+     *
+     * @return a List of {@link DatabaseConnection}s either based on project or NetBeans.
+     */
+    public List<DatabaseConnection> getDatabaseConnections();
 
     /**
      * Should be used when executing PLSQL or SQL.
      *
      * @return will return DatabaseConnectionExecutor with pooled connection if possible.
      */
-    DatabaseConnectionExecutor getExecutor();
+    public DatabaseConnectionExecutor getExecutor();
 
-    DatabaseConnectionManager getConnectionManager();
-
-    boolean isConnected();
+    public boolean isConnected();
 
     /**
      * Close transaction if open, either by commit or rollback based on feedback from user. If user cancels, false will
@@ -58,6 +77,8 @@ public interface DatabaseConnectionMediator {
     public void finish();
 
     public InputOutput getIo();
+
+    public boolean isDefaultDatabase(DatabaseConnection connection);
 
     public static interface Factory {
 

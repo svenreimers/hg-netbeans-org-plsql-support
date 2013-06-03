@@ -31,8 +31,6 @@ class PlsqlExecutor implements DatabaseConnectionExecutor {
     private static final Logger LOG = Logger.getLogger(PlsqlExecutor.class.getName());
     private static final RequestProcessor RP = new RequestProcessor(PlsqlExecutor.class.getName(), 4, true);
     private final DatabaseConnectionMediator connectionMediator;
-//    private final DatabaseConnectionIO io;
-//    private final DatabaseTransaction transaction;
     private final DatabaseConnectionAdapter connection;
     private final StatementHolder statementHolder;
 

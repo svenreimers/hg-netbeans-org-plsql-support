@@ -2,9 +2,9 @@ package org.netbeans.modules.plsqlsupport.db;
 
 import java.util.List;
 import javax.swing.text.Document;
-import org.openide.loaders.DataObject;
 
 /**
+ * DatabaseConnectionExecutor is responsible for executing SQL and other NB UI such as progress bar and threading.
  *
  * @author chrlse
  */

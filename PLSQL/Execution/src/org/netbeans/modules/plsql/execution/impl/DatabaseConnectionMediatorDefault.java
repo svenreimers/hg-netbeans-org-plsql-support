@@ -5,12 +5,17 @@
 package org.netbeans.modules.plsql.execution.impl;
 
 import java.beans.PropertyChangeListener;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import javax.swing.JOptionPane;
+import org.netbeans.api.db.explorer.ConnectionManager;
 import org.netbeans.api.db.explorer.DatabaseConnection;
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionMediator;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionAdapter;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionExecutor;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionMediator;
 import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObject;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.filesystems.FileObject;
@@ -37,11 +42,33 @@ class DatabaseConnectionMediatorDefault implements DatabaseConnectionMediator {
     }
 
     @Override
-    public DatabaseConnectionManager getConnectionManager() {
-        if (manager == null) {
-            manager = DatabaseConnectionManager.getInstance(fileObject, true);
+    public boolean hasProjectDatabaseConnections() {
+        return manager != null;
+    }
+
+    @Override
+    public List<DatabaseConnection> getDatabaseConnections() {
+        if (manager != null) {
+            return manager.getDatabaseConnections();
         }
-        return manager;
+        List<DatabaseConnection> connections = new ArrayList<DatabaseConnection>();
+        DatabaseConnection[] dcs = ConnectionManager.getDefault().getConnections();
+        for (DatabaseConnection dc : dcs) {
+            if (dc.getDriverClass().endsWith("OracleDriver")) {
+                connections.add(dc);
+            }
+        }
+        sortConnections(connections);
+        return connections;
+    }
+
+    void sortConnections(List<DatabaseConnection> connectionList) {
+        Collections.sort(connectionList, new Comparator<DatabaseConnection>() {
+            @Override
+            public int compare(DatabaseConnection o1, DatabaseConnection o2) {
+                return o1.getDisplayName().compareTo(o2.getDisplayName());
+            }
+        });
     }
 
     @Override
@@ -51,8 +78,8 @@ class DatabaseConnectionMediatorDefault implements DatabaseConnectionMediator {
 
     @Override
     public DatabaseConnectionExecutor getExecutor() {
-        if (connection.getConnection() == getConnectionManager().getTemplateConnection()) {
-            DatabaseConnection pooledDatabaseConnection = getConnectionManager().getPooledDatabaseConnection(false, true);
+        if (manager != null && connection.getConnection() == manager.getTemplateConnection()) {
+            DatabaseConnection pooledDatabaseConnection = manager.getPooledDatabaseConnection(false, true);
             if (pooledDatabaseConnection == null) {
                 return null;
             }
@@ -65,7 +92,11 @@ class DatabaseConnectionMediatorDefault implements DatabaseConnectionMediator {
     private void reconnectIfNeeded() {
         //to reconnect if the connection is gone. 
         if (connection.getJDBCConnection() == null) {
-            getConnectionManager().connect(connection.getConnection());
+            if (manager != null) {
+                manager.connect(connection.getConnection());
+            } else {
+                ConnectionManager.getDefault().showConnectionDialog(connection.getConnection());
+            }
         }
         if (connection.getJDBCConnection() == null) {
             JOptionPane.showMessageDialog(null, "Connect to the Database");
@@ -125,9 +156,6 @@ class DatabaseConnectionMediatorDefault implements DatabaseConnectionMediator {
         return false;
     }
 
-//    public String getDisplayName() {
-//        return "Using DB: " + connection.getDisplayName() + " [" + connection.getName() + "]";
-//    }
     DatabaseTransaction getTransaction() {
         return transaction;
     }
@@ -153,7 +181,17 @@ class DatabaseConnectionMediatorDefault implements DatabaseConnectionMediator {
             transaction.commitTransaction();
         }
         if (!hasOpenTransaction()) {
-            getConnectionManager().releaseDatabaseConnection(connection.getConnection());
+            if (manager != null) {
+                manager.releaseDatabaseConnection(connection.getConnection());
+            }
         }
+    }
+
+    @Override
+    public boolean isDefaultDatabase(DatabaseConnection connection) {
+        if (manager == null) {
+            return false;
+        }
+        return manager.isDefaultDatabase(connection);
     }
 }
