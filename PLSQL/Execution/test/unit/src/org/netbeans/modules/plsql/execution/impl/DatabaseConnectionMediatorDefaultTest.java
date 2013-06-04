@@ -9,6 +9,7 @@ import static org.junit.Assert.*;
 import org.junit.Before;
 import static org.mockito.Mockito.mock;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionAdapter;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionIO;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 
 /**

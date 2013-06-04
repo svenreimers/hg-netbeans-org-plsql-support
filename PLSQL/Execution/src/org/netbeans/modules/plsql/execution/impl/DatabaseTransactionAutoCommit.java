@@ -6,6 +6,7 @@ package org.netbeans.modules.plsql.execution.impl;
 
 import java.beans.PropertyChangeListener;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionAdapter;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionIO;
 
 /**
  * Implementation that always has auto commit enabled.

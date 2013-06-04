@@ -10,12 +10,11 @@ import java.util.logging.Logger;
 import javax.swing.text.Document;
 import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.progress.ProgressHandleFactory;
-import org.netbeans.modules.plsql.execution.FileExecutionUtil;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionAdapter;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionExecutor;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionIO;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionMediator;
 import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObject;
-import org.openide.loaders.DataObject;
 import org.openide.util.Cancellable;
 import org.openide.util.RequestProcessor;
 import org.openide.util.Task;
@@ -33,16 +32,19 @@ class PlsqlExecutor implements DatabaseConnectionExecutor {
     private final DatabaseConnectionMediator connectionMediator;
     private final DatabaseConnectionAdapter connection;
     private final StatementHolder statementHolder;
+    private DatabaseConnectionIO connectionIO;
 
     public PlsqlExecutor(DatabaseConnectionMediator connectionMediator, DatabaseConnectionAdapter connection, StatementHolder statementHolder) {
         this.connectionMediator = connectionMediator;
         this.connection = connection;
         this.statementHolder = statementHolder;
+        this.connectionIO = connectionMediator.getIo();
     }
 
     @Override
     public void execute(List<PlsqlExecutableObject> executableObjects, Document document) {
-        final ProgressHandle handle = ProgressHandleFactory.createHandle(executableObjects.get(0).getSummery(), new Cancellable() {
+        connectionIO.setSummery(executableObjects.get(0).getSummery());
+        final ProgressHandle handle = ProgressHandleFactory.createHandle(connectionIO.executionDisplayName(), new Cancellable() {
             @Override
             public boolean cancel() {
                 return handleCancel();
@@ -90,13 +92,11 @@ class PlsqlExecutor implements DatabaseConnectionExecutor {
             try {
                 handle.start();
 
-                DataObject dataObj = FileExecutionUtil.getDataObject(document);
-                String fileName = dataObj.getPrimaryFile().getNameExt();
-                mediator.initializeIO(fileName, dataObj.getNodeDelegate().getDisplayName(), executableObjects.get(0));
-                executor = new PlsqlFileExecutor(statementHolder, connection.getConnection(), mediator.getIo());
+                connectionIO.initialize();
+                executor = new PlsqlFileExecutor(statementHolder, connection.getConnection(), mediator.getIo().getIO());
                 executor.executePLSQL(executableObjects, document);
             } catch (InterruptedException ex) {
-                mediator.getIo().getOut().println("the task was CANCELLED");
+                mediator.getIo().println("the task was CANCELLED");
             } finally {
                 mediator.finish();
                 handle.finish();

@@ -14,12 +14,11 @@ import org.netbeans.api.db.explorer.ConnectionManager;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionAdapter;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionExecutor;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionIO;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionMediator;
-import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObject;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.filesystems.FileObject;
-import org.openide.windows.InputOutput;
 
 /**
  *
@@ -166,13 +165,8 @@ class DatabaseConnectionMediatorDefault implements DatabaseConnectionMediator {
     }
 
     @Override
-    public void initializeIO(String fileName, String displayName, PlsqlExecutableObject executableObject) {
-        io.initializeIO(fileName, displayName, executableObject);
-    }
-
-    @Override
-    public InputOutput getIo() {
-        return io.getIO();
+    public DatabaseConnectionIO getIo() {
+        return io;
     }
 
     @Override

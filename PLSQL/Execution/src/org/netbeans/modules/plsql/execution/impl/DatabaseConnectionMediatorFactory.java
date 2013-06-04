@@ -8,6 +8,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionAdapter;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionIO;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionMediator;
 import org.openide.filesystems.FileObject;
@@ -37,7 +38,7 @@ public class DatabaseConnectionMediatorFactory implements DatabaseConnectionMedi
     @Override
     public DatabaseConnectionMediator create(DatabaseConnectionManager connectionManager, DatabaseConnectionAdapter connectionAdapter,
             FileObject fileObject) {
-        DatabaseConnectionIO io = new DatabaseConnectionIO();
+        DatabaseConnectionIO io = new DatabaseConnectionIODefault(fileObject.getNameExt());
         DatabaseTransaction databaseTransaction = DatabaseTransaction.Factory.create(io, connectionAdapter, fileObject);
         return new DatabaseConnectionMediatorDefault(fileObject, connectionManager, connectionAdapter, databaseTransaction, io);
     }

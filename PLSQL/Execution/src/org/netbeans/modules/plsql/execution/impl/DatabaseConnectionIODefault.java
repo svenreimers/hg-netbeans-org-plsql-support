@@ -1,11 +1,7 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package org.netbeans.modules.plsql.execution.impl;
 
 import java.io.IOException;
-import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObject;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionIO;
 import org.netbeans.modules.plsqlsupport.db.ui.SQLCommandWindow;
 import org.openide.util.Exceptions;
 import org.openide.windows.IOProvider;
@@ -15,14 +11,28 @@ import org.openide.windows.InputOutput;
  *
  * @author chrlse
  */
-class DatabaseConnectionIO {
+class DatabaseConnectionIODefault implements DatabaseConnectionIO {
 
+    private String fileName;
+    private String summery;
     private InputOutput io = null;
 
-    void initializeIO(String fileName, String displayName, PlsqlExecutableObject executableObject) {
-        displayName = getIOTabName(executableObject, fileName, displayName);
+    DatabaseConnectionIODefault(String fileName) {
+        this.fileName = fileName;
+    }
+
+    @Override
+    public void setSummery(String summery) {
+        this.summery = summery;
+    }
+
+    @Override
+    public void initialize() {
+        if (summery == null) {
+            throw new IllegalArgumentException("summery not set");
+        }
         try {
-            io = IOProvider.getDefault().getIO(displayName, false);
+            io = IOProvider.getDefault().getIO(executionDisplayName(), false);
             //if the window is a pl/sql test window keep the old output. Otherwise flush
             if (fileName.startsWith(SQLCommandWindow.SQL_EXECUTION_FILE_PREFIX)) {
                 if (io.isClosed()) {
@@ -44,28 +54,23 @@ class DatabaseConnectionIO {
         }
     }
 
-    /*
-     * Get the suitable IO tab name, according to the content
-     * of the file.
-     */
-    private String getIOTabName(PlsqlExecutableObject executionObject, String fileName, String displayName) {
-        if (fileName.equals(displayName)) {
-            if (executionObject != null && fileName.endsWith(".tdb")) {
-                fileName = executionObject.getSummery();
-            }
-        } else if (displayName != null) {
-            fileName = displayName;
-        }
-        return fileName;
-    }
-
-    void println(Object object) {
+    @Override
+    public void println(Object object) {
         if (!io.isClosed()) {
             io.getOut().println(object);
         }
     }
 
-    InputOutput getIO() {
+    @Override
+    public InputOutput getIO() {
         return io;
+    }
+
+    @Override
+    public String executionDisplayName() {
+        if (fileName.endsWith(".tdb")) {
+            return summery;
+        }
+        return fileName;
     }
 }

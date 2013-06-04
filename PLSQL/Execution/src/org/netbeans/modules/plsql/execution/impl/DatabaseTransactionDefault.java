@@ -50,6 +50,7 @@ import java.util.logging.Logger;
 import org.netbeans.api.progress.ProgressHandle;
 import org.netbeans.api.progress.ProgressHandleFactory;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionAdapter;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionIO;
 import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 import org.openide.util.Exceptions;
 

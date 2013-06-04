@@ -4,7 +4,6 @@ import java.beans.PropertyChangeListener;
 import java.util.List;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.openide.filesystems.FileObject;
-import org.openide.windows.InputOutput;
 
 /**
  * One DatabaseConnectionMediator per DataObject is responsible for DatabaseConnections (such as what to take from pool,
@@ -69,14 +68,12 @@ public interface DatabaseConnectionMediator {
 
     public void addTransactionListener(PropertyChangeListener changeListener);
 
-    public void initializeIO(String fileName, String displayName, PlsqlExecutableObject get);
-
     /**
      * Has to be called, will close any loose ends. Such as release pooled connections if needed.
      */
     public void finish();
 
-    public InputOutput getIo();
+    public DatabaseConnectionIO getIo();
 
     public boolean isDefaultDatabase(DatabaseConnection connection);
 
