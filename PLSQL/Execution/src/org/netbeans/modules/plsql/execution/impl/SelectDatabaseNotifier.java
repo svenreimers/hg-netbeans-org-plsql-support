@@ -13,7 +13,6 @@
  */
 package org.netbeans.modules.plsql.execution.impl;
 
-//import static ifs.dev.nb.silentupdate.ui.Bundle.*;
 import org.openide.awt.Notification;
 import org.openide.awt.NotificationDisplayer;
 import org.openide.util.ImageUtilities;
@@ -29,18 +28,16 @@ public class SelectDatabaseNotifier {
 
     /**
      *
-     * @param tooltip the reason for doing the restart.
+     * @param filename 
      */
-//    @NbBundle.Messages({"RestartNeeded_Details=Click the balloon to restart your application now",
-//        "Support_RestartNeeded=Restart the application to complete "})
-    public void notify(final String tooltip) {
+    public void notify(final String filename) {
         synchronized (SelectDatabaseNotifier.class) {
             if (notification != null) {
                 notification.clear();
                 notification = null;
             }
 
-            notification = NotificationDisplayer.getDefault().notify("No Database Connection Selected for " + tooltip,
+            notification = NotificationDisplayer.getDefault().notify("No Database Connection Selected for " + filename,
                     ImageUtilities.loadImageIcon("org/netbeans/modules/autoupdate/pluginimporter/resources/warning.gif",
                     false), // NOI18N 
                     "Select Connection in Combo box and try again.", null);
