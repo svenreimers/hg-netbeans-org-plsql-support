@@ -40,6 +40,6 @@ public class DatabaseConnectionMediatorFactory implements DatabaseConnectionMedi
             FileObject fileObject) {
         DatabaseConnectionIO io = new DatabaseConnectionIODefault(fileObject.getNameExt());
         DatabaseTransaction databaseTransaction = DatabaseTransaction.Factory.create(io, connectionAdapter, fileObject);
-        return new DatabaseConnectionMediatorDefault(fileObject, connectionManager, connectionAdapter, databaseTransaction, io);
+        return new DatabaseConnectionMediatorDefault(fileObject, connectionManager, connectionAdapter, databaseTransaction, io, new SelectDatabaseNotifier());
     }
 }

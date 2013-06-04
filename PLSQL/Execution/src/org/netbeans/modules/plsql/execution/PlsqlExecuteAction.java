@@ -45,6 +45,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.*;
 import javax.swing.text.Document;
 import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
@@ -73,6 +75,7 @@ import org.openide.util.actions.CookieAction;
 })
 public class PlsqlExecuteAction extends CookieAction {
 
+    private static final Logger LOG = Logger.getLogger(PlsqlExecuteAction.class.getName());
     private static final String ICON_PATH = "org/netbeans/modules/plsql/execution/execute.png";
     private static final PlsqlFileValidatorService validator = Lookup.getDefault().lookup(PlsqlFileValidatorService.class);
     private static final String TEST_BLOCK_NAME_PREFIX = "TestBlock:";
@@ -134,7 +137,10 @@ public class PlsqlExecuteAction extends CookieAction {
     protected void performAction(Node[] activatedNodes) {
         dataObject = activatedNodes[0].getLookup().lookup(DataObject.class);
         final DatabaseConnectionExecutor executor = dataObject.getLookup().lookup(DatabaseConnectionMediator.class).getExecutor();
-
+        if (executor == null) {
+            LOG.log(Level.FINE, "DatabaseConnectionExecutor is null");
+            return;
+        }
         saveIfModified(dataObject);
 
         EditorCookie edCookie = dataObject.getLookup().lookup(EditorCookie.class);

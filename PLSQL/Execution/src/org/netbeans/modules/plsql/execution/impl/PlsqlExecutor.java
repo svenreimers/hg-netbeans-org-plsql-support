@@ -32,13 +32,13 @@ class PlsqlExecutor implements DatabaseConnectionExecutor {
     private final DatabaseConnectionMediator connectionMediator;
     private final DatabaseConnectionAdapter connection;
     private final StatementHolder statementHolder;
-    private DatabaseConnectionIO connectionIO;
+    private final DatabaseConnectionIO connectionIO;
 
-    public PlsqlExecutor(DatabaseConnectionMediator connectionMediator, DatabaseConnectionAdapter connection, StatementHolder statementHolder) {
+    public PlsqlExecutor(DatabaseConnectionMediator connectionMediator, DatabaseConnectionAdapter connection, StatementHolder statementHolder, DatabaseConnectionIO connectionIO) {
         this.connectionMediator = connectionMediator;
         this.connection = connection;
         this.statementHolder = statementHolder;
-        this.connectionIO = connectionMediator.getIo();
+        this.connectionIO = connectionIO;
     }
 
     @Override

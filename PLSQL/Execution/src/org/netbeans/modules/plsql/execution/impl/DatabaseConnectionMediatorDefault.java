@@ -27,17 +27,19 @@ import org.openide.filesystems.FileObject;
 class DatabaseConnectionMediatorDefault implements DatabaseConnectionMediator {
 
     private final FileObject fileObject;
-    private DatabaseConnectionManager manager;
-    private DatabaseConnectionAdapter connection;
+    private final DatabaseConnectionManager manager;
+    private final DatabaseConnectionAdapter connection;
     private final DatabaseTransaction transaction;
     private final DatabaseConnectionIO io;
+    private final SelectDatabaseNotifier notifier;
 
-    public DatabaseConnectionMediatorDefault(FileObject fileObject, DatabaseConnectionManager manager, DatabaseConnectionAdapter connection, DatabaseTransaction transaction, DatabaseConnectionIO io) {
+    public DatabaseConnectionMediatorDefault(FileObject fileObject, DatabaseConnectionManager manager, DatabaseConnectionAdapter connection, DatabaseTransaction transaction, DatabaseConnectionIO io, SelectDatabaseNotifier notifier) {
         this.fileObject = fileObject;
         this.manager = manager;
         this.connection = connection;
         this.transaction = transaction;
         this.io = io;
+        this.notifier = notifier;
     }
 
     @Override
@@ -77,6 +79,10 @@ class DatabaseConnectionMediatorDefault implements DatabaseConnectionMediator {
 
     @Override
     public DatabaseConnectionExecutor getExecutor() {
+        if (connection.getConnection() == null) {
+            notifier.notify(fileObject.getNameExt());
+            return null;
+        }
         if (manager != null && connection.getConnection() == manager.getTemplateConnection()) {
             DatabaseConnection pooledDatabaseConnection = manager.getPooledDatabaseConnection(false, true);
             if (pooledDatabaseConnection == null) {
@@ -85,7 +91,7 @@ class DatabaseConnectionMediatorDefault implements DatabaseConnectionMediator {
             connection.setConnection(pooledDatabaseConnection);
         }
         reconnectIfNeeded();
-        return new PlsqlExecutor(this, connection, new StatementHolder());
+        return new PlsqlExecutor(this, connection, new StatementHolder(), io);
     }
 
     private void reconnectIfNeeded() {
