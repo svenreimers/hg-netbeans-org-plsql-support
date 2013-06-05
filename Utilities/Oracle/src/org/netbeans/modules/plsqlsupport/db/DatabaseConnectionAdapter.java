@@ -7,6 +7,8 @@ package org.netbeans.modules.plsqlsupport.db;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 
 /**
@@ -15,6 +17,7 @@ import org.netbeans.api.db.explorer.DatabaseConnection;
  */
 public class DatabaseConnectionAdapter {
 
+    private static final Logger LOG = Logger.getLogger(DatabaseConnectionAdapter.class.getName());
     private DatabaseConnection connection;
 
     public DatabaseConnectionAdapter(DatabaseConnection connection) {
@@ -38,10 +41,14 @@ public class DatabaseConnectionAdapter {
     }
 
     public boolean isConnected() {
-        if (connection == null) {
-            return false;
+        try {
+            if (connection != null && connection.getJDBCConnection() != null && connection.getJDBCConnection().isValid(1000)) {
+                return true;
+            }
+        } catch (SQLException ex) {
+            LOG.log(Level.FINE, null, ex);
         }
-        return connection.getJDBCConnection() != null;
+        return false;
     }
 
     public CallableStatement prepareCall(String sqlProc) throws SQLException {
