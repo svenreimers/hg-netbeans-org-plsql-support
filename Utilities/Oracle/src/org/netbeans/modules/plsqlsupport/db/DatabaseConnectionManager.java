@@ -124,10 +124,22 @@ public class DatabaseConnectionManager {
         return origin instanceof DataObject ? getInstance((DataObject) origin) : null;
     }
 
+    /**
+     * Returns DatabaseConnectionManager based on DataObject. Will try to connect to Database.
+     *
+     * @param dataObject
+     * @return
+     */
     public static DatabaseConnectionManager getInstance(DataObject dataObject) {
         return getInstance(dataObject.getPrimaryFile(), true);
     }
 
+    /**
+     * Returns DatabaseConnectionManager based on FileObject.
+     *
+     * @param fileObject
+     * @return
+     */
     public static DatabaseConnectionManager getInstance(FileObject fileObject, boolean prompt) {
         Project project = FileOwnerQuery.getOwner(fileObject);
         if (project != null) {
@@ -262,7 +274,7 @@ public class DatabaseConnectionManager {
     private DatabaseConnection getDatabaseConnectionFromPool() {
         logger.log(Level.FINEST, "Getting connection from the pool. Number of pooled connections={0}", connectionPool.size());
         synchronized (connectionPool) {
-            DatabaseConnection connection = null;
+            DatabaseConnection connection;
             while (!connectionPool.isEmpty()) {
                 connection = connectionPool.pop();
                 if (testConnection(connection)) {
@@ -444,18 +456,17 @@ public class DatabaseConnectionManager {
      */
     public static void setModuleInOracle(final DatabaseConnection connection) {
         try {
-            ResultSet rs = null;
-            CallableStatement stmt = null;
             if (connection == null || connection.getJDBCConnection() == null) {
                 return;
             }
-            String appName = "";
+            String appName;
             try {
                 appName = NbBundle.getBundle("org.netbeans.core.windows.view.ui.Bundle").getString("CTL_MainWindow_Title_No_Project");
             } catch (MissingResourceException x) {
                 appName = "NetBeans"; // NOI18N
             }
             String sqlProc = "{call Dbms_Application_Info.Set_Module(?,?)}";
+            CallableStatement stmt;
             stmt = connection.getJDBCConnection().prepareCall(sqlProc);
             stmt.setString(1, appName);
             stmt.setString(2, "Main Program");
@@ -674,9 +685,6 @@ public class DatabaseConnectionManager {
 
     private class ConnectionErrorListener implements ExceptionListener {
 
-        public ConnectionErrorListener() {
-        }
-
         @Override
         public void exceptionThrown(Exception e) {
             logger.log(Level.INFO, e.getMessage(), e);
@@ -692,7 +700,6 @@ public class DatabaseConnectionManager {
         if (!isOnline()) {
             return false;
         }
-        ResultSet rs = null;
         PreparedStatement stmt = null;
         String version = null;
         if (templateConnection == null || templateConnection.getJDBCConnection() == null) {
@@ -702,7 +709,7 @@ public class DatabaseConnectionManager {
         try {
             String sqlSelect = "SELECT banner FROM v$version WHERE banner LIKE 'Oracle%'";
             stmt = templateConnection.getJDBCConnection().prepareStatement(sqlSelect);
-            rs = stmt.executeQuery();
+            ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 version = rs.getString(1);
             }

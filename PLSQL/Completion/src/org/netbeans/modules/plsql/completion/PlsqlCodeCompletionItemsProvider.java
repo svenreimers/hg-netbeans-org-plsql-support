@@ -41,12 +41,6 @@
  */
 package org.netbeans.modules.plsql.completion;
 
-import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
-import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
-import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
-import org.netbeans.modules.plsql.lexer.PlsqlBlock;
-import org.netbeans.modules.plsql.lexer.PlsqlBlockType;
-import org.netbeans.modules.plsql.lexer.PlsqlTokenId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -55,41 +49,32 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import javax.swing.text.BadLocationException;
-import javax.swing.text.Document;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.lexer.Token;
 import org.netbeans.api.lexer.TokenSequence;
 import org.netbeans.editor.BaseDocument;
+import org.netbeans.modules.plsql.lexer.PlsqlBlock;
+import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
+import org.netbeans.modules.plsql.lexer.PlsqlBlockType;
+import org.netbeans.modules.plsql.lexer.PlsqlTokenId;
+import org.netbeans.modules.plsqlsupport.db.DatabaseContentManager;
 import org.openide.util.Exceptions;
 
 /**
  *
  * @author chawlk
+ * @author chrlse
  */
 public class PlsqlCodeCompletionItemsProvider {
 
-//   private static String dbConnectionString = null;
-//   private static long lastPackageSyncTime = 0;
-//   private static long lastViewSyncTime = 0;
-//   private static long lastTableSyncTime = 0;
-//   private static long lastSequenceSyncTime = 0;
-//   private static HashMap<String, PlsqlCodeCompletionItem> tableItems = new HashMap<String, PlsqlCodeCompletionItem>();
-//   private static HashMap<String, PlsqlCodeCompletionItem> viewItems = new HashMap<String, PlsqlCodeCompletionItem>();
-//   private static HashMap<String, PlsqlCodeCompletionItem> pkgItems = new HashMap<String, PlsqlCodeCompletionItem>();
-//   private static HashMap<String, PlsqlCodeCompletionItem> seqItems = new HashMap<String, PlsqlCodeCompletionItem>();
    private DatabaseContentManager cache = null;
-   private DatabaseConnectionManager connectionProvider = null;
+   private DatabaseConnection connection;
 
-   /** Creates a new instance of PLSQLCodeCompletionItemsProvider */
-   public PlsqlCodeCompletionItemsProvider(Document doc) {
-
-      connectionProvider = DatabaseConnectionManager.getInstance(doc);
-      if (connectionProvider != null) {
-         DatabaseConnection connection = connectionProvider.getTemplateConnection();
-         if (connection != null) {
-            cache = DatabaseContentManager.getInstance(connection);
-         }
-      }
+   /**
+    * Creates a new instance of PLSQLCodeCompletionItemsProvider
+    */
+   PlsqlCodeCompletionItemsProvider(DatabaseConnection databaseConnection) {
+      cache = DatabaseContentManager.getInstance(databaseConnection);
    }
 
    private void updateCompletionItemCollection(Collection<PlsqlCodeCompletionItem> map, Collection records, CompletionItemType type) {
@@ -101,6 +86,7 @@ public class PlsqlCodeCompletionItemsProvider {
 
    /**
     * Get all database packages
+    *
     * @return Collection of Code Completion Items for all database packages
     */
    public Collection<PlsqlCodeCompletionItem> getPackages(String schema) {
@@ -111,6 +97,7 @@ public class PlsqlCodeCompletionItemsProvider {
 
    /**
     * Get all database tables
+    *
     * @return Collection of Code Completion Items for all database tables
     */
    public Collection<PlsqlCodeCompletionItem> getTables(String schema) {
@@ -121,6 +108,7 @@ public class PlsqlCodeCompletionItemsProvider {
 
    /**
     * Get all database views
+    *
     * @return Collection of Code Completion Items for all database views
     */
    public Collection<PlsqlCodeCompletionItem> getViews(String schema) {
@@ -131,6 +119,7 @@ public class PlsqlCodeCompletionItemsProvider {
 
    /**
     * Get all database sequences
+    *
     * @return Collection of Code Completion Items for all database sequences
     */
    public Collection<PlsqlCodeCompletionItem> getSequences(String schema) {
@@ -141,14 +130,15 @@ public class PlsqlCodeCompletionItemsProvider {
 
    /**
     * Get all database functions
+    *
     * @return Collection of Code Completion Items for all database functions
     */
    public Collection<PlsqlCodeCompletionItem> getFunctions(String schema, DatabaseConnection databaseConnection) {
       Collection<PlsqlCodeCompletionItem> items = new ArrayList<PlsqlCodeCompletionItem>();
       updateCompletionItemCollection(items, cache.getAllFunctions(schema), CompletionItemType.FUNCTION);
       List<PlsqlCodeCompletionMethodItem> standardMethods = getMethodObjectsMerged("Standard", databaseConnection);
-      for(PlsqlCodeCompletionMethodItem item : standardMethods) {
-         if(item.getType()==CompletionItemType.FUNCTION) {
+      for (PlsqlCodeCompletionMethodItem item : standardMethods) {
+         if (item.getType() == CompletionItemType.FUNCTION) {
             items.add(item);
          }
       }
@@ -157,34 +147,36 @@ public class PlsqlCodeCompletionItemsProvider {
 
    /**
     * Get all database procedures
+    *
     * @return Collection of Code Completion Items for all database procedures
     */
    public Collection<PlsqlCodeCompletionItem> getProcedures(String schema, DatabaseConnection databaseConnection) {
       Collection<PlsqlCodeCompletionItem> items = new ArrayList<PlsqlCodeCompletionItem>();
       updateCompletionItemCollection(items, cache.getAllProcedures(schema), CompletionItemType.PROCEDURE);
       List<PlsqlCodeCompletionMethodItem> standardMethods = getMethodObjectsMerged("Standard", databaseConnection);
-      for(PlsqlCodeCompletionMethodItem item : standardMethods) {
-         if(item.getType()==CompletionItemType.PROCEDURE) {
+      for (PlsqlCodeCompletionMethodItem item : standardMethods) {
+         if (item.getType() == CompletionItemType.PROCEDURE) {
             items.add(item);
          }
-      }      
+      }
       return items;
    }
 
-
    /**
     * Get pseudo columns for database sequences
+    *
     * @return List of code completion items for sequence psuedo columns. (i.e. 'nextval' and 'currval')
     */
    public List<PlsqlCodeCompletionItem> getSequencePseudoColumns() {
-     List<PlsqlCodeCompletionItem> columnList = new ArrayList<PlsqlCodeCompletionItem>();
-     columnList.add(new PlsqlCodeCompletionItem("nextval", CompletionItemType.COLUMN));
-     columnList.add(new PlsqlCodeCompletionItem("currval", CompletionItemType.COLUMN));
-     return columnList;
+      List<PlsqlCodeCompletionItem> columnList = new ArrayList<PlsqlCodeCompletionItem>();
+      columnList.add(new PlsqlCodeCompletionItem("nextval", CompletionItemType.COLUMN));
+      columnList.add(new PlsqlCodeCompletionItem("currval", CompletionItemType.COLUMN));
+      return columnList;
    }
 
    /**
     * Get the columns of the given table/view
+    *
     * @param name of view/table
     * @return List of code completion items for the columns of the specified table/view
     */
@@ -199,24 +191,27 @@ public class PlsqlCodeCompletionItemsProvider {
 
    /**
     * Get only the functions/procedures belonging to the given owner, of the given package
+    *
     * @param owner
     * @return
     */
    public List<PlsqlCodeCompletionMethodItem> getMethodObjects(String pkg, DatabaseConnection databaseConnection) {
       return getMethodObjects(pkg, databaseConnection, false);
    }
-   
+
    /**
     * Get only the functions/procedures belonging to the given owner, of the given package
+    *
     * @param owner
     * @return
     */
    public List<PlsqlCodeCompletionMethodItem> getMethodObjectsMerged(String pkg, DatabaseConnection databaseConnection) {
       return getMethodObjects(pkg, databaseConnection, true);
    }
-   
+
    /**
     * Get only the functions/procedures belonging to the given owner, of the given package
+    *
     * @param owner
     * @return
     */
@@ -231,10 +226,10 @@ public class PlsqlCodeCompletionItemsProvider {
          if (i > 0) {
             name = name.substring(0, i);
          }
-         if(merged) {
+         if (merged) {
             PlsqlCodeCompletionMethodItem item = uniqueList.get(name);
-            if(item!=null) {
-               item.setDocumentation(item.getDocumentation()+"<br>---<br>"+documentation);
+            if (item != null) {
+               item.setDocumentation(item.getDocumentation() + "<br>---<br>" + documentation);
             } else {
                CompletionItemType type = documentation.indexOf(">FUNCTION<") > 0 ? CompletionItemType.FUNCTION : CompletionItemType.PROCEDURE;
                item = new PlsqlCodeCompletionMethodItem(PlsqlDataAccessor.formatPlsqlName(name), type, documentation);
@@ -251,6 +246,7 @@ public class PlsqlCodeCompletionItemsProvider {
 
    /**
     * Get the exceptions belonging to the given owner, of the given package
+    *
     * @param package
     * @return
     */
@@ -260,6 +256,7 @@ public class PlsqlCodeCompletionItemsProvider {
 
    /**
     * Get the exceptions belonging to the given owner, of the given package
+    *
     * @param package
     * @return
     */
@@ -269,6 +266,7 @@ public class PlsqlCodeCompletionItemsProvider {
 
    /**
     * Get the constants belonging to the given owner, of the given package
+    *
     * @param package
     * @return
     */
@@ -278,6 +276,7 @@ public class PlsqlCodeCompletionItemsProvider {
 
    /**
     * Get the types belonging to the given owner, of the given package
+    *
     * @param package
     * @return
     */
@@ -285,20 +284,19 @@ public class PlsqlCodeCompletionItemsProvider {
       return getPackageMembers(pkg, CompletionItemType.TYPE, databaseConnection);
    }
 
-   
    private List<PlsqlCodeCompletionItem> getPackageMembers(String pkg, CompletionItemType memberType, DatabaseConnection databaseConnection) {
       List<PlsqlCodeCompletionItem> methodList = new ArrayList<PlsqlCodeCompletionItem>();
       Map<String, String> methods = cache.getPackageMembers(pkg, databaseConnection);
       for (Map.Entry<String, String> methodEntry : methods.entrySet()) {
          String name = methodEntry.getKey();
          String type = methodEntry.getValue();
-         if(CompletionItemType.valueOf(type)==memberType) {
+         if (CompletionItemType.valueOf(type) == memberType) {
             methodList.add(new PlsqlCodeCompletionItem(name, memberType));
          }
       }
       return methodList;
    }
-      
+
    String extractMethodHeader(PlsqlBlock block, PlsqlContext context) {
       BaseDocument document = context.getDocument();
       int start = block.getStartOffset();
@@ -347,6 +345,7 @@ public class PlsqlCodeCompletionItemsProvider {
 
    /**
     * Get only the functions/procedures belonging to the current package
+    *
     * @param call context
     * @return
     */
@@ -370,6 +369,7 @@ public class PlsqlCodeCompletionItemsProvider {
 
    /**
     * Get only the cursor belonging to the current scope
+    *
     * @param call context
     * @return
     */
@@ -409,6 +409,7 @@ public class PlsqlCodeCompletionItemsProvider {
 
    /**
     * Get only the type declarations belonging to the current scope
+    *
     * @param context
     * @return
     */
@@ -497,6 +498,7 @@ public class PlsqlCodeCompletionItemsProvider {
 
    /**
     * Get the start offset of the first child method implementation
+    *
     * @param parent
     * @return
     */
@@ -518,6 +520,7 @@ public class PlsqlCodeCompletionItemsProvider {
 
    /**
     * Get the columns of the type declaration
+    *
     * @param parent
     * @param context
     * @return
@@ -618,99 +621,92 @@ public class PlsqlCodeCompletionItemsProvider {
 
    /**
     * Method that will actually extract the columns from the type declaration
+    *
     * @param ts
     * @param columns
     * @param context
     */
    private void extractColumns(TokenSequence<PlsqlTokenId> ts, List<PlsqlCodeCompletionItem> columns, PlsqlContext context) {
-      DatabaseConnection databaseConnection = connectionProvider.getPooledDatabaseConnection(false);
-      try {
-         while (ts.moveNext()) {
-            Token<PlsqlTokenId> token = ts.token();
-            PlsqlTokenId tokenId = token.id();
+      while (ts.moveNext()) {
+         Token<PlsqlTokenId> token = ts.token();
+         PlsqlTokenId tokenId = token.id();
 
-            if (tokenId == PlsqlTokenId.KEYWORD && "RECORD".equalsIgnoreCase(token.toString())) {
-               while (ts.moveNext()) {
-                  token = ts.token();
-                  tokenId = token.id();
+         if (tokenId == PlsqlTokenId.KEYWORD && "RECORD".equalsIgnoreCase(token.toString())) {
+            while (ts.moveNext()) {
+               token = ts.token();
+               tokenId = token.id();
 
-                  if (tokenId == PlsqlTokenId.LPAREN || (tokenId == PlsqlTokenId.OPERATOR && token.toString().equals(","))) {
-                     if (getNextNonWhitespace(ts)) {
-                        token = ts.token();
-                        columns.add(new PlsqlCodeCompletionItem(token.toString(), CompletionItemType.COLUMN));
-                     }
-                  }
-
-                  if (tokenId == PlsqlTokenId.OPERATOR && token.toString().equals(";")) {
-                     break;
+               if (tokenId == PlsqlTokenId.LPAREN || (tokenId == PlsqlTokenId.OPERATOR && token.toString().equals(","))) {
+                  if (getNextNonWhitespace(ts)) {
+                     token = ts.token();
+                     columns.add(new PlsqlCodeCompletionItem(token.toString(), CompletionItemType.COLUMN));
                   }
                }
 
-               break;
-            } else if (tokenId == PlsqlTokenId.KEYWORD && "TABLE".equalsIgnoreCase(token.toString())) {
-               if (getNextNonWhitespace(ts)) {
-                  token = ts.token();
-                  if (tokenId == PlsqlTokenId.KEYWORD && "OF".equalsIgnoreCase(token.toString())) {
-                     if (getNextNonWhitespace(ts)) {
-                        token = ts.token();
-                        tokenId = token.id();
-                        String text = token.toString();
+               if (tokenId == PlsqlTokenId.OPERATOR && token.toString().equals(";")) {
+                  break;
+               }
+            }
 
-                        if (tokenId == PlsqlTokenId.IDENTIFIER) {
-                           //Can be a table%rowtype or another type declaration
-                           if (ts.moveNext()) {
-                              token = ts.token();
-                              tokenId = token.id();
-                              if (tokenId == PlsqlTokenId.OPERATOR && token.toString().equals("%")) {
-                                 if (ts.moveNext()) {
-                                    token = ts.token();
-                                    tokenId = token.id();
-                                    if (tokenId == PlsqlTokenId.KEYWORD && token.toString().equals("ROWTYPE")) {
-                                       if (cache.isView(text) || cache.isTable(text)) {
-                                          //Table or view
-                                          List<PlsqlCodeCompletionColumnItem> items = getColumnObjects(text, databaseConnection);
-                                          for (int i = 0; i < items.size(); i++) {
-                                             columns.add(items.get(i));
-                                          }
-                                       } else {
-                                          //Can be a cursor
-                                          List results = getCursorColumns(text, context);
-                                          for (int i = 0; i < results.size(); i++) {
-                                             columns.add((PlsqlCodeCompletionItem) results.get(i));
-                                          }
+            break;
+         } else if (tokenId == PlsqlTokenId.KEYWORD && "TABLE".equalsIgnoreCase(token.toString())) {
+            if (getNextNonWhitespace(ts)) {
+               token = ts.token();
+               if (tokenId == PlsqlTokenId.KEYWORD && "OF".equalsIgnoreCase(token.toString())) {
+                  if (getNextNonWhitespace(ts)) {
+                     token = ts.token();
+                     tokenId = token.id();
+                     String text = token.toString();
+
+                     if (tokenId == PlsqlTokenId.IDENTIFIER) {
+                        //Can be a table%rowtype or another type declaration
+                        if (ts.moveNext()) {
+                           token = ts.token();
+                           tokenId = token.id();
+                           if (tokenId == PlsqlTokenId.OPERATOR && token.toString().equals("%")) {
+                              if (ts.moveNext()) {
+                                 token = ts.token();
+                                 tokenId = token.id();
+                                 if (tokenId == PlsqlTokenId.KEYWORD && token.toString().equals("ROWTYPE")) {
+                                    if (cache.isView(text) || cache.isTable(text)) {
+                                       //Table or view
+                                       List<PlsqlCodeCompletionColumnItem> items = getColumnObjects(text, connection);
+                                       for (int i = 0; i < items.size(); i++) {
+                                          columns.add(items.get(i));
+                                       }
+                                    } else {
+                                       //Can be a cursor
+                                       List results = getCursorColumns(text, context);
+                                       for (int i = 0; i < results.size(); i++) {
+                                          columns.add((PlsqlCodeCompletionItem) results.get(i));
                                        }
                                     }
                                  }
-                              } else {
-                                 //Check for another type declaration
-                                 List items = getTypeColumns(text, context);
-                                 for (int i = 0; i < items.size(); i++) {
-                                    columns.add((PlsqlCodeCompletionItem) items.get(i));
-                                 }
+                              }
+                           } else {
+                              //Check for another type declaration
+                              List items = getTypeColumns(text, context);
+                              for (int i = 0; i < items.size(); i++) {
+                                 columns.add((PlsqlCodeCompletionItem) items.get(i));
                               }
                            }
                         }
                      }
                   }
                }
-
-               break;
             }
+            break;
          }
-      } finally {
-         connectionProvider.releaseDatabaseConnection(databaseConnection);
       }
    }
 
-
-      /**
-       * Get Return next non whitespace token
-       * @param ts
-       * @return
-       */
-   private
-
-    boolean getNextNonWhitespace(TokenSequence<PlsqlTokenId> ts) {
+   /**
+    * Get Return next non whitespace token
+    *
+    * @param ts
+    * @return
+    */
+   private boolean getNextNonWhitespace(TokenSequence<PlsqlTokenId> ts) {
       boolean moveNext = ts.moveNext();
       Token<PlsqlTokenId> tmp = ts.token();
 
@@ -729,6 +725,7 @@ public class PlsqlCodeCompletionItemsProvider {
 
    /**
     * Get the columns in the select list of the cursor
+    *
     * @param parent
     * @param context
     * @return
@@ -808,22 +805,18 @@ public class PlsqlCodeCompletionItemsProvider {
 
       if (!sql.equals("")) {
          sql = context.translateAliases(sql);
-         DatabaseConnection dbConnection = connectionProvider.getPooledDatabaseConnection(true);
-         try {
-            String[] results = PlsqlDataAccessor.getMetaData(dbConnection.getJDBCConnection(), sql);
-            if (results != null) {
-               for (int i = 0; i < results.length; i++) {
-                  columns.add(new PlsqlCodeCompletionItem(results[i].toString().toLowerCase(Locale.ENGLISH), CompletionItemType.COLUMN));
-               }
+         String[] results = PlsqlDataAccessor.getMetaData(connection.getJDBCConnection(), sql);
+         if (results != null) {
+            for (int i = 0; i < results.length; i++) {
+               columns.add(new PlsqlCodeCompletionItem(results[i].toString().toLowerCase(Locale.ENGLISH), CompletionItemType.COLUMN));
             }
-         } finally {
-            connectionProvider.releaseDatabaseConnection(dbConnection);
          }
       }
    }
 
    /**
     * Get only the parameters if the current scope is a method implementation
+    *
     * @param call context
     * @return
     */
@@ -917,6 +910,7 @@ public class PlsqlCodeCompletionItemsProvider {
 
    /**
     * Extract the parameters from the given block and it's child methods
+    *
     * @param block
     * @param context
     * @param params
@@ -1008,4 +1002,3 @@ public class PlsqlCodeCompletionItemsProvider {
       }
    }
 }
-   
