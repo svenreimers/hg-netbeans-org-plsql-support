@@ -448,6 +448,7 @@ public class PlsqlFileExecutor {
 
                 String exeObjName = exeObj.getExecutableObjName().toUpperCase(Locale.ENGLISH);
                 if ((exeObj.getType() != PlsqlExecutableObjectType.UNKNOWN) && (exeObj.getType() != PlsqlExecutableObjectType.COMMENT)) {
+                     define = getAliases(definesMap, doc, 0, exeObj.getEndOffset(), define, io);
                     //replace aliases since there are aliases in PROMPTS
                     if (!ignoreDefines) {
                         if (exeObj.getType() == PlsqlExecutableObjectType.TRIGGER) {
@@ -1115,7 +1116,7 @@ public class PlsqlFileExecutor {
                                 || (value.startsWith("\'") && value.endsWith("\'"))) {
                             value = value.substring(1, value.length() - 1);
                         }
-
+                        
                         Iterator<Character> itre = define.iterator();
                         while (itre.hasNext()) {
                             if (value.indexOf(itre.next()) >= 0) {

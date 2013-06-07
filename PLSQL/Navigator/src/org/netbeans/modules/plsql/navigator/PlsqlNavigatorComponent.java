@@ -59,6 +59,8 @@ import java.util.Enumeration;
 import java.util.List;
 import javax.swing.Icon;
 import javax.swing.JEditorPane;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
 import javax.swing.JToggleButton;
 import javax.swing.JTree;
 import javax.swing.SwingUtilities;
@@ -73,6 +75,10 @@ import javax.swing.tree.TreePath;
 import org.netbeans.editor.BaseDocument;
 import org.netbeans.editor.Utilities;
 import org.netbeans.modules.editor.NbEditorUtilities;
+import org.netbeans.modules.plsql.execution.PlsqlExecutableBlocksMaker;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionExecutor;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionMediator;
+import org.netbeans.modules.plsqlsupport.db.PlsqlExecutableObject;
 import org.openide.ErrorManager;
 import org.openide.cookies.EditorCookie;
 import org.openide.loaders.DataObject;
@@ -163,14 +169,13 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
             @Override
             public void mousePressed(MouseEvent e) {
                 int selRow = jTree1.getRowForLocation(e.getX(), e.getY());
+                final DefaultMutableTreeNode node = (DefaultMutableTreeNode) jTree1.getLastSelectedPathComponent();
+                if (node == null) {
+                    return;
+                }
                 if (selRow != -1) {
                     if (e.getClickCount() == 2) {
                         try {
-                            DefaultMutableTreeNode node = (DefaultMutableTreeNode) jTree1.getLastSelectedPathComponent();
-                            if (node == null) {
-                                return;
-                            }
-
                             Object nodeInfo = node.getUserObject();
                             if (nodeInfo instanceof NodeInfo) {
                                 NodeInfo block = (NodeInfo) nodeInfo;
@@ -179,6 +184,20 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
                             }
                         } catch (Exception ex) {
                             Exceptions.printStackTrace(ex);
+                        }
+                    } else if (SwingUtilities.isRightMouseButton(e)) {
+                        if (node.getParent().toString().equals("Views")) {
+                            JPopupMenu popup = new JPopupMenu();                            
+                            JMenuItem item = new JMenuItem("Deploy View");
+                            item.addActionListener(new ActionListener() {
+                                @Override
+                                public void actionPerformed(ActionEvent e) {
+                                    deploySelectedViews();
+                                }
+                            });
+
+                            popup.add(item);
+                            popup.show(e.getComponent(), e.getX(), e.getY());
                         }
                     }
                 }
@@ -850,6 +869,38 @@ public class PlsqlNavigatorComponent extends NavigatorTopComponent {
                 }
             }
         });
+    }
+
+    private void deploySelectedViews() {
+        BaseDocument doc = (BaseDocument) getDocument();
+        DataObject dataObject = NbEditorUtilities.getDataObject(doc);
+
+        final DatabaseConnectionExecutor executor = dataObject.getLookup().lookup(DatabaseConnectionMediator.class).getExecutor();
+        if (executor == null) {
+            return;
+        }
+
+        PlsqlExecutableBlocksMaker blockMaker = new PlsqlExecutableBlocksMaker(doc);
+        List<PlsqlExecutableObject> blocks = blockMaker.makeExceutableObjects();
+        List<PlsqlExecutableObject> newblocks = new ArrayList<PlsqlExecutableObject>();
+        
+        TreePath[] selectionPaths = jTree1.getSelectionPaths();
+        for (TreePath tp : selectionPaths) {
+            DefaultMutableTreeNode node1 = (DefaultMutableTreeNode) tp.getLastPathComponent();
+            NodeInfo nodeblock = null;
+            Object nodeInfo = node1.getUserObject();
+            if (nodeInfo instanceof NodeInfo) {
+                nodeblock = (NodeInfo) nodeInfo;
+            }
+            for (PlsqlExecutableObject block : blocks) {
+             // did not used the offsets to select the blocks because we need to deploy the view comments along with the view
+               if (block.getExecutableObjName().equals(nodeblock.name)) {
+                    newblocks.add(block);                   
+                }
+            }
+
+        }
+        executor.execute(newblocks, doc);
     }
 
     /**
