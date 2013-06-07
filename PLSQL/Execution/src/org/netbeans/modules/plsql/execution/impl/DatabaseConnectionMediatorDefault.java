@@ -146,9 +146,10 @@ class DatabaseConnectionMediatorDefault implements DatabaseConnectionMediator {
                 transaction.commitTransaction();
             } else {
                 String msg = "Commit open transactions for " + connection.getDisplayName() + "?";
-                String title = "Commit open transaction?";
+                String title = "Open transactions!";
+                Object[] options = {"Commit", "Rollback", "Cancel"};
                 int dialogAnswer = JOptionPane.showOptionDialog(null, msg, title, JOptionPane.YES_NO_CANCEL_OPTION,
-                        JOptionPane.QUESTION_MESSAGE, null, null, null);
+                        JOptionPane.QUESTION_MESSAGE, null, options, null);
                 if (dialogAnswer == JOptionPane.YES_OPTION) {
                     commitTransaction();
                 } else if (dialogAnswer == JOptionPane.NO_OPTION) {
