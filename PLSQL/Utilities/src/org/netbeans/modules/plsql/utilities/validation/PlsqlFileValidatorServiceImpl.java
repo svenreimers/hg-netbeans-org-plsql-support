@@ -41,11 +41,11 @@
  */
 package org.netbeans.modules.plsql.utilities.validation;
 
-import org.netbeans.modules.plsql.utilities.PlsqlFileValidator;
-import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
 import java.io.File;
 import java.util.Collection;
 import java.util.Locale;
+import org.netbeans.modules.plsql.utilities.PlsqlFileValidator;
+import org.netbeans.modules.plsql.utilities.PlsqlFileValidatorService;
 import org.openide.filesystems.FileObject;
 import org.openide.filesystems.FileUtil;
 import org.openide.loaders.DataFolder;
