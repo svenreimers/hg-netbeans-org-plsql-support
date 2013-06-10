@@ -134,7 +134,7 @@ public class PlsqlFileValidatorServiceImpl implements PlsqlFileValidatorService 
          return false;
       }
       FileObject fileObject = dataObject.getPrimaryFile();
-      return fileObject.isValid();
+      return fileObject.getPath().toLowerCase(Locale.ENGLISH).endsWith(".tdb") && fileObject.isValid();
    }
 
    @Override
