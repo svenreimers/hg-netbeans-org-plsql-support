@@ -150,8 +150,7 @@ public class PlsqlExecuteAction extends CookieAction {
         List<PlsqlExecutableObject> blocks = blockMaker.makeExceutableObjects();
 
         //if the user has selected any text in the window, create exec block using selected text only
-        if (validator.isValidTDB(dataObject)) {
-            JEditorPane[] panes = edCookie.getOpenedPanes();
+        JEditorPane[] panes = edCookie.getOpenedPanes();
             if ((panes != null) && (panes.length > 0)) {
                 String selectedSql = panes[0].getSelectedText();
                 if (selectedSql != null && !selectedSql.trim().equals("")) { //some text has been selected
@@ -189,11 +188,10 @@ public class PlsqlExecuteAction extends CookieAction {
                     }
                 }
             }
-            if (blocks.size() > 0 && (dataObject.getNodeDelegate().getDisplayName() == null || !dataObject.getNodeDelegate().getDisplayName().contains(TEST_BLOCK_NAME_PREFIX))) {
+            if (blocks.size() > 0 && validator.isValidTDB(dataObject) && (dataObject.getNodeDelegate().getDisplayName() == null || !dataObject.getNodeDelegate().getDisplayName().contains(TEST_BLOCK_NAME_PREFIX))) {
                 String str = blocks.get(0).getPlsqlString().replaceAll("\n", " ");
                 dataObject.getNodeDelegate().setDisplayName(str.length() > 30 ? str.substring(0, 30) + "..." : str);
             }
-        }
         executor.execute(blocks, document);
     }
 
