@@ -787,7 +787,11 @@ public class PlsqlFormatter extends ExtFormatter {
                     TokenItem previousWhen = getPreviousWhenThenBlock(previousNWS);
 
                     if (previousWhen != null) {
-                        indent = getIndentationDiff(previousWhen, previousNWS);
+                        indent = getIndentationDiff(previousWhen, previousNWS);                    
+                    }
+                    if(previousWhen == null && (previousNWS.getImage().equalsIgnoreCase("CASE") || previousNWS.getImage().equalsIgnoreCase("EXCEPTION") 
+                                   || getPreviousKeyword(previousNWS).getImage().trim().equalsIgnoreCase("CASE"))){
+                        indent = getTabSize();
                     }
                 } else if (currentImage.equalsIgnoreCase("END") || currentImage.equalsIgnoreCase("$END")) {
                     //END can be ending BEGIN, EXCEPTION, LOOP, IF
@@ -1550,13 +1554,16 @@ public class PlsqlFormatter extends ExtFormatter {
                 if ((imageTmp.equalsIgnoreCase("$ERROR"))
                         || (imageTmp.equalsIgnoreCase("BEGIN"))
                         || (imageTmp.equalsIgnoreCase("EXCEPTION"))
+                        || (imageTmp.equalsIgnoreCase("CASE"))
                         || (imageTmp.equalsIgnoreCase("LOOP"))) {
                     break;
                 } else if ((imageTmp.equalsIgnoreCase(";"))
                         && (tokenThen != null)) {
                     //Don't catch IF-THEN
                     break;
-                } else if ((imageTmp.equalsIgnoreCase("WHEN"))
+                }else if(imageTmp.equalsIgnoreCase("IF")  && (tokenThen != null)) {
+                    tokenThen = null;
+                }else if ((imageTmp.equalsIgnoreCase("WHEN"))
                         && (tokenThen != null)) {
                     tokenWhen = tokenTemp;
                     break;
