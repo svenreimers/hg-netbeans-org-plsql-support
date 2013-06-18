@@ -60,6 +60,7 @@ public class OptionsUtilities {
    public static final String PLSQL_ANNOTATIONS_WRONG_END_NAME_KEY = "plsql.annotations.wrong.endname";
    public static final String PLSQL_ANNOTATIONS_WRONG_FUNC_PARAM_KEY = "plsql.annotations.wrong.func.param";
    public static final String PLSQL_ANNOTATIONS_WRONG_PARAM_ORDER_KEY = "plsql.annotations.wrong.param.order";
+   public static final String PLSQL_OUTPUT_BUFFER_KEY = "plsql.output.buffer";
 
    private OptionsUtilities() {
    } //singleton
@@ -118,5 +119,10 @@ public class OptionsUtilities {
 
    public static boolean isPlSqlAnnotationWrongParamOrderEnabled() {
       return NbPreferences.forModule(PLSQLAnnotationsPanel.class).getBoolean(PLSQL_ANNOTATIONS_WRONG_PARAM_ORDER_KEY, true);
+   }
+   
+   public static int PlSqlOutputBufferSize() {
+      int bufferSize = 20000;
+      return NbPreferences.forModule(GeneralPanel.class).getInt(PLSQL_OUTPUT_BUFFER_KEY, bufferSize);
    }
 }

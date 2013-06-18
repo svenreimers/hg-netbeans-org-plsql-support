@@ -103,6 +103,7 @@ import org.openide.util.datatransfer.ExClipboard;
 import org.openide.windows.InputOutput;
 import org.openide.windows.OutputWriter;
 import org.openide.windows.TopComponent;
+import org.netbeans.modules.plsqlsupport.options.OptionsUtilities;
 
 public class PlsqlFileExecutor {
 
@@ -134,7 +135,14 @@ public class PlsqlFileExecutor {
         try {
             stm = con.createStatement();
             stm.setEscapeProcessing(false);
-            stm.execute("DECLARE\nBEGIN\nDbms_Output.Enable;\nEND;");
+         
+            String statement = "DECLARE\nBEGIN\nDbms_Output.Enable;\nEND;";
+            if(OptionsUtilities.PlSqlOutputBufferSize()== 0){
+                statement = "DECLARE\nBEGIN\nDBMS_OUTPUT.ENABLE(NULL);\nEND;";
+            } else {
+                 statement = "DECLARE\nBEGIN\nDBMS_OUTPUT.ENABLE("+ OptionsUtilities.PlSqlOutputBufferSize() +");\nEND;";
+            }      
+            stm.execute(statement);
         } catch (SQLException ex) {
             Exceptions.printStackTrace(ex);
         } finally {
@@ -371,7 +379,7 @@ public class PlsqlFileExecutor {
         }
         Statement stm = null;
         String firstWord = null;
-
+        
         //quick & dirty fix to avoid having output tabs for the SQL Execution window (unless there's an exception)
         //first check to see if this is a simple select statement and if so treat it separately.
         if (executableObjs.size() == 1) {
