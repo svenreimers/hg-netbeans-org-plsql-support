@@ -369,10 +369,6 @@ public final class CreateTestBlockAction extends CookieAction {
                 String type = "";
 
                 StringTokenizer tokenizer = new StringTokenizer(value, " \t\n");
-                if (tokenizer.countTokens() == 1) {
-                    type = value;
-                }
-
                 while (tokenizer.hasMoreTokens()) {
                     String temp = tokenizer.nextToken();
                     if (temp.equalsIgnoreCase("OUT")) {
