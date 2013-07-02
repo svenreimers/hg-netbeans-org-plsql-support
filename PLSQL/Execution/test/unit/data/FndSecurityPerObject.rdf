@@ -1,0 +1,262 @@
+-----------------------------------------------------------------------------
+--
+--  Logical unit: FndUser
+--
+--  File:         SecurityPerObject.rdf
+--
+--  Date    Sign  History
+--  ------  ----  -----------------------------------------------------------
+--  260404 Bamalk  Created.
+--  080604 Bamalk  Modified for use Report Designer.
+--  050405 Bamalk  Re-written to satisfy the requirements in Bug# 47362.
+--  040805 Mesalk  Added support for raw data view creation. (Bug id #44975)
+--  051028  MAOL  Removed QRP's (F1PR467).
+--  110503  CHAA  EASTONE-16468 : Remove report layout definitions from RDF
+--  270612 Chaalk Added Assert_SYS method calls to validate the entered package and method name (BugID 103717)
+-----------------------------------------------------------------------------
+
+DEFINE MODULE             = FNDBAS
+DEFINE LU                 = FndUser
+DEFINE PKG                = FND_SECURITY_PER_OBJECT_RPI
+
+DEFINE TABLE              = INFO_SERVICES_RPT
+DEFINE RAWVIEW            = INFO_SERVICES_RPV
+DEFINE VIEW               = FND_SECURITY_PER_OBJECT_REP
+DEFINE METHOD             = Report_Overview
+
+-----------------------------------------------------------------------------
+-- PACKAGE SPECIFICATION:
+-----------------------------------------------------------------------------
+
+PROMPT Creating &PKG specification
+
+CREATE OR REPLACE PACKAGE &PKG AS
+
+module_ CONSTANT VARCHAR2(6) := '&MODULE';
+lu_name_ CONSTANT VARCHAR2(25) := '&LU';
+
+PROCEDURE &METHOD (
+   report_attr_    IN VARCHAR2,
+   parameter_attr_ IN VARCHAR2 );
+
+END &PKG;
+/
+SHOW ERROR
+
+-----------------------------------------------------------------------------
+-- REPORTS
+-----------------------------------------------------------------------------
+
+PROMPT Creating report view &VIEW
+
+CREATE OR REPLACE VIEW &VIEW AS
+SELECT RESULT_KEY                              RESULT_KEY,
+       ROW_NO                                  ROW_NO,   
+       s1                                      PACKAGE_NAME,
+       s2                                      METHOD,
+       s3                                      USER_ID,
+       s4                                      USER_DESC,
+       s5                                      ROLE
+FROM  &RAWVIEW
+WITH  read only;
+
+
+COMMENT ON TABLE &VIEW
+   IS 'LU=&LU^MODULE=&MODULE^';
+COMMENT ON COLUMN &VIEW..result_key IS
+   'FLAGS=M----^DATATYPE=NUMBER^';
+COMMENT ON COLUMN &VIEW..row_no IS
+   'FLAGS=M----^DATATYPE=NUMBER^';
+COMMENT ON COLUMN &VIEW..package_name IS
+   'FLAGS=A----^DATATYPE=STRING(100)/UPPERCASE^PROMPT=Package Name^TITLE=Package Name^QUERY=Package Name:^QFLAGS=M-S-L^ITEM_NAME=iPackageName^REF=Dictionary_Sys_Method_lov^';
+COMMENT ON COLUMN &VIEW..method IS
+   'FLAGS=A----^DATATYPE=STRING(30)^PROMPT=Method^TITLE=Method^ITEM_NAME=iMethod^QUERY=Method:^QFLAGS=M-S-L^REF=Dictionary_Sys_Method_lov(PACKAGE_NAME)^';
+COMMENT ON COLUMN &VIEW..user_id IS
+   'FLAGS=A----^DATATYPE=STRING(30)/UPPERCASE^PROMPT=User Id^STATUS=Enter User Id^TITLE=User Id^ITEM_NAME=iUserId^';      
+COMMENT ON COLUMN &VIEW..user_desc IS
+   'FLAGS=A----^DATATYPE=STRING(2000)^PROMPT=User Description^TITLE=User Description^ITEM_NAME=iUserDesc^';      
+COMMENT ON COLUMN &VIEW..role IS
+   'FLAGS=A----^DATATYPE=STRING(30)/UPPERCASE^PROMPT=Role^TITLE=Role^ITEM_NAME=iRole^';
+
+
+BEGIN
+   Report_SYS.Define_Report_(
+      '&VIEW',
+      '&MODULE',
+      '&LU', 
+      'Security Per Object',
+      '&TABLE',
+      '&PKG..&METHOD',
+      7);
+   --Report_SYS.Define_Report_Layout_(
+   --   '&VIEW',
+   --   'SecurityPerObject.qrp',
+   --   'Landscape',
+   --   'A4',
+   --   'ROW_NO');
+   --Report_SYS.Define_Report_Layout_(
+   --   '&VIEW',
+   --   'SecurityPerObject_Letter.qrp',
+   --   'Landscape',
+   --   'LETTER',
+   --   'ROW_NO');   
+   --Report_SYS.Define_Report_Layout_(
+   --   '&VIEW',
+   --   'FndSecurityPerObjectRep.xsl',
+   --   'Landscape',
+   --   'DYNAMIC',
+   --    NULL,
+   --   'DESIGNER');   
+Report_SYS.Refresh_('&VIEW');
+END;
+/
+
+-----------------------------------------------------------------------------
+-- PACKAGE IMPLEMENTATION
+-----------------------------------------------------------------------------
+
+PROMPT Creating &PKG implementation
+
+CREATE OR REPLACE PACKAGE BODY &PKG AS
+
+PROCEDURE &METHOD (
+   report_attr_    IN VARCHAR2,
+   parameter_attr_ IN VARCHAR2 )
+IS
+   result_key_          NUMBER;
+   row_no_              NUMBER := 1;
+   parent_row_no_       NUMBER := 0;
+   package_name_        VARCHAR2(30); 
+   method_              VARCHAR2(200);
+   do_xml_              BOOLEAN := Report_SYS.Should_Generate_Xml('&VIEW');
+   do_rs_               BOOLEAN := Report_SYS.Should_Generate_Result_Set('&VIEW');
+   xml_                 CLOB;
+   report_package_name_ VARCHAR2(100) := 'FND_SECURITY_PER_OBJECT_REP';
+
+   CURSOR get_users IS
+   SELECT DISTINCT identity
+      FROM fnd_user_tab
+      WHERE active = 'TRUE'
+      ORDER BY identity;
+
+
+   CURSOR get_grantee(v_user VARCHAR2) IS
+      SELECT DISTINCT grantee
+         FROM   security_sys_privs_tab
+         WHERE  table_name = package_name_
+         AND    grantee IN (SELECT role
+                         FROM   fnd_user_role_runtime_tab
+                         WHERE  identity = v_user)
+      MINUS
+      SELECT DISTINCT role
+         FROM   security_sys_tab
+         WHERE  package_name = package_name_
+         and    method_name  = method_
+         AND    role IN (SELECT role
+                      FROM   fnd_user_role_runtime_tab
+                      WHERE  identity = v_user);
+
+BEGIN
+   result_key_ := Client_SYS.Attr_Value_To_Number(Client_SYS.Get_Item_Value('RESULT_KEY', report_attr_));
+   package_name_ := UPPER(Client_SYS.Get_Item_Value('PACKAGE_NAME', parameter_attr_));
+   method_ := Client_SYS.Get_Item_Value('METHOD', parameter_attr_);
+
+   IF (INSTR(package_name_,'%') > 0) OR  (INSTR(method_,'%') > 0) THEN
+     Error_SYS.Record_General(lu_name_, 'INVALIDVALUE: Wild Cards are not allowed for input parameters');
+   END IF;
+
+   Assert_SYS.Assert_Is_Package(package_name_);
+   Assert_SYS.Assert_Is_Package_Method(package_name_,method_);
+
+   IF (do_xml_) THEN
+      Xml_Record_Writer_SYS.Create_Report_Header(xml_, '&VIEW', package_name_);
+      Xml_Record_Writer_SYS.Add_Element(xml_, 'PACKAGE_NAME', package_name_||'.');
+      Xml_Record_Writer_SYS.Add_Element(xml_, 'METHOD', method_);
+      Xml_Record_Writer_SYS.Start_Element(xml_, 'USERS');
+   END IF;
+                        
+   FOR user_rec_ IN get_users LOOP
+     
+     IF (do_xml_) THEN
+         Xml_Record_Writer_SYS.Start_Element(xml_, 'USER_ID');
+         Xml_Record_Writer_SYS.Add_Element(xml_, 'USER_ID', user_rec_.identity);
+         Xml_Record_Writer_SYS.Add_Element(xml_, 'USER_DESC', Fnd_User_API.Get_Description(user_rec_.identity));     
+         Xml_Record_Writer_SYS.Start_Element(xml_, 'ROLES');
+     END IF;
+     
+     FOR role_rec_ IN get_grantee(user_rec_.identity) LOOP
+
+              IF (do_xml_) THEN
+                  Xml_Record_Writer_SYS.Start_Element(xml_, 'ROLE');
+                  Xml_Record_Writer_SYS.Add_Element(xml_, 'ROLE', role_rec_.grantee); 
+              END IF;
+
+              IF (do_rs_) THEN
+                  INSERT INTO &TABLE(
+                       RESULT_KEY,
+                       ROW_NO,
+                       PARENT_ROW_NO,
+                       s1,
+                       s2,
+                       s3,
+                       s4,
+                       s5)
+
+                   VALUES(
+                      result_key_,
+                      row_no_,
+                      parent_row_no_,
+                      package_name_||'.',
+                      method_,
+                      user_rec_.identity,
+                      Fnd_User_API.Get_Description(user_rec_.identity),
+                      role_rec_.grantee);
+                   row_no_ := row_no_ + 1;
+               END IF;
+               IF (do_xml_) THEN
+                  Xml_Record_Writer_SYS.End_Element(xml_, 'ROLE');
+               END IF;
+
+     END LOOP;
+     IF (do_xml_) THEN
+         Xml_Record_Writer_SYS.End_Element(xml_, 'ROLES');
+         Xml_Record_Writer_SYS.End_Element(xml_, 'USER_ID');
+     END IF;                      
+
+ END LOOP;
+
+ IF (do_xml_) THEN
+   Xml_Record_Writer_SYS.End_Element(xml_, 'USERS');
+   Xml_Record_Writer_SYS.End_Element(xml_, '&VIEW');
+   Report_SYS.Finish_Xml_Report('&VIEW', result_key_, xml_);
+ END IF;
+
+
+END &METHOD;
+
+END &PKG;
+/
+SHOW ERROR
+
+
+-----------------------------------------------------------------------------
+-- END
+-----------------------------------------------------------------------------
+
+----------------------------------------------------------
+-- <UNDEFINE_SECTION>
+----------------------------------------------------------
+-- This section is reserved for undefine statements
+-- nothing should be manually written below because
+-- that would be overwritten everytime the IFS / Undefine
+-- tool is run.  
+-- Also do NOT make any changes to the above tag because
+-- this will result in duplicated code
+----------------------------------------------------------
+UNDEFINE MODULE
+UNDEFINE LU
+UNDEFINE PKG
+UNDEFINE TABLE
+UNDEFINE RAWVIEW
+UNDEFINE VIEW
+UNDEFINE METHOD

@@ -1,0 +1,163 @@
+-----------------------------------------------------------------------------
+--
+--  Logical unit: FndEvent
+--
+--  IFS/Design Template Version 2.3
+--
+--  Date    Sign  History
+--  ------  ----  -----------------------------------------------------------
+--  971009  ERFO  Reviewed for Foundation1 Release 2.0.0 (ToDo #1676).
+--  030212  ROOD  Changed module to FNDBAS (ToDo#4149).
+--  070212  HAAR  Added support for Custom Defined Events (Bugg#61780).
+--  090114  HAAR  Added methods for Export/Import Export__ and Register_Custom_Event (Bug#79673).
+--  120926  DUWI   Added new function Check_Custom_Event (Bug#104703)
+-----------------------------------------------------------------------------
+
+DEFINE MODULE        = FNDBAS
+DEFINE LU            = FndEvent
+DEFINE PKG           = FND_EVENT_API
+
+
+PROMPT Creating &PKG specification
+
+CREATE OR REPLACE PACKAGE &PKG IS
+
+module_  CONSTANT VARCHAR2(25) := '&MODULE';
+lu_name_ CONSTANT VARCHAR2(25) := '&LU';
+
+TYPE Public_Rec IS RECORD
+   (event_description FND_EVENT_TAB.event_description%TYPE,
+    event_enable FND_EVENT_TAB.event_enable%TYPE);
+
+-----------------------------------------------------------------------------
+-------------------- PRIVATE BASE METHODS -----------------------------------
+-----------------------------------------------------------------------------
+
+PROCEDURE Lock__ (
+   info_       OUT VARCHAR2,
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2 );
+
+PROCEDURE New__ (
+   info_       OUT    VARCHAR2,
+   objid_      OUT    VARCHAR2,
+   objversion_ OUT    VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 );
+
+PROCEDURE Modify__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 );
+
+PROCEDURE Remove__ (
+   info_       OUT VARCHAR2,
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2,
+   action_     IN  VARCHAR2 );
+
+-----------------------------------------------------------------------------
+-------------------- PUBLIC BASE METHODS ------------------------------------
+-----------------------------------------------------------------------------
+
+PROCEDURE Exist (
+   event_lu_name_ IN VARCHAR2,
+   event_id_      IN VARCHAR2 );
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PRIVATE METHODS ----------------------------
+-----------------------------------------------------------------------------
+
+PROCEDURE Export__ (
+   string_        OUT VARCHAR2,
+   event_lu_name_ IN  VARCHAR2,
+   event_id_      IN  VARCHAR2 );
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PROTECTED METHODS --------------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PUBLIC METHODS -----------------------------
+-----------------------------------------------------------------------------
+
+FUNCTION Get_Event_Description (
+   event_lu_name_ IN VARCHAR2,
+   event_id_      IN VARCHAR2 ) RETURN VARCHAR2;
+PRAGMA restrict_references(Get_Event_Description, WNDS);
+
+
+FUNCTION Get_Event_Enable (
+   event_lu_name_ IN VARCHAR2,
+   event_id_      IN VARCHAR2 ) RETURN VARCHAR2;
+PRAGMA restrict_references(Get_Event_Enable, WNDS);
+
+
+PROCEDURE Set_Event_Enable (
+   event_lu_name_ IN VARCHAR2,
+   event_id_      IN VARCHAR2 );
+
+
+PROCEDURE Refresh (
+   event_lu_name_       IN VARCHAR2,
+   event_id_            IN VARCHAR2,
+   event_desc_          IN VARCHAR2,
+   event_type_db_       IN VARCHAR2 DEFAULT 'APPLICATION',
+   event_table_name_    IN VARCHAR2 DEFAULT NULL,
+   modified_attributes_ IN VARCHAR2 DEFAULT NULL,
+   new_row_             IN VARCHAR2 DEFAULT 'FALSE',
+   modify_row_          IN VARCHAR2 DEFAULT 'FALSE',
+   remove_row_          IN VARCHAR2 DEFAULT 'FALSE');
+
+PROCEDURE Register_Custom_Event (
+   event_lu_name_ IN VARCHAR2,
+   event_id_      IN VARCHAR2,
+   info_msg_      IN VARCHAR2 );
+
+
+PROCEDURE Unfresh (
+   event_lu_name_ IN VARCHAR2,
+   event_id_      IN VARCHAR2 );
+
+
+FUNCTION Get (
+   event_lu_name_ IN VARCHAR2,
+   event_id_ IN VARCHAR2 ) RETURN Public_Rec;
+PRAGMA restrict_references(Get, WNDS);
+
+FUNCTION Check_Custom_Event(
+   table_name_ VARCHAR2) RETURN BOOLEAN;
+PRAGMA restrict_references(Check_Custom_Event, WNDS);
+
+
+
+-----------------------------------------------------------------------------
+-------------------- FOUNDATION1 METHODS ------------------------------------
+-----------------------------------------------------------------------------
+
+PROCEDURE Init;
+
+
+END &PKG;
+/
+SHOW ERROR
+
+
+-----------------------------------------------------------------------------
+
+----------------------------------------------------------
+-- <UNDEFINE_SECTION>
+----------------------------------------------------------
+-- This section is reserved for undefine statements
+-- nothing should be manually written below because
+-- that would be overwritten everytime the IFS / Undefine
+-- tool is run.  
+-- Also do NOT make any changes to the above tag because
+-- this will result in duplicated code
+----------------------------------------------------------
+UNDEFINE MODULE
+UNDEFINE LU
+UNDEFINE PKG

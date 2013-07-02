@@ -1,0 +1,702 @@
+-----------------------------------------------------------------------------
+--
+--  Logical unit: Actor
+--
+--  Purpose:
+--
+--  IFS/Design Template Version 2.5
+--
+--  Date    Sign    History
+--  ------  ------  ---------------------------------------------------------
+-----------------------------------------------------------------------------
+
+DEFINE MODULE        = MOVIE
+DEFINE LU            = Actor
+DEFINE TABLE         = ACTOR_TAB
+DEFINE VIEW          = ACTOR
+DEFINE PKG           = ACTOR_API
+
+DEFINE OBJID         = rowid
+DEFINE OBJKEY        = rowkey
+DEFINE OBJVERSION    = "ltrim(lpad(to_char(rowversion,'YYYYMMDDHH24MISS'),2000))"
+
+-----------------------------------------------------------------------------
+-------------------- VIEWS FOR SELECTS --------------------------------------
+-----------------------------------------------------------------------------
+
+PROMPT Creating &VIEW VIEW
+
+CREATE OR REPLACE VIEW &VIEW AS
+SELECT actor_id                       actor_id,
+       first_name                     first_name,
+       last_name                      last_name,
+       birth_date                     birth_date,
+       profile_picture                profile_picture,
+       &OBJID                         objid,
+       &OBJVERSION                    objversion,
+       &OBJKEY                        objkey
+FROM   actor_tab
+WITH   read only;
+
+COMMENT ON TABLE &VIEW
+   IS 'LU=&LU^PROMPT=Actor^MODULE=&MODULE^';
+
+COMMENT ON COLUMN &VIEW..actor_id
+   IS 'FLAGS=KMI-L^DATATYPE=NUMBER(10)^PROMPT=Actor Id^';
+COMMENT ON COLUMN &VIEW..first_name
+   IS 'FLAGS=AMIUL^DATATYPE=STRING(100)^PROMPT=First Name^';
+COMMENT ON COLUMN &VIEW..last_name
+   IS 'FLAGS=A-IUL^DATATYPE=STRING(100)^PROMPT=Last Name^';
+COMMENT ON COLUMN &VIEW..birth_date
+   IS 'FLAGS=A-IUL^DATATYPE=DATE/DATE^PROMPT=Birth Date^';
+COMMENT ON COLUMN &VIEW..profile_picture
+   IS 'FLAGS=A-I--^DATATYPE=BINARY^PROMPT=Profile Picture^';
+
+-----------------------------------------------------------------------------
+-------------------- PACKAGES FOR METHODS -----------------------------------
+-----------------------------------------------------------------------------
+
+PROMPT Creating &PKG implementation
+
+CREATE OR REPLACE PACKAGE BODY &PKG IS
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC IMPLEMENTATION METHOD DECLARATIONS ---------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS ----------------------------
+-----------------------------------------------------------------------------
+-- Lock_By_Id___
+--    Client-support to lock a specific instance of the logical unit.
+--
+-- Lock_By_Keys___
+--    Server support to lock a specific instance of the logical unit.
+--
+-- Get_Object_By_Id___
+--    Get LU-record from the database with a specified object identity.
+--
+-- Get_Object_By_Keys___
+--    Get LU-record from the database with specified key columns.
+--
+-- Check_Exist___
+--    Check if a specific LU-instance already exist in the database.
+--
+-- Get_Id_Version_By_Keys___
+--    Get the current OBJID and OBJVERSION for a specific LU-instance.
+-----------------------------------------------------------------------------
+
+FUNCTION Lock_By_Id___ (
+   objid_      IN VARCHAR2,
+   objversion_ IN VARCHAR2 ) RETURN &TABLE%ROWTYPE
+IS
+   row_changed EXCEPTION;
+   row_deleted EXCEPTION;
+   row_locked  EXCEPTION;
+   PRAGMA      EXCEPTION_INIT(row_locked, -0054);
+   rec_        &TABLE%ROWTYPE;
+   dummy_      NUMBER;
+   CURSOR lock_control IS
+      SELECT *
+      FROM   &TABLE
+      WHERE  &OBJID = objid_
+      AND    &OBJVERSION = objversion_
+      FOR UPDATE NOWAIT;
+   CURSOR exist_control IS
+      SELECT 1
+      FROM   &TABLE
+      WHERE  &OBJID = objid_;
+BEGIN
+   OPEN lock_control;
+   FETCH lock_control INTO rec_;
+   IF (lock_control%FOUND) THEN
+      CLOSE lock_control;
+      RETURN rec_;
+   END IF;
+   CLOSE lock_control;
+   OPEN exist_control;
+   FETCH exist_control INTO dummy_;
+   IF (exist_control%FOUND) THEN
+      CLOSE exist_control;
+      RAISE row_changed;
+   ELSE
+      CLOSE exist_control;
+      RAISE row_deleted;
+   END IF;
+EXCEPTION
+   WHEN row_locked THEN
+      Error_SYS.Record_Locked(lu_name_);
+   WHEN row_changed THEN
+      Error_SYS.Record_Modified(lu_name_);
+   WHEN row_deleted THEN
+      Error_SYS.Record_Removed(lu_name_);
+      
+      IF lu_name_ THEN
+         RETURN NULL;
+        END IF; 
+      WHEN OTHERS THEN
+       RETURN FALSE;
+END Lock_By_Id___;
+
+
+FUNCTION Lock_By_Keys___ (
+   actor_id_ IN NUMBER ) RETURN &TABLE%ROWTYPE
+IS
+   row_deleted EXCEPTION;
+   rec_        &TABLE%ROWTYPE;
+   CURSOR lock_control IS
+      SELECT *
+      FROM   &TABLE
+      WHERE  actor_id = actor_id_
+      FOR UPDATE;
+BEGIN
+   OPEN lock_control;
+   FETCH lock_control INTO rec_;
+   IF (lock_control%FOUND) THEN
+      CLOSE lock_control;
+      RETURN rec_;
+   ELSE
+      CLOSE lock_control;
+      RAISE row_deleted;
+   END IF;
+EXCEPTION
+   WHEN OTHERS THEN
+      Error_SYS.Record_Removed(lu_name_);
+END Lock_By_Keys___;
+
+
+FUNCTION Get_Object_By_Id___ (
+   objid_ IN VARCHAR2 ) RETURN &TABLE%ROWTYPE
+IS
+   lu_rec_ &TABLE%ROWTYPE;
+   CURSOR getrec IS
+      SELECT *
+      FROM   &TABLE
+      WHERE  &OBJID = objid_;
+BEGIN
+   OPEN getrec;
+   FETCH getrec INTO lu_rec_;
+   IF (getrec%NOTFOUND) THEN
+      CLOSE getrec;
+      Error_SYS.Record_Removed(lu_name_);
+   END IF;
+   CLOSE getrec;
+   RETURN(lu_rec_);
+END Get_Object_By_Id___;
+
+
+FUNCTION Get_Object_By_Keys___ (
+   actor_id_ IN NUMBER ) RETURN &TABLE%ROWTYPE
+IS
+   lu_rec_ &TABLE%ROWTYPE;
+   CURSOR getrec IS
+      SELECT *
+      FROM   &TABLE
+      WHERE  actor_id = actor_id_;
+BEGIN
+   OPEN getrec;
+   FETCH getrec INTO lu_rec_;
+   CLOSE getrec;
+   RETURN(lu_rec_);
+END Get_Object_By_Keys___;
+
+
+FUNCTION Check_Exist___ (
+   actor_id_ IN NUMBER ) RETURN BOOLEAN
+IS
+   dummy_ NUMBER;
+   CURSOR exist_control IS
+      SELECT 1
+      FROM   &TABLE
+      WHERE  actor_id = actor_id_;
+BEGIN
+   OPEN exist_control;
+   FETCH exist_control INTO dummy_;
+   IF (exist_control%FOUND) THEN
+      CLOSE exist_control;
+      RETURN(TRUE);
+   END IF;
+   CLOSE exist_control;
+   RETURN(FALSE);
+END Check_Exist___;
+
+
+PROCEDURE Get_Id_Version_By_Keys___ (
+   objid_      IN OUT VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   actor_id_ IN NUMBER )
+IS
+   CURSOR get_version IS
+      SELECT &OBJID, &OBJVERSION
+      FROM   &TABLE
+      WHERE  actor_id = actor_id_;
+BEGIN
+   OPEN get_version;
+   FETCH get_version INTO objid_, objversion_;
+   CLOSE get_version;
+END Get_Id_Version_By_Keys___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR INSERT -----------------
+-----------------------------------------------------------------------------
+-- Prepare_Insert___
+--    Set all default values for a new instance (ON-NEW-RECORD) of this
+--    logical unit by calling procedure Add_Attr.
+--
+-- Unpack_Check_Insert___
+--    Unpack the attribute list, check all attributes from the client
+--    and generate all default values before creation of the new object.
+--
+-- Insert___
+--    Insert a new LU-instance into the database and return the values
+--    for OBJID and OBJVERSION.
+-----------------------------------------------------------------------------
+
+PROCEDURE Prepare_Insert___ (
+   attr_ IN OUT VARCHAR2 )
+IS
+BEGIN
+   Client_SYS.Clear_Attr(attr_);
+END Prepare_Insert___;
+
+
+PROCEDURE Unpack_Check_Insert___ (
+   attr_   IN OUT VARCHAR2,
+   newrec_ IN OUT &TABLE%ROWTYPE )
+IS
+   ptr_   NUMBER;
+   name_  VARCHAR2(30);
+   value_ VARCHAR2(2000);
+BEGIN
+   ptr_ := NULL;
+   WHILE (Client_SYS.Get_Next_From_Attr(attr_, ptr_, name_, value_)) LOOP
+      IF (name_ = 'ACTOR_ID') THEN
+         newrec_.actor_id := Client_SYS.Attr_Value_To_Number(value_);
+      ELSIF (name_ = 'FIRST_NAME') THEN
+         newrec_.first_name := value_;
+      ELSIF (name_ = 'LAST_NAME') THEN
+         newrec_.last_name := value_;
+      ELSIF (name_ = 'BIRTH_DATE') THEN
+         newrec_.birth_date := Client_SYS.Attr_Value_To_Date(value_);
+      ELSE
+         Error_SYS.Item_Not_Exist(lu_name_, name_, value_);
+      END IF;
+   END LOOP;
+   Client_SYS.Clear_Attr(attr_);
+   Error_SYS.Check_Not_Null(lu_name_, 'ACTOR_ID', newrec_.actor_id);
+   Error_SYS.Check_Not_Null(lu_name_, 'FIRST_NAME', newrec_.first_name);
+EXCEPTION
+   WHEN value_error THEN
+      Error_SYS.Item_Format(lu_name_, name_, value_);
+END Unpack_Check_Insert___;
+
+
+PROCEDURE Insert___ (
+   objid_      OUT    VARCHAR2,
+   objversion_ OUT    VARCHAR2,
+   newrec_     IN OUT &TABLE%ROWTYPE,
+   attr_       IN OUT VARCHAR2 )
+IS
+BEGIN
+   newrec_.rowversion := sysdate;
+   INSERT
+      INTO actor_tab (
+         actor_id,
+         first_name,
+         last_name,
+         birth_date,
+         profile_picture,
+         rowversion)
+      VALUES (
+         newrec_.actor_id,
+         newrec_.first_name,
+         newrec_.last_name,
+         newrec_.birth_date,
+         empty_blob(),
+         newrec_.rowversion)
+      RETURNING &OBJID INTO objid_;
+   objversion_ := to_char(newrec_.rowversion,'YYYYMMDDHH24MISS');
+EXCEPTION
+   WHEN dup_val_on_index THEN
+      Error_SYS.Record_Exist(lu_name_);
+END Insert___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR UPDATE -----------------
+-----------------------------------------------------------------------------
+-- Unpack_Check_Update___
+--    Unpack the attribute list, check all attributes from the client
+--    and generate all default values before modifying the object.
+--
+-- Update___
+--    Update an existing LU-instance in the database and return the
+--    the new OBJVERSION.
+-----------------------------------------------------------------------------
+
+PROCEDURE Unpack_Check_Update___ (
+   attr_   IN OUT VARCHAR2,
+   newrec_ IN OUT &TABLE%ROWTYPE,
+   objid_  IN     VARCHAR2 )
+IS
+   ptr_   NUMBER;
+   name_  VARCHAR2(30);
+   value_ VARCHAR2(2000);
+BEGIN
+   ptr_ := NULL;
+   WHILE (Client_SYS.Get_Next_From_Attr(attr_, ptr_, name_, value_)) LOOP
+      IF (name_ = 'ACTOR_ID') THEN
+         Error_SYS.Item_Update(lu_name_, 'ACTOR_ID');
+      ELSIF (name_ = 'FIRST_NAME') THEN
+         newrec_.first_name := value_;
+      ELSIF (name_ = 'LAST_NAME') THEN
+         newrec_.last_name := value_;
+      ELSIF (name_ = 'BIRTH_DATE') THEN
+         newrec_.birth_date := Client_SYS.Attr_Value_To_Date(value_);
+      ELSE
+         Error_SYS.Item_Not_Exist(lu_name_, name_, value_);
+      END IF;
+   END LOOP;
+   Client_SYS.Clear_Attr(attr_);
+   Error_SYS.Check_Not_Null(lu_name_, 'FIRST_NAME', newrec_.first_name);
+EXCEPTION
+   WHEN value_error THEN
+      Error_SYS.Item_Format(lu_name_, name_, value_);
+END Unpack_Check_Update___;
+
+
+PROCEDURE Update___ (
+   objid_      IN     VARCHAR2,
+   oldrec_     IN     &TABLE%ROWTYPE,
+   newrec_     IN OUT &TABLE%ROWTYPE,
+   attr_       IN OUT VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   by_keys_    IN     BOOLEAN DEFAULT FALSE )
+IS
+BEGIN
+   newrec_.rowversion := sysdate;
+   IF by_keys_ THEN
+      UPDATE actor_tab
+         SET actor_id = newrec_.actor_id,
+             first_name = newrec_.first_name,
+             last_name = newrec_.last_name,
+             birth_date = newrec_.birth_date,
+             rowversion = newrec_.rowversion
+         WHERE actor_id = newrec_.actor_id;
+   ELSE
+      UPDATE actor_tab
+         SET actor_id = newrec_.actor_id,
+             first_name = newrec_.first_name,
+             last_name = newrec_.last_name,
+             birth_date = newrec_.birth_date,
+             rowversion = newrec_.rowversion
+         WHERE &OBJID = objid_;
+   END IF;
+   objversion_ := to_char(newrec_.rowversion,'YYYYMMDDHH24MISS');
+EXCEPTION
+   WHEN dup_val_on_index THEN
+      Error_SYS.Record_Exist(lu_name_);
+END Update___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR DELETE -----------------
+-----------------------------------------------------------------------------
+-- Check_Delete___
+--    Checks whether a specific LU-record may be removed or not.
+--    The procedure should check business rules like attribute values
+--    as well as database constraints (defined or not).
+--
+-- Delete___
+--    Deletion of the specific LU-object from the database.
+-----------------------------------------------------------------------------
+
+PROCEDURE Check_Delete___ (
+   remrec_ IN &TABLE%ROWTYPE )
+IS
+   key_ VARCHAR2(2000);
+BEGIN
+   key_ := remrec_.actor_id || '^';
+   Reference_SYS.Check_Restricted_Delete(lu_name_, key_);
+END Check_Delete___;
+
+
+PROCEDURE Delete___ (
+   objid_  IN VARCHAR2,
+   remrec_ IN &TABLE%ROWTYPE )
+IS
+   key_ VARCHAR2(2000);
+BEGIN
+   key_ := remrec_.actor_id || '^';
+   Reference_SYS.Do_Cascade_Delete(lu_name_, key_);
+   DELETE
+      FROM  &TABLE
+      WHERE &OBJID = objid_;
+END Delete___;
+
+-----------------------------------------------------------------------------
+-------------------- PRIVATE BASE METHODS -----------------------------------
+-----------------------------------------------------------------------------
+-- Lock__
+--    Client-support to lock a specific instance of the logical unit.
+--
+-- New__
+--    Client-support interface to create LU instances.
+--       action_ = 'PREPARE'
+--          Default values and handle of information to client.
+--          The default values are set in procedure Prepare_Insert___.
+--       action_ = 'CHECK'
+--          Check all attributes before creating new object and handle of
+--          information to client. The attribute list is unpacked, checked
+--          and prepared (defaults) in procedure Unpack_Check_Insert___.
+--       action_ = 'DO'
+--          Creation of new instances of the logical unit and handle of
+--          information to client. The attribute list is unpacked, checked
+--          and prepared (defaults) in procedure Unpack_Check_Insert___
+--          before calling procedure Insert___.
+--
+-- Modify__
+--    Client-support interface to modify attributes for LU instances.
+--       action_ = 'CHECK'
+--          Check all attributes before modifying an existing object and
+--          handle of information to client. The attribute list is unpacked,
+--          checked and prepared(defaults) in procedure Unpack_Check_Update___.
+--       action_ = 'DO'
+--          Modification of an existing instance of the logical unit. The
+--          procedure unpacks the attributes, checks all values before
+--          procedure Update___ is called.
+--
+-- Remove__
+--    Client-support interface to remove LU instances.
+--       action_ = 'CHECK'
+--          Check whether a specific LU-instance may be removed or not.
+--          The procedure fetches the complete record by calling procedure
+--          Get_Object_By_Id___. Then the check is made by calling procedure
+--          Check_Delete___.
+--       action_ = 'DO'
+--          Remove an existing instance of the logical unit. The procedure
+--          fetches the complete LU-record, checks for a delete and then
+--          deletes the record by calling procedure Delete___.
+-----------------------------------------------------------------------------
+
+PROCEDURE Lock__ (
+   info_       OUT VARCHAR2,
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2 )
+IS
+   dummy_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Lock__');
+   dummy_ := Lock_By_Id___(objid_, objversion_);
+   info_ := Client_SYS.Get_All_Info;
+END Lock__;
+
+
+PROCEDURE New__ (
+   info_       OUT    VARCHAR2,
+   objid_      OUT    VARCHAR2,
+   objversion_ OUT    VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   newrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'New__');
+   IF (action_ = 'PREPARE') THEN
+      Prepare_Insert___(attr_);
+   ELSIF (action_ = 'CHECK') THEN
+      Unpack_Check_Insert___(attr_, newrec_);
+   ELSIF (action_ = 'DO') THEN
+      Unpack_Check_Insert___(attr_, newrec_);
+      Insert___(objid_, objversion_, newrec_, attr_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END New__;
+
+
+PROCEDURE Modify__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   oldrec_ &TABLE%ROWTYPE;
+   newrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Modify__');
+   IF (action_ = 'CHECK') THEN
+      newrec_ := Get_Object_By_Id___(objid_);
+      Unpack_Check_Update___(attr_, newrec_, objid_);
+   ELSIF (action_ = 'DO') THEN
+      oldrec_ := Lock_By_Id___(objid_, objversion_);
+      newrec_ := oldrec_;
+      Unpack_Check_Update___(attr_, newrec_, objid_);
+      Update___(objid_, oldrec_, newrec_, attr_, objversion_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Modify__;
+
+
+PROCEDURE Remove__ (
+   info_       OUT VARCHAR2,
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2,
+   action_     IN  VARCHAR2 )
+IS
+   remrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Remove__');
+   IF (action_ = 'CHECK') THEN
+      remrec_ := Get_Object_By_Id___(objid_);
+      Check_Delete___(remrec_);
+   ELSIF (action_ = 'DO') THEN
+      remrec_ := Lock_By_Id___(objid_, objversion_);
+      Check_Delete___(remrec_);
+      Delete___(objid_, remrec_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Remove__;
+
+-----------------------------------------------------------------------------
+-------------------- PUBLIC BASE METHODS ------------------------------------
+-----------------------------------------------------------------------------
+-- Exist
+--   Checks if given pointer (e.g. primary key) to an instance of this
+--   logical unit exists. If not an exception will be raised.
+-----------------------------------------------------------------------------
+
+PROCEDURE Exist (
+   actor_id_ IN NUMBER )
+IS
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Exist', TRUE);
+   IF (NOT Check_Exist___(actor_id_)) THEN
+      Error_SYS.Record_Not_Exist(lu_name_);
+   END IF;
+END Exist;
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC IMPLEMENTATION METHODS ---------------------
+-----------------------------------------------------------------------------
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PRIVATE METHODS ----------------------------
+-----------------------------------------------------------------------------
+
+PROCEDURE Write_Profile_Picture__ (
+   objversion_ IN OUT VARCHAR2,
+   rowid_      IN ROWID,
+   lob_loc_    IN BLOB )
+IS
+   rec &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Write_Profile_Picture__');
+   rec := Lock_By_Id___(rowid_, objversion_);
+   UPDATE &TABLE
+   SET profile_picture = lob_loc_,
+       rowversion = sysdate
+   WHERE rowid = rowid_
+   RETURNING &OBJVERSION INTO objversion_;
+END Write_Profile_Picture__;
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PROTECTED METHODS --------------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PUBLIC METHODS -----------------------------
+-----------------------------------------------------------------------------
+
+FUNCTION Get_First_Name (
+   actor_id_ IN NUMBER ) RETURN VARCHAR2
+IS
+   temp_ &TABLE..first_name%TYPE;
+   CURSOR get_attr IS
+      SELECT first_name
+      FROM   &TABLE
+      WHERE  actor_id = actor_id_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_First_Name;
+
+
+FUNCTION Get_Last_Name (
+   actor_id_ IN NUMBER ) RETURN VARCHAR2
+IS
+   temp_ &TABLE..last_name%TYPE;
+   CURSOR get_attr IS
+      SELECT last_name
+      FROM   &TABLE
+      WHERE  actor_id = actor_id_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Last_Name;
+
+
+FUNCTION Get_Birth_Date (
+   actor_id_ IN NUMBER ) RETURN DATE
+IS
+   temp_ &TABLE..birth_date%TYPE;
+   CURSOR get_attr IS
+      SELECT birth_date
+      FROM   &TABLE
+      WHERE  actor_id = actor_id_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Birth_Date;
+
+
+FUNCTION Get (
+   actor_id_ IN NUMBER ) RETURN Public_Rec
+IS
+   temp_ Public_Rec;
+   CURSOR get_attr IS
+      SELECT first_name, last_name, birth_date
+      FROM   &TABLE
+      WHERE  actor_id = actor_id_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get;
+
+-----------------------------------------------------------------------------
+-------------------- FOUNDATION1 METHODS ------------------------------------
+-----------------------------------------------------------------------------
+-- Init
+--   Dummy procedure that can be called at database startup to ensure that
+--   this package is loaded into memory for performance reasons only.
+-----------------------------------------------------------------------------
+
+PROCEDURE Init
+IS
+BEGIN
+   NULL;
+END Init;
+
+
+END &PKG;
+/
+SHOW ERROR
+
+
+UNDEFINE MODULE
+UNDEFINE LU
+UNDEFINE TABLE
+UNDEFINE VIEW
+UNDEFINE PKG
+UNDEFINE OBJID
+UNDEFINE OBJKEY
+UNDEFINE OBJVERSION
+-----------------------------------------------------------------------------

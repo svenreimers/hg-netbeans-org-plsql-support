@@ -1,0 +1,45 @@
+--------------------------------------------------------------------------------------------
+--
+--  Filename      : 120620_103302_Fndbas.cdb
+--
+--  Module        : FNDBAS
+--
+--  Purpose       : Presentation Object ID of old Custom Menus created before Bug 92923   
+--                  should be changed so that there is no difference in behavior
+--                  compared to newly created ones.
+--
+--------------------------------------------------------------------------------------------
+--  Date    Sign    History
+--  ------  ------  ------------------------------------------------------------------------
+--  120620  WaWiLK  Created.
+--------------------------------------------------------------------------------------------
+
+SET SERVEROUTPUT ON
+
+DEFINE MODULE = FNDBAS
+
+exec Installation_SYS.Log_Detail_Time_Stamp('FNDBAS','120620_103302_Fndbas.cdb','Start');   
+PROMPT Correcting values set for PO_ID in CUSTOM_MENU_TAB 
+BEGIN
+   IF NOT (Installation_SYS.Is_Db_Patch_Registered('&MODULE', 103302)) THEN
+		 
+		UPDATE custom_menu_tab t
+		SET t.po_id = t.parameter
+		WHERE t.custom_menu_type IN ('1', '2')
+		AND EXISTS(SELECT 1 FROM pres_object_tab s WHERE s.po_id = t.parameter);
+   
+		UPDATE custom_menu_tab t
+		SET t.po_id = NULL
+		WHERE t.custom_menu_type IN ('1', '2')
+		AND NOT EXISTS(SELECT 1 FROM pres_object_tab s WHERE s.po_id = t.parameter);
+      
+      Installation_SYS.Register_Db_Patch('&MODULE', 103302, 'Correcting the values for PO_ID in custom menus created before 92923.');
+      COMMIT;
+   END IF;
+END;
+/
+exec Installation_SYS.Log_Detail_Time_Stamp('FNDBAS','120620_103302_Fndbas.cdb','Done');
+UNDEFINE MODULE
+
+SET SERVEROUTPUT OFF
+      

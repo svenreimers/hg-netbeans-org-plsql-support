@@ -1,0 +1,1468 @@
+-----------------------------------------------------------------------------
+--
+--  Logical unit: FndEvent
+--
+--  Purpose:
+--
+--  IFS/Design Template Version 2.3
+--
+--  Date    Sign  History
+--  ------  ----  -----------------------------------------------------------
+--  971009  ERFO  Reviewed for Foundation1 Release 2.0.0 (ToDo #1676).
+--  971013  ERFO  Made attribute EVENT_ID uppercase.
+--  980223  ERFO  Removed Set_Event_Enabled in method Refresh and added
+--                validation when setting event enabled (ToDo #2144).
+--  980310  ERFO  Set event_enable to FALSE in method Refresh and
+--                ensure a correct error message in method Update___.
+--  030212  ROOD  Changed module to FNDBAS (ToDo#4149).
+--  030214  ROOD  Replaced usage of fnd_event_action_tab with the view (ToDo#4149).
+--  060623  RARU  Moved the select statement into a cursor in Update__.
+--  070212  HAAR  Added support for Custom Defined Events (Bugg#61780).
+--  080101  SUMA  Changed the :new to old when inserting new recs.(Bug#70269).
+--  080228  SUMA  Added Create_Trigger_Name function to aviod special chars(Bug#71099)
+--  080925  HAAR  Renamed parameters for Custom Defined Events (Bug#77334).
+--                New value: NEW:COLUMN_NAME => NEW:IDENTITY
+--                Old value: OLD:COLUMN_NAME => OLD:IDENTITY
+--  090114  HAAR  Added methods for Export/Import Export__ and Register_Custom_Event (Bug#79673).
+--  091109  NABA  Added the check for event_id as a valid identifier (Bug#86681)
+--  110727  CHMU  Escaped quotes in event description and custom attributes in events
+--                and added COMMIT when exporting to file (Bug#95454). 
+--  120926  DUWI  Added new function Check_Custom_Event (Bug#104703)
+-----------------------------------------------------------------------------
+
+DEFINE MODULE        = FNDBAS
+DEFINE LU            = FndEvent
+DEFINE TABLE         = FND_EVENT_TAB
+DEFINE VIEW          = FND_EVENT
+DEFINE PKG           = FND_EVENT_API
+
+DEFINE OBJID         = rowid
+DEFINE OBJKEY        = rowkey
+DEFINE OBJVERSION    = "ltrim(lpad(to_char(rowversion,'YYYYMMDDHH24MISS'),2000))"
+
+-----------------------------------------------------------------------------
+-------------------- VIEWS FOR SELECTS --------------------------------------
+-----------------------------------------------------------------------------
+
+PROMPT Creating &VIEW view
+
+
+CREATE OR REPLACE VIEW &VIEW AS
+SELECT event_lu_name                  event_lu_name,
+       event_id                       event_id,
+       event_description              event_description,
+       event_enable                   event_enable,
+       event_table_name               event_table_name,
+       Fnd_Event_Type_API.Decode(event_type) event_type,
+       event_type                     event_type_db,
+       modified_attributes            modified_attributes,
+       Fnd_Boolean_API.Decode(new_row) new_row,
+       new_row                        new_row_db,
+       Fnd_Boolean_API.Decode(modify_row) modify_row,
+       modify_row                     modify_row_db,
+       Fnd_Boolean_API.Decode(remove_row) remove_row,
+       remove_row                     remove_row_db,
+       &OBJID                         objid,
+       &OBJVERSION                    objversion,
+       &OBJKEY                        objkey
+FROM   fnd_event_tab
+WITH   read only;
+
+COMMENT ON TABLE &VIEW
+   IS 'LU=&LU^PROMPT=Fnd Event^MODULE=&MODULE^';
+
+COMMENT ON COLUMN &VIEW..event_lu_name
+   IS 'FLAGS=KMI-L^DATATYPE=STRING(25)^PROMPT=Event Lu Name^';
+COMMENT ON COLUMN &VIEW..event_id
+   IS 'FLAGS=KMI-L^DATATYPE=STRING(32)/UPPERCASE^PROMPT=Event Id^';
+COMMENT ON COLUMN &VIEW..event_description
+   IS 'FLAGS=A-IU-^DATATYPE=STRING(256)^PROMPT=Event Description^';
+COMMENT ON COLUMN &VIEW..event_enable
+   IS 'FLAGS=A-IU-^DATATYPE=BOOLEAN^PROMPT=Event Enable^';
+COMMENT ON COLUMN &VIEW..event_table_name
+   IS 'FLAGS=A-IU-^DATATYPE=STRING(30)^PROMPT=Event Table Name^';
+COMMENT ON COLUMN &VIEW..event_type
+   IS 'FLAGS=AMIU-^DATATYPE=STRING(200)^ENUMERATION=FndEventType^PROMPT=Event Type^REF=FndEventType^';
+COMMENT ON COLUMN &VIEW..event_type_db
+   IS 'FLAGS=A----^DATATYPE=STRING(20)^PROMPT=Event Type^';
+COMMENT ON COLUMN &VIEW..modified_attributes
+   IS 'FLAGS=A-IU-^DATATYPE=STRING(4000)^PROMPT=Modified Attributes^';
+COMMENT ON COLUMN &VIEW..new_row
+   IS 'FLAGS=AMIU-^DATATYPE=STRING(200)^ENUMERATION=FndBoolean^PROMPT=New Row^REF=FndBoolean^';
+COMMENT ON COLUMN &VIEW..new_row_db
+   IS 'FLAGS=A----^DATATYPE=STRING(20)^PROMPT=New Row^';
+COMMENT ON COLUMN &VIEW..modify_row
+   IS 'FLAGS=AMIU-^DATATYPE=STRING(200)^ENUMERATION=FndBoolean^PROMPT=Modify Row^REF=FndBoolean^';
+COMMENT ON COLUMN &VIEW..modify_row_db
+   IS 'FLAGS=A----^DATATYPE=STRING(20)^PROMPT=Modify Row^';
+COMMENT ON COLUMN &VIEW..remove_row
+   IS 'FLAGS=AMIUL^DATATYPE=STRING(200)^ENUMERATION=FndBoolean^PROMPT=Remove Row^REF=FndBoolean^';
+COMMENT ON COLUMN &VIEW..remove_row_db
+   IS 'FLAGS=A----^DATATYPE=STRING(20)^PROMPT=Remove Row^';
+
+-----------------------------------------------------------------------------
+-------------------- PACKAGES FOR METHODS -----------------------------------
+-----------------------------------------------------------------------------
+
+PROMPT Creating &PKG implementation
+
+CREATE OR REPLACE PACKAGE BODY &PKG IS
+
+datetime_format_ VARCHAR2(40) := Fnd_Setting_API.Get_Value('EVENT_REG_DATETIME');
+date_format_     VARCHAR2(40) := Fnd_Setting_API.Get_Value('EVENT_REG_DATE');
+time_format_     VARCHAR2(40) := Fnd_Setting_API.Get_Value('EVENT_REG_TIME');
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC IMPLEMENTATION METHOD DECLARATIONS ---------
+-----------------------------------------------------------------------------
+
+PROCEDURE Create_Custom_Trigger___(
+   rec_           IN     Fnd_Event_Tab%ROWTYPE,
+   trigger_type_  IN     VARCHAR2 );
+
+PROCEDURE Create_Custom_Triggers___(
+   rec_ IN Fnd_Event_Tab%ROWTYPE );
+
+FUNCTION Get_Trigger_Name___(
+   event_id_      IN VARCHAR2,
+   trigger_type_  IN VARCHAR2 ) RETURN VARCHAR2;
+
+PROCEDURE Remove_Custom_Trigger___(
+   rec_           IN     Fnd_Event_Tab%ROWTYPE,
+   trigger_type_  IN     VARCHAR2 );
+
+PROCEDURE Remove_Custom_Triggers___(
+   rec_ IN Fnd_Event_Tab%ROWTYPE );
+
+FUNCTION Create_Trigger_Name___ (
+   event_id_ IN VARCHAR2 ) RETURN VARCHAR2;
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS ----------------------------
+-----------------------------------------------------------------------------
+-- Lock_By_Id___
+--    Client-support to lock a specific instance of the logical unit.
+--
+-- Lock_By_Keys___
+--    Server support to lock a specific instance of the logical unit.
+--
+-- Get_Object_By_Id___
+--    Get LU-record from the database with a specified object identity.
+--
+-- Get_Object_By_Keys___
+--    Get LU-record from the database with specified key columns.
+--
+-- Check_Exist___
+--    Check if a specific LU-instance already exist in the database.
+--
+-- Get_Id_Version_By_Keys___
+--    Get the current OBJID and OBJVERSION for a specific LU-instance.
+-----------------------------------------------------------------------------
+
+FUNCTION Lock_By_Id___ (
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2 ) RETURN &TABLE%ROWTYPE
+IS
+   row_changed EXCEPTION;
+   row_deleted EXCEPTION;
+   row_locked  EXCEPTION;
+   PRAGMA      exception_init(row_locked, -0054);
+   rec_        &TABLE%ROWTYPE;
+   dummy_      NUMBER;
+   CURSOR lock_control IS
+      SELECT *
+      FROM   &TABLE
+      WHERE  &OBJID = objid_
+      AND    &OBJVERSION = objversion_
+      FOR UPDATE NOWAIT;
+   CURSOR exist_control IS
+      SELECT 1
+      FROM   &TABLE
+      WHERE  &OBJID = objid_;
+BEGIN
+   OPEN lock_control;
+   FETCH lock_control INTO rec_;
+   IF (lock_control%FOUND) THEN
+      CLOSE lock_control;
+      RETURN rec_;
+   END IF;
+   CLOSE lock_control;
+   OPEN exist_control;
+   FETCH exist_control INTO dummy_;
+   IF (exist_control%FOUND) THEN
+      CLOSE exist_control;
+      RAISE row_changed;
+   ELSE
+      CLOSE exist_control;
+      RAISE row_deleted;
+   END IF;
+EXCEPTION
+   WHEN row_locked THEN
+      Error_SYS.Record_Locked(lu_name_);
+   WHEN row_changed THEN
+      Error_SYS.Record_Modified(lu_name_);
+   WHEN row_deleted THEN
+      Error_SYS.Record_Removed(lu_name_);
+END Lock_By_Id___;
+
+FUNCTION Lock_By_Keys___ (
+   event_lu_name_ IN VARCHAR2,
+   event_id_      IN VARCHAR2 ) RETURN &TABLE%ROWTYPE
+IS
+   row_deleted EXCEPTION;
+   rec_        &TABLE%ROWTYPE;
+   CURSOR lock_control IS
+      SELECT *
+      FROM  &TABLE
+      WHERE event_lu_name = event_lu_name_
+      AND   event_id = event_id_
+      FOR UPDATE;
+BEGIN
+   OPEN lock_control;
+   FETCH lock_control INTO rec_;
+   IF (lock_control%FOUND) THEN
+      CLOSE lock_control;
+      RETURN rec_;
+   ELSE
+      CLOSE lock_control;
+      RAISE row_deleted;
+   END IF;
+EXCEPTION
+   WHEN row_deleted THEN
+      Error_SYS.Record_Removed(lu_name_);
+END Lock_By_Keys___;
+
+FUNCTION Get_Object_By_Id___ (
+   objid_ IN VARCHAR2 ) RETURN &TABLE%ROWTYPE
+IS
+   lu_rec_ &TABLE%ROWTYPE;
+   CURSOR getrec IS
+      SELECT *
+      FROM   &TABLE
+      WHERE  &OBJID = objid_;
+BEGIN
+   OPEN getrec;
+   FETCH getrec INTO lu_rec_;
+   IF (getrec%NOTFOUND) THEN
+      CLOSE getrec;
+      Error_SYS.Record_Removed(lu_name_);
+   END IF;
+   CLOSE getrec;
+   RETURN(lu_rec_);
+END Get_Object_By_Id___;
+
+
+FUNCTION Get_Object_By_Keys___ (
+   event_lu_name_ IN VARCHAR2,
+   event_id_      IN VARCHAR2 ) RETURN &TABLE%ROWTYPE
+IS
+   lu_rec_ &TABLE%ROWTYPE;
+   CURSOR getrec IS
+      SELECT *
+      FROM  &TABLE
+      WHERE event_lu_name = event_lu_name_
+      AND   event_id = event_id_;
+BEGIN
+   OPEN getrec;
+   FETCH getrec INTO lu_rec_;
+   CLOSE getrec;
+   RETURN(lu_rec_);
+END Get_Object_By_Keys___;
+
+FUNCTION Check_Exist___ (
+   event_lu_name_ IN VARCHAR2,
+   event_id_      IN VARCHAR2 ) RETURN BOOLEAN
+IS
+   dummy_ NUMBER;
+   CURSOR exist_control IS
+      SELECT 1
+      FROM   &TABLE
+      WHERE event_lu_name = event_lu_name_
+      AND   event_id = event_id_;
+BEGIN
+   OPEN exist_control;
+   FETCH exist_control INTO dummy_;
+   IF (exist_control%FOUND) THEN
+      CLOSE exist_control;
+      RETURN(TRUE);
+   END IF;
+   CLOSE exist_control;
+   RETURN(FALSE);
+END Check_Exist___;
+
+PROCEDURE Get_Id_Version_By_Keys___ (
+   objid_         IN OUT VARCHAR2,
+   objversion_    IN OUT VARCHAR2,
+   event_lu_name_ IN     VARCHAR2,
+   event_id_      IN     VARCHAR2)
+IS
+   CURSOR get_version IS
+      SELECT &OBJID, &OBJVERSION
+      FROM  &TABLE
+      WHERE event_lu_name = event_lu_name_
+      AND   event_id = event_id_;
+BEGIN
+   OPEN get_version;
+   FETCH get_version INTO objid_, objversion_;
+   CLOSE get_version;
+END Get_Id_Version_By_Keys___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR INSERT -----------------
+-----------------------------------------------------------------------------
+-- Prepare_Insert___
+--    Set all default values for a new instance (ON-NEW-RECORD) of this
+--    logical unit by calling procedure Add_Attr.
+--
+-- Unpack_Check_Insert___
+--    Unpack the attribute list, check all attributes from the client
+--    and generate all default values before creation of the new object.
+--
+-- Insert___
+--    Insert a new LU-instance into the database and return the values
+--    for OBJID and OBJVERSION.
+-----------------------------------------------------------------------------
+
+PROCEDURE Prepare_Insert___ (
+   attr_ IN OUT VARCHAR2 )
+IS
+BEGIN
+   Client_SYS.Clear_Attr(attr_);
+   Client_SYS.Add_To_Attr('EVENT_TYPE_DB', 'CUSTOM', attr_);
+   Client_SYS.Add_To_Attr('EVENT_TYPE', Fnd_Event_Type_API.Decode('CUSTOM'), attr_);
+   Client_SYS.Add_To_Attr('NEW_ROW_DB', 'FALSE', attr_);
+   Client_SYS.Add_To_Attr('NEW_ROW', Fnd_Boolean_API.Decode('FALSE'), attr_);
+   Client_SYS.Add_To_Attr('MODIFY_ROW_DB', 'FALSE', attr_);
+   Client_SYS.Add_To_Attr('MODIFY_ROW', Fnd_Boolean_API.Decode('FALSE'), attr_);
+   Client_SYS.Add_To_Attr('REMOVE_ROW_DB', 'FALSE', attr_);
+   Client_SYS.Add_To_Attr('REMOVE_ROW', Fnd_Boolean_API.Decode('FALSE'), attr_);
+END Prepare_Insert___;
+
+
+PROCEDURE Unpack_Check_Insert___ (
+   attr_   IN OUT VARCHAR2,
+   newrec_ IN OUT &TABLE%ROWTYPE )
+IS
+   ptr_   NUMBER;
+   name_  VARCHAR2(30);
+   value_ VARCHAR2(2000);
+BEGIN
+   ptr_ := NULL;
+   WHILE (Client_SYS.Get_Next_From_Attr(attr_, ptr_, name_, value_)) LOOP
+      IF (name_ = 'EVENT_LU_NAME') THEN
+         newrec_.event_lu_name := value_;
+      ELSIF (name_ = 'EVENT_ID') THEN
+         newrec_.event_id := Upper(value_);
+      ELSIF (name_ = 'EVENT_DESCRIPTION') THEN
+         newrec_.event_description := value_;
+      ELSIF (name_ = 'EVENT_ENABLE') THEN
+         newrec_.event_enable := value_;
+      ELSIF (name_ = 'EVENT_TABLE_NAME') THEN
+         newrec_.event_table_name := value_;
+      ELSIF (name_ = 'EVENT_TYPE') THEN
+         newrec_.event_type := Fnd_Event_Type_API.Encode(value_);
+         IF (value_ IS NOT NULL) THEN
+            Fnd_Event_Type_API.Exist(value_);
+         END IF;
+      ELSIF (name_ = 'EVENT_TYPE_DB') THEN
+         newrec_.event_type := value_;
+         IF (value_ IS NOT NULL) THEN
+            Fnd_Event_Type_API.Exist_Db(value_);
+         END IF;
+      ELSIF (name_ = 'MODIFIED_ATTRIBUTES') THEN
+         newrec_.modified_attributes := value_;
+      ELSIF (name_ = 'NEW_ROW') THEN
+         newrec_.new_row := Fnd_Boolean_API.Encode(value_);
+         IF (value_ IS NOT NULL) THEN
+            Fnd_Boolean_API.Exist(value_);
+         END IF;
+      ELSIF (name_ = 'NEW_ROW_DB') THEN
+         newrec_.new_row := value_;
+         IF (value_ IS NOT NULL) THEN
+            Fnd_Boolean_API.Exist_Db(value_);
+         END IF;
+      ELSIF (name_ = 'MODIFY_ROW') THEN
+         newrec_.modify_row := Fnd_Boolean_API.Encode(value_);
+         IF (value_ IS NOT NULL) THEN
+            Fnd_Boolean_API.Exist(value_);
+         END IF;
+      ELSIF (name_ = 'MODIFY_ROW_DB') THEN
+         newrec_.modify_row := value_;
+         IF (value_ IS NOT NULL) THEN
+            Fnd_Boolean_API.Exist_Db(value_);
+         END IF;
+      ELSIF (name_ = 'REMOVE_ROW') THEN
+         newrec_.remove_row := Fnd_Boolean_API.Encode(value_);
+         IF (value_ IS NOT NULL) THEN
+            Fnd_Boolean_API.Exist(value_);
+         END IF;
+      ELSIF (name_ = 'REMOVE_ROW_DB') THEN
+         newrec_.remove_row := value_;
+         IF (value_ IS NOT NULL) THEN
+            Fnd_Boolean_API.Exist_Db(value_);
+         END IF;
+      ELSE
+         Error_SYS.Item_Not_Exist(lu_name_, name_, value_);
+      END IF;
+   END LOOP;
+   Client_SYS.Clear_Attr(attr_);
+   Error_SYS.Check_Not_Null(lu_name_, 'EVENT_LU_NAME', newrec_.event_lu_name);
+   Error_SYS.Check_Not_Null(lu_name_, 'EVENT_ID', newrec_.event_id);
+   Error_SYS.Check_Valid_Identifier('EVENT_ID', newrec_.event_id); 
+   Error_SYS.Check_Not_Null(lu_name_, 'EVENT_TYPE', newrec_.event_type);
+   Error_SYS.Check_Not_Null(lu_name_, 'NEW_ROW', newrec_.new_row);
+   Error_SYS.Check_Not_Null(lu_name_, 'MODIFY_ROW', newrec_.modify_row);
+   Error_SYS.Check_Not_Null(lu_name_, 'REMOVE_ROW', newrec_.remove_row);
+EXCEPTION
+   WHEN value_error THEN
+      Error_SYS.Item_Format(lu_name_, name_, value_);
+END Unpack_Check_Insert___;
+
+
+PROCEDURE Insert___ (
+   objid_      OUT    VARCHAR2,
+   objversion_ OUT    VARCHAR2,
+   newrec_     IN OUT &TABLE%ROWTYPE,
+   attr_       IN OUT VARCHAR2 )
+IS
+BEGIN
+   newrec_.rowversion := sysdate;
+   objversion_ := to_char(newrec_.rowversion,'YYYYMMDDHH24MISS');
+   --
+   IF (nvl(newrec_.event_enable, 'FALSE') = 'TRUE') THEN
+      Error_SYS.Appl_General(lu_name_, 'ENERR_I: Can not enable event with no actions enabled.');
+   END IF;
+   --
+   INSERT
+      INTO fnd_event_tab (
+         event_lu_name,
+         event_id,
+         event_description,
+         event_enable,
+         event_table_name,
+         event_type,
+         modified_attributes,
+         new_row,
+         modify_row,
+         remove_row,
+         rowversion)
+      VALUES (
+         newrec_.event_lu_name,
+         newrec_.event_id,
+         newrec_.event_description,
+         newrec_.event_enable,
+         newrec_.event_table_name,
+         newrec_.event_type,
+         newrec_.modified_attributes,
+         newrec_.new_row,
+         newrec_.modify_row,
+         newrec_.remove_row,
+         newrec_.rowversion)
+   RETURNING &OBJID INTO objid_;
+   -- Create Custom Defined triggers
+   IF (newrec_.event_type = 'CUSTOM') THEN
+      IF (newrec_.event_enable = 'TRUE') THEN
+         Create_Custom_Triggers___(newrec_);
+      END IF;
+   END IF;
+EXCEPTION
+   WHEN dup_val_on_index THEN
+      Error_SYS.Record_Exist(lu_name_);
+END Insert___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR UPDATE -----------------
+-----------------------------------------------------------------------------
+-- Unpack_Check_Update___
+--    Unpack the attribute list, check all attributes from the client
+--    and generate all default values before modifying the object.
+--
+-- Update___
+--    Update an existing LU-instance in the database and return the
+--    the new OBJVERSION.
+-----------------------------------------------------------------------------
+
+PROCEDURE Unpack_Check_Update___ (
+   attr_   IN OUT VARCHAR2,
+   newrec_ IN OUT &TABLE%ROWTYPE,
+   objid_  IN     VARCHAR2 )
+IS
+   ptr_   NUMBER;
+   name_  VARCHAR2(30);
+   value_ VARCHAR2(2000);
+BEGIN
+   ptr_ := NULL;
+   WHILE (Client_SYS.Get_Next_From_Attr(attr_, ptr_, name_, value_)) LOOP
+      IF (name_ = 'EVENT_LU_NAME') THEN
+         Error_SYS.Item_Update(lu_name_, 'EVENT_LU_NAME');
+      ELSIF (name_ = 'EVENT_ID') THEN
+         Error_SYS.Item_Update(lu_name_, 'EVENT_ID');
+      ELSIF (name_ = 'EVENT_DESCRIPTION') THEN
+         newrec_.event_description := value_;
+      ELSIF (name_ = 'EVENT_ENABLE') THEN
+         newrec_.event_enable := value_;
+      ELSIF (name_ = 'EVENT_TABLE_NAME') THEN
+         newrec_.event_table_name := value_;
+      ELSIF (name_ = 'EVENT_TYPE') THEN
+         newrec_.event_type := Fnd_Event_Type_API.Encode(value_);
+         IF (value_ IS NOT NULL) THEN
+            Fnd_Event_Type_API.Exist(value_);
+         END IF;
+      ELSIF (name_ = 'EVENT_TYPE_DB') THEN
+         newrec_.event_type := value_;
+         IF (value_ IS NOT NULL) THEN
+            Fnd_Event_Type_API.Exist_Db(value_);
+         END IF;
+      ELSIF (name_ = 'MODIFIED_ATTRIBUTES') THEN
+         newrec_.modified_attributes := value_;
+      ELSIF (name_ = 'NEW_ROW') THEN
+         newrec_.new_row := Fnd_Boolean_API.Encode(value_);
+         IF (value_ IS NOT NULL) THEN
+            Fnd_Boolean_API.Exist(value_);
+         END IF;
+      ELSIF (name_ = 'NEW_ROW_DB') THEN
+         newrec_.new_row := value_;
+         IF (value_ IS NOT NULL) THEN
+            Fnd_Boolean_API.Exist_Db(value_);
+         END IF;
+      ELSIF (name_ = 'MODIFY_ROW') THEN
+         newrec_.modify_row := Fnd_Boolean_API.Encode(value_);
+         IF (value_ IS NOT NULL) THEN
+            Fnd_Boolean_API.Exist(value_);
+         END IF;
+      ELSIF (name_ = 'MODIFY_ROW_DB') THEN
+         newrec_.modify_row := value_;
+         IF (value_ IS NOT NULL) THEN
+            Fnd_Boolean_API.Exist_Db(value_);
+         END IF;
+      ELSIF (name_ = 'REMOVE_ROW') THEN
+         newrec_.remove_row := Fnd_Boolean_API.Encode(value_);
+         IF (value_ IS NOT NULL) THEN
+            Fnd_Boolean_API.Exist(value_);
+         END IF;
+      ELSIF (name_ = 'REMOVE_ROW_DB') THEN
+         newrec_.remove_row := value_;
+         IF (value_ IS NOT NULL) THEN
+            Fnd_Boolean_API.Exist_Db(value_);
+         END IF;
+      ELSE
+         Error_SYS.Item_Not_Exist(lu_name_, name_, value_);
+      END IF;
+   END LOOP;
+   Client_SYS.Clear_Attr(attr_);
+   Error_SYS.Check_Not_Null(lu_name_, 'EVENT_TYPE', newrec_.event_type);
+   Error_SYS.Check_Not_Null(lu_name_, 'NEW_ROW', newrec_.new_row);
+   Error_SYS.Check_Not_Null(lu_name_, 'MODIFY_ROW', newrec_.modify_row);
+   Error_SYS.Check_Not_Null(lu_name_, 'REMOVE_ROW', newrec_.remove_row);
+EXCEPTION
+   WHEN value_error THEN
+      Error_SYS.Item_Format(lu_name_, name_, value_);
+END Unpack_Check_Update___;
+
+
+PROCEDURE Update___ (
+   objid_      IN     VARCHAR2,
+   oldrec_     IN     &TABLE%ROWTYPE,
+   newrec_     IN OUT &TABLE%ROWTYPE,
+   attr_       IN OUT VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   by_keys_    IN BOOLEAN DEFAULT FALSE )
+IS
+   dummy_ NUMBER;
+
+   CURSOR get_event_count IS
+   SELECT COUNT(*)
+     FROM fnd_event_action_tab
+     WHERE event_lu_name = newrec_.event_lu_name
+     AND   event_id = newrec_.event_id
+     AND   action_enable = 'TRUE';
+BEGIN
+   IF (nvl(oldrec_.event_enable, 'FALSE') = 'FALSE' AND newrec_.event_enable = 'TRUE') THEN
+      OPEN  get_event_count;
+      FETCH get_event_count INTO dummy_;
+      CLOSE get_event_count;
+      IF (dummy_ = 0) THEN
+         Error_SYS.Appl_General(lu_name_, 'ENERR_U: Can not enable event with no actions enabled.');
+      END IF;
+   END IF;
+   --
+   newrec_.rowversion := sysdate;
+   objversion_ := to_char(newrec_.rowversion,'YYYYMMDDHH24MISS');
+   IF by_keys_ THEN
+      UPDATE fnd_event_tab
+      SET event_lu_name = newrec_.event_lu_name,
+          event_id = newrec_.event_id,
+          event_description = newrec_.event_description,
+          event_enable = newrec_.event_enable,
+          event_table_name = newrec_.event_table_name,
+          event_type = newrec_.event_type,
+          modified_attributes = newrec_.modified_attributes,
+          new_row = newrec_.new_row,
+          modify_row = newrec_.modify_row,
+          remove_row = newrec_.remove_row,
+          rowversion = newrec_.rowversion
+      WHERE event_lu_name = newrec_.event_lu_name
+      AND   event_id = newrec_.event_id;
+   ELSE
+      UPDATE fnd_event_tab
+      SET event_lu_name = newrec_.event_lu_name,
+          event_id = newrec_.event_id,
+          event_description = newrec_.event_description,
+          event_enable = newrec_.event_enable,
+          event_table_name = newrec_.event_table_name,
+          event_type = newrec_.event_type,
+          modified_attributes = newrec_.modified_attributes,
+          new_row = newrec_.new_row,
+          modify_row = newrec_.modify_row,
+          remove_row = newrec_.remove_row,
+          rowversion = newrec_.rowversion
+      WHERE &OBJID = objid_;
+   END IF;
+   -- Create/remove Custom Defined triggers
+   IF (newrec_.event_type = 'CUSTOM') THEN
+      IF (newrec_.event_enable = 'TRUE') THEN
+         Remove_Custom_Triggers___(oldrec_);
+         Create_Custom_Triggers___(newrec_);
+      ELSE
+         Remove_Custom_Triggers___(oldrec_);
+      END IF;
+   END IF;
+EXCEPTION
+   WHEN dup_val_on_index THEN
+      Error_SYS.Record_Exist(lu_name_);
+END Update___;
+
+-----------------------------------------------------------------------------
+-------------------- IMPLEMENTATION BASE METHODS FOR DELETE -----------------
+-----------------------------------------------------------------------------
+-- Check_Delete___
+--    Checks whether a specific LU-record may be removed or not.
+--    The procedure should check business rules like attribute values
+--    as well as database constraints (defined or not).
+--
+-- Delete___
+--    Deletion of the specific LU-object from the database.
+-----------------------------------------------------------------------------
+
+PROCEDURE Check_Delete___ (
+   remrec_ IN &TABLE%ROWTYPE )
+IS
+   key_ VARCHAR2(2000);
+BEGIN
+   key_ := remrec_.event_lu_name || '^' || remrec_.event_id || '^';
+   Reference_SYS.Check_Restricted_Delete(lu_name_, key_);
+END Check_Delete___;
+
+
+PROCEDURE Delete___ (
+   objid_  IN VARCHAR2,
+   remrec_ IN &TABLE%ROWTYPE )
+IS
+   key_ VARCHAR2(2000);
+BEGIN
+   key_ := remrec_.event_lu_name || '^' || remrec_.event_id || '^';
+   Reference_SYS.Do_Cascade_Delete(lu_name_, key_);
+   DELETE
+      FROM  fnd_event_tab
+      WHERE &OBJID = objid_;
+   -- Remove Custom Defined triggers
+   IF (remrec_.event_type = 'CUSTOM') THEN
+      Remove_Custom_Triggers___(remrec_);
+   END IF;
+END Delete___;
+
+-----------------------------------------------------------------------------
+-------------------- PRIVATE BASE METHODS -----------------------------------
+-----------------------------------------------------------------------------
+-- Lock__
+--    Client-support to lock a specific instance of the logical unit.
+--
+-- New__
+--    Client-support interface to create LU instances.
+--       action_ = 'PREPARE'
+--          Default values and handle of information to client.
+--          The default values are set in procedure Prepare_Insert___.
+--       action_ = 'CHECK'
+--          Check all attributes before creating new object and handle of
+--          information to client. The attribute list is unpacked, checked
+--          and prepared (defaults) in procedure Unpack_Check_Insert___.
+--       action_ = 'DO'
+--          Creation of new instances of the logical unit and handle of
+--          information to client. The attribute list is unpacked, checked
+--          and prepared (defaults) in procedure Unpack_Check_Insert___
+--          before calling procedure Insert___.
+--
+-- Modify__
+--    Client-support interface to modify attributes for LU instances.
+--       action_ = 'CHECK'
+--          Check all attributes before modifying an existing object and
+--          handle of information to client. The attribute list is unpacked,
+--          checked and prepared(defaults) in procedure Unpack_Check_Update___.
+--       action_ = 'DO'
+--          Modification of an existing instance of the logical unit. The
+--          procedure unpacks the attributes, checks all values before
+--          procedure Update___ is called.
+--
+-- Remove__
+--    Client-support interface to remove LU instances.
+--       action_ = 'CHECK'
+--          Check whether a specific LU-instance may be removed or not.
+--          The procedure fetches the complete record by calling procedure
+--          Get_Object_By_Id___. Then the check is made by calling procedure
+--          Check_Delete___.
+--       action_ = 'DO'
+--          Remove an existing instance of the logical unit. The procedure
+--          fetches the complete LU-record, checks for a delete and then
+--          deletes the record by calling procedure Delete___.
+-----------------------------------------------------------------------------
+
+PROCEDURE Lock__ (
+   info_       OUT VARCHAR2,
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2 )
+IS
+   dummy_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Lock__');
+   dummy_ := Lock_By_Id___(objid_, objversion_);
+   info_ := Client_SYS.Get_All_Info;
+END Lock__;
+
+
+PROCEDURE New__ (
+   info_       OUT    VARCHAR2,
+   objid_      OUT    VARCHAR2,
+   objversion_ OUT    VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   newrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'New__');
+   IF (action_ = 'PREPARE') THEN
+      Prepare_Insert___(attr_);
+   ELSIF (action_ = 'CHECK') THEN
+      Unpack_Check_Insert___(attr_, newrec_);
+   ELSIF (action_ = 'DO') THEN
+      Unpack_Check_Insert___(attr_, newrec_);
+      Insert___(objid_, objversion_, newrec_, attr_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END New__;
+
+
+PROCEDURE Modify__ (
+   info_       OUT    VARCHAR2,
+   objid_      IN     VARCHAR2,
+   objversion_ IN OUT VARCHAR2,
+   attr_       IN OUT VARCHAR2,
+   action_     IN     VARCHAR2 )
+IS
+   oldrec_ &TABLE%ROWTYPE;
+   newrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Modify__');
+   IF (action_ = 'CHECK') THEN
+      newrec_ := Get_Object_By_Id___(objid_);
+      Unpack_Check_Update___(attr_, newrec_, objid_);
+   ELSIF (action_ = 'DO') THEN
+      oldrec_ := Lock_By_Id___(objid_, objversion_);
+      newrec_ := oldrec_;
+      Unpack_Check_Update___(attr_, newrec_, objid_);
+      Update___(objid_, oldrec_, newrec_, attr_, objversion_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Modify__;
+
+
+PROCEDURE Remove__ (
+   info_       OUT VARCHAR2,
+   objid_      IN  VARCHAR2,
+   objversion_ IN  VARCHAR2,
+   action_     IN  VARCHAR2 )
+IS
+   remrec_ &TABLE%ROWTYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Remove__');
+   IF (action_ = 'CHECK') THEN
+      remrec_ := Get_Object_By_Id___(objid_);
+      Check_Delete___(remrec_);
+   ELSIF (action_ = 'DO') THEN
+      remrec_ := Lock_By_Id___(objid_, objversion_);
+      Check_Delete___(remrec_);
+      Delete___(objid_, remrec_);
+   END IF;
+   info_ := Client_SYS.Get_All_Info;
+END Remove__;
+
+-----------------------------------------------------------------------------
+-------------------- PUBLIC BASE METHODS ------------------------------------
+-----------------------------------------------------------------------------
+-- Exist
+--   Checks if given pointer (e.g. primary key) to an instance of this
+--   logical unit exists. If not an exception will be raised.
+-----------------------------------------------------------------------------
+
+PROCEDURE Exist (
+   event_lu_name_ IN VARCHAR2,
+   event_id_      IN VARCHAR2 )
+IS
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Exist', TRUE);
+   IF (NOT Check_Exist___(event_lu_name_, event_id_)) THEN
+      Error_SYS.Record_Not_Exist(lu_name_);
+   END IF;
+END Exist;
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC IMPLEMENTATION METHODS ---------------------
+-----------------------------------------------------------------------------
+
+PROCEDURE Create_Custom_Triggers___(
+   rec_ IN Fnd_Event_Tab%ROWTYPE )
+IS
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Create_Custom_Triggers___', TRUE);
+   -- Create triggers per type (New, Modify, Remove)
+   IF (rec_.new_row = 'TRUE') THEN
+      Create_Custom_Trigger___(rec_, 'NEW');
+   END IF;
+   IF (rec_.modify_row = 'TRUE') THEN
+      Create_Custom_Trigger___(rec_, 'MODIFY');
+   END IF;
+   IF (rec_.remove_row = 'TRUE') THEN
+      Create_Custom_Trigger___(rec_, 'REMOVE');
+   END IF;
+END Create_Custom_Triggers___;
+
+PROCEDURE Create_Custom_Trigger___(
+   rec_           IN     Fnd_Event_Tab%ROWTYPE,
+   trigger_type_  IN     VARCHAR2 )
+IS
+   columns_             Installation_SYS.ColumnTabType;
+   stmt_                VARCHAR2(32000);
+   old_param_prefix_    VARCHAR2(10);
+   new_param_prefix_    VARCHAR2(10);
+   format_prefix_       VARCHAR2(30);
+   format_postfix_      VARCHAR2(30);
+   if_stmt_start_       VARCHAR2(32000);
+   if_stmt_end_         VARCHAR2(32000);
+   indent_              NUMBER;
+   --
+   CURSOR get_param IS
+   SELECT *
+     FROM fnd_event_parameter_tab
+    WHERE event_lu_name = rec_.event_lu_name
+      AND event_id = rec_.event_id;
+   --
+   FUNCTION space___ (
+      indent_  IN NUMBER ) RETURN VARCHAR2
+   IS
+      string_  VARCHAR2(100);
+   BEGIN
+      RETURN(lpad(string_, indent_ * 3));
+   END space___;
+   --
+   FUNCTION Get_Dml_Event___(
+      trigger_type_        IN VARCHAR2 ) RETURN VARCHAR2
+   IS
+   BEGIN
+      CASE trigger_type_
+         WHEN 'NEW' THEN
+            RETURN('INSERT');
+         WHEN 'MODIFY' THEN
+            RETURN('UPDATE');
+         WHEN 'REMOVE' THEN
+            RETURN('DELETE');
+      END CASE;
+   END Get_Dml_Event___;
+   --
+   FUNCTION Get_Columns___ (
+      column_list_ IN VARCHAR2 ) RETURN Installation_SYS.ColumnTabType
+   IS
+      pos_              BINARY_INTEGER       := 1;
+      start_            BINARY_INTEGER       := 1;
+      tmp_column_list_  VARCHAR2(32000)      := column_list_;
+      separator_        CONSTANT VARCHAR2(2) := ';';
+      column_name_      VARCHAR2(30);
+      columns_          Installation_SYS.ColumnTabType;
+   BEGIN
+      IF column_list_ IS NULL THEN
+         RETURN(columns_);
+      END IF;
+      -- Find all attributes in Search Domain Title
+      pos_ := Instr(tmp_column_list_, separator_, pos_);
+      LOOP
+         -- Find column name
+         column_name_ := Substr(tmp_column_list_, start_, pos_ - start_);
+         IF column_name_ IS NOT NULL THEN
+            Installation_SYS.Set_Table_Column(columns_, column_name_);
+         END IF;
+         -- Find new attribute
+         start_ := pos_ + 1;
+         pos_   := Instr(tmp_column_list_, separator_, start_);
+         IF pos_ = 0 THEN
+            pos_ := length(tmp_column_list_);
+            -- Find column name
+            column_name_ := Substr(tmp_column_list_, start_);
+            Installation_SYS.Set_Table_Column(columns_, column_name_);
+            EXIT;
+         END IF;
+      END LOOP;
+      RETURN(columns_);
+   END Get_Columns___;
+   --
+   FUNCTION Create_If_Stmt___ (
+      column_list_ IN VARCHAR2 ) RETURN VARCHAR2
+   IS
+      found_            BOOLEAN              := FALSE;
+      i_                BINARY_INTEGER       := 0;
+      pos_              BINARY_INTEGER       := 1;
+      start_            BINARY_INTEGER       := 1;
+      tmp_column_list_  VARCHAR2(32000)      := column_list_;
+      stmt_             VARCHAR2(32000);
+      separator_        CONSTANT VARCHAR2(2) := ';';
+      column_name_      VARCHAR2(30);
+   BEGIN
+      IF column_list_ IS NULL THEN
+         RETURN(NULL);
+      END IF;
+      -- Find all attributes in Search Domain Title
+      pos_ := Instr(tmp_column_list_, separator_, pos_);
+      i_   := i_ + 1;
+      IF (tmp_column_list_ IS NOT NULL) THEN
+         stmt_ := stmt_ || 'IF ';
+      END IF;
+      LOOP
+         IF (i_ > 1) THEN
+            stmt_ := stmt_||space___(indent_)||' OR ';
+         END IF;
+         -- Find column name
+         column_name_ := Substr(tmp_column_list_, start_, pos_ - start_);
+         IF column_name_ IS NOT NULL THEN
+            found_   := TRUE;
+            indent_  := indent_ + 1;
+            stmt_    := stmt_ ||space___(indent_)||'(:NEW.'||column_name_||' != '||':OLD.'||column_name_||') OR ((:NEW.'||column_name_||' IS NULL) AND ('||':old.'||column_name_||' IS NOT NULL)) OR ((:new.'||column_name_||' IS NOT NULL) AND ('||':OLD.'||column_name_||' IS NULL))';
+         END IF;
+         -- Find new attribute
+         start_ := pos_ + 1;
+         pos_   := Instr(tmp_column_list_, separator_, start_);
+         i_     := i_ + 1;
+         IF pos_ = 0 THEN
+            IF (i_ > 1 AND found_) THEN
+               stmt_ := stmt_||space___(indent_)||' OR ';
+            END IF;
+            pos_ := length(tmp_column_list_);
+            -- Find column name
+            column_name_ := Substr(tmp_column_list_, start_);
+            stmt_ := stmt_ ||space___(indent_)||'(:NEW.'||column_name_||' != '||':OLD.'||column_name_||') OR ((:NEW.'||column_name_||' IS NULL) AND ('||':OLD.'||column_name_||' IS NOT NULL)) OR ((:NEW.'||column_name_||' IS NOT NULL) AND ('||':OLD.'||column_name_||' IS NULL))';
+            stmt_ := stmt_||space___(indent_)||' THEN ';
+            EXIT;
+         END IF;
+      END LOOP;
+      RETURN(stmt_);
+   END Create_If_Stmt___;
+   --
+   FUNCTION Replace_Parameter___ (
+      plsql_method_ IN VARCHAR2 ) RETURN VARCHAR2
+   IS
+      pos_              BINARY_INTEGER       := 1;
+      method_           VARCHAR2(32000)      := plsql_method_;
+      param_marker_     CONSTANT VARCHAR2(2) := chr(38);
+      --
+      CURSOR get_param IS
+      SELECT *
+        FROM fnd_event_parameter_tab
+       WHERE event_lu_name = rec_.event_lu_name
+         AND event_id = rec_.event_id;
+   BEGIN
+      pos_ := Instr(method_, param_marker_);
+      IF (pos_ = 0) THEN
+         RETURN(method_);
+      END IF;
+      -- Replace all parameters used as parameters to PL/SQL method
+      FOR par IN get_param LOOP
+         IF par.current_value = 'TRUE' THEN
+            method_ := replace(method_, param_marker_||'OLD:'||par.id, old_param_prefix_||par.id);
+         END IF;
+         IF par.new_value = 'TRUE' THEN
+            method_ := replace(method_, param_marker_||'NEW:'||par.id, new_param_prefix_||par.id);
+         END IF;
+         pos_ := Instr(method_, param_marker_);
+         IF pos_ = 0 THEN
+            RETURN(method_);
+         END IF;
+      END LOOP;
+      RETURN(method_);
+   END Replace_Parameter___;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Create_Custom_Trigger___', TRUE);
+   indent_ := 1;
+   CASE trigger_type_
+      WHEN 'NEW' THEN
+         new_param_prefix_ := ':NEW.';
+         old_param_prefix_ := ':OLD.';
+      WHEN 'MODIFY' THEN
+         new_param_prefix_ := ':NEW.';
+         old_param_prefix_ := ':OLD.';
+         -- Build If statement for modify
+         if_stmt_start_ := Create_If_Stmt___(rec_.modified_attributes);
+         IF (if_stmt_start_ IS NOT NULL) THEN
+            indent_        := 1;
+            if_stmt_end_   := 'END IF; ';
+         ELSE
+            indent_        := 0;
+            if_stmt_end_   := NULL;
+         END IF;
+         stmt_ := if_stmt_start_;
+      WHEN 'REMOVE' THEN
+         new_param_prefix_ := ':OLD.';
+         old_param_prefix_ := ':OLD.';
+   END CASE;
+   -- Build PL/SQL statement
+   stmt_ := stmt_ ||space___(indent_)||'DECLARE ';
+   indent_ := indent_ + 1;
+   stmt_ := stmt_ ||space___(indent_)||'msg_  VARCHAR2(32000);';
+   indent_ := indent_ - 1;
+   stmt_ := stmt_ ||space___(indent_)||'BEGIN ';
+   indent_ := indent_ + 1;
+   stmt_ := stmt_ ||space___(indent_)||'IF (Event_SYS.Event_Enabled('''||rec_.event_lu_name||''', '''||rec_.event_id||''')) THEN ';
+   indent_ := indent_ + 1;
+   stmt_ := stmt_ ||space___(indent_)||'msg_ := Message_SYS.Construct('''||rec_.event_id||''');';
+   stmt_ := stmt_ ||space___(indent_)||'Message_SYS.Add_Attribute(msg_, ''LU'', '''||rec_.event_lu_name||''');';
+   IF (Database_SYS.Column_Exist(rec_.event_table_name, 'ROWKEY')) THEN
+      stmt_ := stmt_ ||space___(indent_)||'Message_SYS.Add_Attribute(msg_, ''ROWKEY'', '||new_param_prefix_||'ROWKEY);';
+   END IF;
+   FOR par_ IN get_param LOOP
+      IF (par_.id_type = 'DATETIME') THEN
+         format_prefix_  := 'to_char(';
+         format_postfix_ := ', '''||datetime_format_||''')';
+      ELSIF (par_.id_type = 'DATE') THEN
+         format_prefix_  := 'to_char(';
+         format_postfix_ := ', '''||date_format_||''')';
+      ELSIF (par_.id_type = 'TIME') THEN
+         format_prefix_  := 'to_char(';
+         format_postfix_ := ', '''||time_format_||''')';
+      ELSE
+         format_prefix_  := NULL;
+         format_postfix_ := NULL;
+      END IF;
+      --
+      IF par_.plsql_method IS NOT NULL THEN
+         stmt_ := stmt_ ||space___(indent_)||'Message_SYS.Add_Attribute(msg_, '''||par_.id||''', '||
+                          format_prefix_||Replace_Parameter___(par_.plsql_method)||format_postfix_||');';
+      ELSE
+         IF par_.current_value = 'TRUE' THEN
+            stmt_ := stmt_ ||space___(indent_)||'Message_SYS.Add_Attribute(msg_, ''OLD:'||par_.id||''', '||format_prefix_||old_param_prefix_||par_.id||format_postfix_||');';
+         END IF;
+         IF par_.new_value = 'TRUE' THEN
+            stmt_ := stmt_ ||space___(indent_)||'Message_SYS.Add_Attribute(msg_, ''NEW:'||par_.id||''', '||format_prefix_||new_param_prefix_||par_.id||format_postfix_||');';
+         END IF;
+      END IF;
+   END LOOP;
+   stmt_ := stmt_ ||space___(indent_)||'Event_SYS.Event_Execute('''||rec_.event_lu_name||''', '''||rec_.event_id||''', msg_);';
+   indent_ := indent_ - 1;
+   stmt_ := stmt_ ||space___(indent_)||'END IF; ';
+   indent_ := indent_ - 1;
+   stmt_ := stmt_ ||space___(indent_)||'END; ';
+   indent_ := indent_ - 1;
+   stmt_ := stmt_ ||space___(indent_)||if_stmt_end_;
+dbms_output.put_line(stmt_);
+   --
+   Installation_SYS.Create_Trigger (
+   Get_Trigger_Name___(rec_.event_id, trigger_type_),
+   'AFTER',
+   Get_Dml_Event___(trigger_type_),
+   Get_Columns___(rec_.modified_attributes),
+   rec_.event_table_name,
+   NULL,
+   stmt_,
+   TRUE);
+END Create_Custom_Trigger___;
+
+FUNCTION Get_Trigger_Name___(
+   event_id_      IN VARCHAR2,
+   trigger_type_  IN VARCHAR2 ) RETURN VARCHAR2
+IS
+BEGIN
+   CASE trigger_type_
+      WHEN 'NEW' THEN
+         RETURN(Upper(Create_Trigger_Name___(event_id_)||'_EVI'));
+      WHEN 'MODIFY' THEN
+         RETURN(Upper(Create_Trigger_Name___(event_id_)||'_EVU'));
+      WHEN 'REMOVE' THEN
+         RETURN(Upper(Create_Trigger_Name___(event_id_)||'_EVD'));
+   END CASE;
+END Get_Trigger_Name___;
+
+PROCEDURE Remove_Custom_Triggers___(
+   rec_ IN Fnd_Event_Tab%ROWTYPE )
+IS
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Create_Custom_Triggers___', TRUE);
+   -- Create triggers per type (New, Modify, Remove)
+   IF (rec_.new_row = 'TRUE') THEN
+      Remove_Custom_Trigger___(rec_, 'NEW');
+   END IF;
+   IF (rec_.modify_row = 'TRUE') THEN
+      Remove_Custom_Trigger___(rec_, 'MODIFY');
+   END IF;
+   IF (rec_.remove_row = 'TRUE') THEN
+      Remove_Custom_Trigger___(rec_, 'REMOVE');
+   END IF;
+END Remove_Custom_Triggers___;
+
+PROCEDURE Remove_Custom_Trigger___(
+   rec_           IN     Fnd_Event_Tab%ROWTYPE,
+   trigger_type_  IN     VARCHAR2 )
+IS
+   stmt_ VARCHAR2(32000);
+   --
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Remove_Custom_Trigger___', TRUE);
+   Installation_SYS.Remove_Trigger(Get_Trigger_Name___(rec_.event_id, trigger_type_), TRUE);
+END Remove_Custom_Trigger___;
+
+FUNCTION Create_Trigger_Name___ (
+   event_id_ IN VARCHAR2 ) RETURN VARCHAR2
+IS
+   new_event_id_ VARCHAR2(100);
+BEGIN
+   new_event_id_ := Replace(event_id_, ' ', '_');
+   new_event_id_ := Replace(new_event_id_, '/', '_');
+   new_event_id_ := Replace(new_event_id_, '\', '_');
+   new_event_id_ := Replace(new_event_id_, '-', '_');
+   RETURN new_event_id_;
+END Create_Trigger_Name___;
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PRIVATE METHODS ----------------------------
+-----------------------------------------------------------------------------
+
+PROCEDURE Export__ (
+   string_        OUT VARCHAR2,
+   event_lu_name_ IN  VARCHAR2,
+   event_id_      IN  VARCHAR2 )
+IS
+   newline_    CONSTANT VARCHAR2(2) := chr(13)||chr(10);
+   rec                  &TABLE%ROWTYPE;
+   id_                  VARCHAR2(100);
+   CURSOR get_param IS
+   SELECT id, id_type, plsql_method, current_value, new_value
+     FROM fnd_event_parameter_tab
+    WHERE event_lu_name = event_lu_name_
+      AND event_id = event_id_;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Export__');
+   -- Fetch the event details
+   rec     := Get_Object_By_Keys___(event_lu_name_, event_id_);
+   -- Only allowed to export Custom Events
+   IF (nvl(rec.event_type, 'APPLICATION') != 'CUSTOM') THEN
+      Error_SYS.Appl_General(lu_name_, 'EXP_TYPE: Only Custom Events are allowed to be exported.');
+   END IF;
+   --
+   -- Create Export file
+   --
+   string_ :=            '-------------------------------------------------------------------------------------------- ' || newline_;
+   string_ := string_ || '-- Export file for Custom Events ' || rec.event_id || '.' || newline_;
+   string_ := string_ || '-- ' || newline_;
+   string_ := string_ || '--  Date    Sign    History' || newline_;
+   string_ := string_ || '--  ------  ------  -----------------------------------------------------------' || newline_;
+   string_ := string_ || '--  ' || to_char(sysdate, 'YYMMDD') || '  ' || rpad(Fnd_Session_API.Get_Fnd_User, 6, ' ') || '  ' ||
+                         'Export file for task ' || rec.event_id || '.' || newline_;
+   string_ := string_ || '-------------------------------------------------------------------------------------------- ' || newline_;
+   string_ := string_ || newline_;
+   string_ := string_ || 'SET DEFINE ~' || newline_;
+   string_ := string_ || 'PROMPT Register Custom Event "' || rec.event_id || '"' || newline_;
+   string_ := string_ || 'DECLARE' || newline_;
+   string_ := string_ || '   event_lu_name_      VARCHAR2(30)    := ''' || event_lu_name_ || ''';' || newline_;
+   string_ := string_ || '   event_id_           VARCHAR2(30)    := ''' || event_id_ || ''';' || newline_;
+   string_ := string_ || '   id_                 VARCHAR2(100);' || newline_;
+   string_ := string_ || '   info_msg_           VARCHAR2(32000) := NULL;' || newline_;
+   string_ := string_ || 'BEGIN' || newline_;
+   --
+   -- Create Main Message
+   --
+   string_ := string_ || '-- Construct Main Message' || newline_;
+   string_ := string_ || '   info_msg_    := Message_SYS.Construct('''');' || newline_;
+   string_ := string_ || '   Message_SYS.Add_Attribute(info_msg_, ''EVENT_DESCRIPTION'', ''' || Assert_SYS.Encode_Single_Quote_String(rec.event_description) || ''');' || newline_;
+   string_ := string_ || '   Message_SYS.Add_Attribute(info_msg_, ''EVENT_ENABLE'', ''FALSE'');' || newline_;
+   string_ := string_ || '   Message_SYS.Add_Attribute(info_msg_, ''EVENT_TYPE_DB'', ''' || rec.event_type || ''');' || newline_;
+   string_ := string_ || '   Message_SYS.Add_Attribute(info_msg_, ''EVENT_TABLE_NAME'', ''' || rec.event_table_name || ''');' || newline_;
+   string_ := string_ || '   Message_SYS.Add_Attribute(info_msg_, ''MODIFIED_ATTRIBUTES'', ''' || rec.modified_attributes || ''');' || newline_;
+   string_ := string_ || '   Message_SYS.Add_Attribute(info_msg_, ''NEW_ROW_DB'', ''' || rec.new_row || ''');' || newline_;
+   string_ := string_ || '   Message_SYS.Add_Attribute(info_msg_, ''MODIFY_ROW_DB'', ''' || rec.modify_row || ''');' || newline_;
+   string_ := string_ || '   Message_SYS.Add_Attribute(info_msg_, ''REMOVE_ROW_DB'', ''' || rec.remove_row || ''');' || newline_;
+   string_ := string_ || '-- Register Custom Event' || newline_;
+   string_ := string_ || '   Fnd_Event_API.Register_Custom_Event(event_lu_name_, event_id_, info_msg_);' || newline_;
+   FOR rec2 IN get_param LOOP
+      string_ := string_ || '   -- Register Event Parameter' || newline_;
+      string_ := string_ || '      info_msg_ := Message_SYS.Construct('''');' || newline_;
+      string_ := string_ || '      id_  := ''' || rec2.id || ''';' || newline_;
+      string_ := string_ || '      Message_SYS.Add_Attribute(info_msg_, ''ID_TYPE'', ''' || rec2.id_type || ''');' || newline_;
+      string_ := string_ || '      Message_SYS.Add_Attribute(info_msg_, ''PLSQL_METHOD'', ''' || Assert_SYS.Encode_Single_Quote_String(rec2.plsql_method) || ''');' || newline_;
+      string_ := string_ || '      Message_SYS.Add_Attribute(info_msg_, ''CURRENT_VALUE_DB'', ''' || rec2.current_value || ''');' || newline_;
+      string_ := string_ || '      Message_SYS.Add_Attribute(info_msg_, ''NEW_VALUE_DB'', ''' || rec2.new_value || ''');' || newline_;
+      string_ := string_ || '      Fnd_Event_Parameter_API.Register(event_lu_name_, event_id_, id_, info_msg_);' || newline_;
+   END LOOP;
+   string_ := string_ || 'END;' || newline_;
+   string_ := string_ || '/' || newline_;
+   string_ := string_ || 'COMMIT' || newline_;
+   string_ := string_ || '/' || newline_;
+   string_ := string_ || 'SET DEFINE &' || newline_;
+END Export__;
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PROTECTED METHODS --------------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PUBLIC METHODS -----------------------------
+-----------------------------------------------------------------------------
+
+FUNCTION Get_Event_Description (
+   event_lu_name_ IN VARCHAR2,
+   event_id_      IN VARCHAR2 ) RETURN VARCHAR2
+IS
+   temp_ &TABLE..event_description%TYPE;
+   CURSOR get_attr IS
+      SELECT event_description
+      FROM &TABLE
+      WHERE event_lu_name = event_lu_name_
+      AND   event_id = event_id_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get_Event_Description;
+
+
+FUNCTION Get_Event_Enable (
+   event_lu_name_ IN VARCHAR2,
+   event_id_      IN VARCHAR2 ) RETURN VARCHAR2
+IS
+   temp_ &TABLE..event_enable%TYPE;
+   CURSOR get_attr IS
+      SELECT event_enable
+      FROM &TABLE
+      WHERE event_lu_name = event_lu_name_
+      AND   event_id = event_id_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   IF temp_ IS NULL THEN
+      RETURN 'FALSE';
+   ELSE
+      RETURN temp_;
+   END IF;
+END Get_Event_Enable;
+
+
+PROCEDURE Set_Event_Enable (
+   event_lu_name_ IN VARCHAR2,
+   event_id_      IN VARCHAR2 )
+IS
+   temp_       NUMBER;
+   attr_       VARCHAR2(32000);
+   oldrec_     &TABLE%ROWTYPE;
+   newrec_     &TABLE%ROWTYPE;
+   objid_      &VIEW..objid%TYPE;
+   objversion_ &VIEW..objversion%TYPE;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Set_Event_Enable');
+   IF (event_id_ <> upper(event_id_)) THEN
+      Error_SYS.Appl_General(lu_name_, 'UPPCASE: The event identity ":P1" must be in upper case.', event_id_);
+   END IF;
+   SELECT COUNT(*)
+      INTO temp_
+      FROM fnd_event_action
+      WHERE event_id = event_id_
+      AND   event_lu_name = event_lu_name_
+      AND   action_enable = 'TRUE';
+   Get_Id_Version_By_Keys___ (objid_, objversion_, event_lu_name_, event_id_);
+   IF (temp_ > 0) THEN
+      Client_SYS.Add_To_Attr('EVENT_ENABLE', 'TRUE', attr_);
+      oldrec_ := Get_Object_By_Keys___(event_lu_name_, event_id_);
+      newrec_ := oldrec_;
+      Unpack_Check_Update___(attr_, newrec_, objid_);
+      Update___(objid_, oldrec_, newrec_, attr_, objversion_);
+   ELSE
+      Client_SYS.Add_To_Attr('EVENT_ENABLE', 'FALSE', attr_);
+      oldrec_ := Get_Object_By_Keys___(event_lu_name_, event_id_);
+      newrec_ := oldrec_;
+      Unpack_Check_Update___(attr_, newrec_, objid_);
+      Update___(objid_, oldrec_, newrec_, attr_, objversion_);
+   END IF;
+END Set_Event_Enable;
+
+
+PROCEDURE Refresh (
+   event_lu_name_       IN VARCHAR2,
+   event_id_            IN VARCHAR2,
+   event_desc_          IN VARCHAR2,
+   event_type_db_       IN VARCHAR2 DEFAULT 'APPLICATION',
+   event_table_name_    IN VARCHAR2 DEFAULT NULL,
+   modified_attributes_ IN VARCHAR2 DEFAULT NULL,
+   new_row_             IN VARCHAR2 DEFAULT 'FALSE',
+   modify_row_          IN VARCHAR2 DEFAULT 'FALSE',
+   remove_row_          IN VARCHAR2 DEFAULT 'FALSE')
+IS
+   temp_ NUMBER;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Refresh');
+   IF (event_id_ <> upper(event_id_)) THEN
+      Error_SYS.Appl_General(lu_name_, 'UPPCASE: The event identity ":P1" must be in upper case.', event_id_);
+   END IF;
+   SELECT COUNT(*)
+      INTO temp_
+      FROM &VIEW
+      WHERE event_id = event_id_
+      AND event_lu_name = event_lu_name_;
+   IF (temp_ = 0) THEN
+      INSERT INTO fnd_event_tab
+         (event_lu_name, event_id, event_description, event_enable, rowversion,
+          event_type, event_table_name, modified_attributes,
+          new_row, modify_row, remove_row)
+      VALUES
+         (event_lu_name_, event_id_, event_desc_, 'FALSE', SYSDATE,
+          event_type_db_, event_table_name_, modified_attributes_,
+          new_row_, modify_row_, remove_row_);
+   ELSE
+      UPDATE fnd_event_tab
+         SET event_description = event_desc_
+         WHERE event_lu_name = event_lu_name_
+         AND   event_id = event_id_;
+   END IF;
+END Refresh;
+
+PROCEDURE Register_Custom_Event (
+   event_lu_name_ IN VARCHAR2,
+   event_id_      IN VARCHAR2,
+   info_msg_      IN VARCHAR2 )
+IS
+   info_       VARCHAR2(32000);
+   objid_      VARCHAR2(100);
+   objversion_ VARCHAR2(100);
+   attr_       VARCHAR2(2000);
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Register_Custom_Event');
+   Client_SYS.Add_To_Attr('EVENT_LU_NAME',       event_lu_name_, attr_);
+   Client_SYS.Add_To_Attr('EVENT_ID',            event_id_, attr_);
+   Client_SYS.Add_To_Attr('EVENT_DESCRIPTION',   Message_SYS.Find_Attribute(info_msg_, 'EVENT_DESCRIPTION', ''), attr_);
+   Client_SYS.Add_To_Attr('EVENT_ENABLE',        Message_SYS.Find_Attribute(info_msg_, 'EVENT_ENABLE', 'FALSE'), attr_);
+   Client_SYS.Add_To_Attr('EVENT_TABLE_NAME',    Message_SYS.Find_Attribute(info_msg_, 'EVENT_TABLE_NAME', ''), attr_);
+   Client_SYS.Add_To_Attr('EVENT_TYPE_DB',       Message_SYS.Find_Attribute(info_msg_, 'EVENT_TYPE_DB', ''), attr_);
+   Client_SYS.Add_To_Attr('NEW_ROW_DB',          Message_SYS.Find_Attribute(info_msg_, 'NEW_ROW_DB', 'FALSE'), attr_);
+   Client_SYS.Add_To_Attr('MODIFY_ROW_DB',       Message_SYS.Find_Attribute(info_msg_, 'MODIFY_ROW_DB', 'FALSE'), attr_);
+   Client_SYS.Add_To_Attr('REMOVE_ROW_DB',       Message_SYS.Find_Attribute(info_msg_, 'REMOVE_ROW_DB', 'FALSE'), attr_);
+   Client_SYS.Add_To_Attr('MODIFIED_ATTRIBUTES', Message_SYS.Find_Attribute(info_msg_, 'MODIFIED_ATTRIBUTES', ''), attr_);
+   IF (Check_Exist___(event_lu_name_, event_id_)) THEN
+      DELETE FROM fnd_event_tab WHERE event_lu_name = event_lu_name_ AND event_id = event_id_;
+      DELETE FROM fnd_event_parameter_tab WHERE event_lu_name = event_lu_name_ AND event_id = event_id_;
+   END IF;
+   New__(info_, objid_, objversion_, attr_, 'DO');
+END Register_Custom_Event;
+
+PROCEDURE Unfresh (
+   event_lu_name_ IN VARCHAR2,
+   event_id_      IN VARCHAR2 )
+IS
+   temp_ NUMBER;
+BEGIN
+   General_SYS.Init_Method(lu_name_, '&PKG', 'Unfresh');
+   SELECT COUNT(*)
+      INTO temp_
+      FROM &VIEW
+      WHERE event_id = event_id_
+      AND   event_lu_name = event_lu_name_;
+   IF (temp_ > 0) THEN
+      DELETE FROM fnd_event_tab
+         WHERE event_lu_name = event_lu_name_
+         AND   event_id = event_id_;
+   END IF;
+END Unfresh;
+
+
+FUNCTION Get (
+   event_lu_name_ IN VARCHAR2,
+   event_id_ IN VARCHAR2 ) RETURN Public_Rec
+IS
+   temp_ Public_Rec;
+   CURSOR get_attr IS
+      SELECT event_description, event_enable
+      FROM &TABLE
+      WHERE event_lu_name = event_lu_name_
+      AND   event_id = event_id_;
+BEGIN
+   OPEN get_attr;
+   FETCH get_attr INTO temp_;
+   CLOSE get_attr;
+   RETURN temp_;
+END Get;
+
+
+FUNCTION Check_Custom_Event(
+   table_name_ VARCHAR2) RETURN BOOLEAN
+IS
+  temp_ NUMBER;
+  CURSOR get_event IS
+     SELECT 1
+       FROM FND_EVENT_TAB
+      WHERE event_table_name = table_name_ AND
+            event_type = 'CUSTOM';
+BEGIN
+   OPEN get_event;
+   FETCH get_event INTO temp_;
+   
+   IF get_event%FOUND THEN
+     CLOSE get_event;
+     RETURN TRUE;
+   END IF;
+   CLOSE get_event;
+   RETURN FALSE;
+END Check_Custom_Event;
+
+
+
+-----------------------------------------------------------------------------
+-------------------- FOUNDATION1 METHODS ------------------------------------
+-----------------------------------------------------------------------------
+-- Init
+--   Dummy procedure that can be called at database startup to ensure that
+--   this package is loaded into memory for performance reasons only.
+-----------------------------------------------------------------------------
+
+PROCEDURE Init
+IS
+BEGIN
+   NULL;
+END Init;
+
+
+END &PKG;
+/
+SHOW ERROR
+
+
+
+-----------------------------------------------------------------------------
+
+----------------------------------------------------------
+-- <UNDEFINE_SECTION>
+----------------------------------------------------------
+-- This section is reserved for undefine statements
+-- nothing should be manually written below because
+-- that would be overwritten everytime the IFS / Undefine
+-- tool is run.  
+-- Also do NOT make any changes to the above tag because
+-- this will result in duplicated code
+----------------------------------------------------------
+UNDEFINE MODULE
+UNDEFINE LU
+UNDEFINE TABLE
+UNDEFINE VIEW
+UNDEFINE PKG
+UNDEFINE OBJID
+UNDEFINE OBJKEY
+UNDEFINE OBJVERSION

@@ -1,0 +1,581 @@
+-----------------------------------------------------------------------------------
+--
+--  File: FndSetting.ins
+--
+--  Purpose: Install/Upgrade all standard Foundation1 parameters
+--
+--  Date    Sign  History
+--  ------  ----  -----------------------------------------------------------
+--  011022  ROOD  Added comments section. Added parameter KEEP_PERSONAL_MSG (ToDo#4016).
+--  011023  ROOD  Modified description for PDF_ARCHIVE_PATH (ToDo#4015).
+--  011203  HAAR  ToDo#4054 Added DEFAULT_PROFILE.
+--  011207  ROOD  Added DEFAULT_PAPER_FORMAT (ToDo#4056).
+--  020314  ROOD  Added REP_CLEANUP_BEHAVIOR (Bug#22732).
+--  020315  ROOD  Removed the reset of SEC_PRES_SETUP (ToDo#4099).
+--  020321  ROOD  Removed REP_CLEANUP_BEHAVIOR again, another solution choosen. (Bug#22732).
+--  021216  HAAR  Removed parameter for MONITORING_PROCESS, MONITORING_INTERVAL,
+--                KEEP_SCHEDULE_HEAVY and KEEP_SCHEDULE_LIGHT (ToDo#4191).
+--  030117  RAKU  Added parameter LAYOUT_ROOT (Bug#35362).
+--  030219  HAAR  Added QUERY_HINT parameter (ToDo#4152).
+--  030311  ROOD  Removed EVENT_SERVER and KEEP_EVENTS parameters (ToDo#4149).
+--  030509  HAAR  Added commit in script (ToDo#4261).
+--  030627  ROOD  Major update of parameters and values (ToDo#4099).
+--  030702  ROOD  Necessary changes discovered when updating documentation (ToDo#4099).
+--  030818  ROOD  Added attribute value_type. Modified internal methods.
+--                Added initiation of process for Batch Schedules (ToDo#4099).
+--  030826  ROOD  Changed default value for FAST_LOGIN_ACTIVE (ToDo#4099).
+--  030905  RAKU  Changed description for URL_APP_SUPPORT (TakeOff)
+--  030924  ROOD  Added parameters for Fndmig (ToDo#4303).
+--  040219  DOZE  Added REPDES_GRAPHICS for Print Agent
+--  040830  HAAR  Added DEFAULT_FILEENCODING for Utl_File and Unicode (F1PR408).
+--  040914  ASWI  Value 'CUSTOM STRING' parsed to the method Modify_Parameter for 'URL_HELP_BASE' (Bug#43461).
+--  041001  HAAR  Added REMOTE_DEBUGGING (F1PR440).
+--  041027  HAAR  Added CHECKPOINT, CHECKPOINT_TYPE and CHECKPOINT_METHOD (F1PR414).
+--  041125  HAAR  Added CHECKPOINT_CLEANUP (F1PR414).
+--  050613  BAMA  Corrected the parameter value parsed to the method Modify_Parameter for 'URL_HELP_BASE' (Bug#50888).
+--  050714  UTGU  Added parameter SHOW_ASGN_DEF_PRINT. (F1PR861)
+--  051027  HAAR  Added better default values for TABLESPACES (F1PR480).
+--  060228  RAKU  Added setting for CANCEL_QUERY (F1PR480).
+--  060321  MAOL  Changed PRINT_SERVER default value to ON (Edge - NOIID).
+--  200404  MUNA  Added MAX_XML_SIZE and MAX_FO_SIZE for Print Agent (Bug# 56873)
+--  060605  SUKM  Added OBJ_CONN_DELETE bug id Bug# 56013, this comment added in Bug# 58508...
+--  061027  NiWiLK  Corrected; 0.007 of days equals to ten minutes, not one minute!(Bug#61210).
+--  061124  RAKU  Added IFS_CURR_PRECISION keeping the amount of decimals used for storage (F1PR487).
+--  070108  HAAR  Added BATCH_PROCESS_LOG for logging of background processes (Bug#62360).
+--  070509  HAAR  Added parameter KEEP_DEFJOBS_WARNING and KEEP_DEFJOBS_ERROR (Bug#65267).
+--  070524  PEMA  Added CHECKPOINT_U_TIMEOUT for Security Checkpoint FDR 21 11.200 compliance
+--  070622  SUMA  Changed the Description for DEFAULT_PAPER_FORMAT.(F1PR499)
+--  070622  SUMA  Deleted HTTP_AVAILABLE and Hardcoded YES in the FndSettings.api(F1PR499)
+--  070622  SUMA  Deleted EVENT_EXECUTOR and Hardcoded Connect in the FndSettings.api(F1PR499)
+--  070622  SUMA  Deleted HELP_STYLE and Hardcoded HTML in the FndSettings.api(F1PR499)
+--  070622  SUMA  Deleted REF_CACHE_CHECK(F1PR499)
+--  070924  JHMA  Added FNDMIG parameters (Bug#67956).
+--  071211  SUMALK  Added a Parameter REPORT_LIFETIME (Bug#69953).
+--  080109  JHMASE  Added FNDMIG parameter FNDMIG_ALT_REPL_USR (Bug #70434).
+--  080304  SUBSLK  Modified description and domain descriptions for PRINT_SERVER.<Bug#71830>.
+--  080406  HAAR  Added category to be able to sort on category (Bug#72844).
+--  080819  MADRSE  Removed MAX_XML_SIZE, MAX_FO_SIZE. Added REP_MAX_XML_SIZE, REP_MAX_INT_XML_SIZE (Bug#75322).
+--  090422  UDLELK  Added parameter to set HTTP transfer timeout (Bug #81998)
+--  090422  HAAR  Changed parameter URL_APP_ONWEB, URL_APP_SUPPORT and added URL_OPEN_IFS (Bug#82260).
+--  090507  JHMASE Choose WinPopUp destination (Bug #82672).
+--  091023  LAKRLK IEE - email notification for scheduled reports(BUG #86339)
+--  091028  DASVSE External Report formatter "REP_EXT_RF_CS" added (BUG #86485)
+--  091030  NABALK Added IAL_TABLESPACE_DATA and IAL_STORAGE_DATA parameters(Bug#86669)
+--  091110  CHAALK Integrating Crystal Support to IEE (Bug #86604)
+--  100121  JHMASE Proxy Server parameters (Bug #88597).
+--  100624  DUWILK Added paramter for Key field validation (Bug#86672).
+--  100824  NaBaLK Added IAL_CREATE_EMPTY_TAB for IAL Replication (Bug#92495)
+--  100920  SJayLK BI Server Base URL and feature URL added. (Bug#93000)
+--  100528  HAAR  Added parameter BATCH_PROCESSES (EACS-750).
+--  101018  MaBose Changed default user as IAL Owner
+--  111128  MaBose Removed storage variables, set default tablespace for ial owner
+--  120106  AsiWLK RDTERUNTIME-1194 99205 Make Report Designer PDF/A compliant - Supplimentary
+--  120209  DUWILK Add parameter IAL_ERROR_OCCURENCE for IAL Objects(RDTERUNTIME-1978).
+--  120815  LiRiSE Add parameter REP_RULE_LOG for component RRE
+-----------------------------------------------------------------------------
+--
+--  New_Parameter:
+--     Create the parameter if it does not already exist. In this call
+--     the default value is to be set. If parameter already exist, everything
+--     except value_ and dynamic is updated.
+--
+--  Modify_Parameter:
+--     Update an already existing parameter. Seldom used, in most cases no
+--     setting of the default value is to be made, since the value may have been
+--     changed by an administrator and this script should not change
+--     such a value during an upgrade. Only the attributes that has been
+--     changed since the parameter was created need to be set.
+--
+--  Remove_Parameter:
+--     Remove obsolete parameters.
+--
+--  Get_Parameter:
+--     Fetch a parameter with all its attributes. Use this when some
+--     evaluation of existing attributes has to be made when updating
+--     a parameter.
+--
+--  Value types:
+--    FIXED STRING  : (Default) Datatype string and only the values specified in the domain are allowed.
+--    FIXED NUMBER  : Datatype number and only the values specified in the domain are allowed.
+--    FIXED DATE    : Date format as a string and only the values specified in the domain are allowed.
+--    CUSTOM STRING : Datatype string and custom values are allowed.
+--    CUSTOM NUMBER : Datatype number and custom values are allowed.
+--    CUSTOM DATE   : Date format as a string and custom values are allowed.
+-----------------------------------------------------------------------------
+
+PROMPT Inserting Foundation1 Parameters
+
+SET SERVEROUTPUT ON
+
+DECLARE
+   --
+   -- Cursor declaration
+   --
+   CURSOR get_encoding IS
+   SELECT value
+   FROM  nls_database_parameters
+   WHERE parameter = 'NLS_CHARACTERSET';
+   --
+   CURSOR get_user_ts IS
+   SELECT Nvl(default_tablespace, 'USERS') default_tablespace,
+          Nvl(temporary_tablespace, 'TEMP') temporary_tablespace
+   FROM user_users u;
+   --
+   CURSOR get_default_ts IS
+   SELECT tablespace_name
+   FROM  dba_tablespaces
+   WHERE tablespace_name = 'USERS';
+   --
+   CURSOR get_temp_ts IS
+   SELECT tablespace_name
+   FROM  dba_tablespaces
+   WHERE tablespace_name = 'TEMP';
+   --
+   -- Variable declaration
+   --
+   parameter_record_ fnd_setting_tab%ROWTYPE;
+   value_            fnd_setting_tab.value%TYPE;
+   dummy_            VARCHAR2(30);
+   --
+   -- Method implementations
+   --
+   PROCEDURE Modify_Parameter (
+      parameter_   IN VARCHAR2,
+      description_ IN VARCHAR2,
+      dynamic_     IN VARCHAR2,
+      value_       IN VARCHAR2,
+      domain_      IN VARCHAR2,
+      domain_desc_ IN VARCHAR2,
+      category_    IN VARCHAR2,
+      value_type_  IN VARCHAR2 DEFAULT 'FIXED STRING' )
+   IS
+      rec_ fnd_setting_tab%ROWTYPE;
+   BEGIN
+      SELECT * INTO rec_
+         FROM  fnd_setting_tab
+         WHERE parameter = parameter_;
+      IF (description_ IS NOT NULL) THEN
+         rec_.parameter_desc := description_;
+      END IF;
+      IF (dynamic_ IS NOT NULL) THEN
+         rec_.dynamic := dynamic_;
+      END IF;
+      IF (value_ IS NOT NULL) THEN
+         rec_.value := value_;
+      END IF;
+      IF (domain_ IS NOT NULL) THEN
+         rec_.domain := domain_;
+      END IF;
+      IF (domain_desc_ IS NOT NULL) THEN
+         rec_.domain_desc := domain_desc_;
+      END IF;
+      IF (value_type_ IS NOT NULL) THEN
+         rec_.value_type := value_type_;
+      END IF;
+      IF (category_ IS NOT NULL) THEN
+         rec_.category := category_;
+      END IF;
+      -- Do not upgrade Tablespace values
+      IF parameter_ NOT IN ('TS_DEFAULT', 'TS_TEMPORARY') THEN
+         UPDATE fnd_setting_tab SET
+            parameter_desc = rec_.parameter_desc,
+            dynamic = rec_.dynamic,
+            value = rec_.value,
+            domain = rec_.domain,
+            domain_desc = rec_.domain_desc,
+            value_type = rec_.value_type,
+            category = rec_.category,
+            rowversion = sysdate
+         WHERE parameter = parameter_;
+      END IF;
+   EXCEPTION
+      WHEN no_data_found THEN
+         NULL;
+   END Modify_Parameter;
+
+   PROCEDURE New_Parameter (
+      parameter_   IN VARCHAR2,
+      description_ IN VARCHAR2,
+      dynamic_     IN VARCHAR2,
+      value_       IN VARCHAR2,
+      domain_      IN VARCHAR2,
+      domain_desc_ IN VARCHAR2,
+      category_    IN VARCHAR2,
+      value_type_  IN VARCHAR2 DEFAULT 'FIXED STRING' )
+   IS
+   BEGIN
+      INSERT INTO FND_SETTING_TAB (
+         parameter,
+         parameter_desc,
+         dynamic,
+         value,
+         domain,
+         domain_desc,
+         value_type,
+         category,
+         rowversion
+      ) VALUES (
+         parameter_,
+         description_,
+         dynamic_,
+         value_,
+         domain_,
+         domain_desc_,
+         value_type_,
+         category_,
+         sysdate );
+   EXCEPTION
+      WHEN dup_val_on_index THEN
+         Modify_Parameter (parameter_,
+                           description_,
+                           '',
+                           '',
+                           domain_,
+                           domain_desc_,
+                           category_,
+                           value_type_);
+   END New_Parameter;
+
+   PROCEDURE Remove_Parameter (
+      parameter_ IN VARCHAR2 )
+   IS
+      rec_ fnd_setting_tab%ROWTYPE;
+   BEGIN
+      DELETE FROM fnd_setting_tab
+      WHERE parameter = parameter_;
+   EXCEPTION
+      WHEN OTHERS THEN
+         NULL;
+   END Remove_Parameter;
+
+   FUNCTION Get_Parameter (
+      parameter_ IN VARCHAR2 ) RETURN fnd_setting_tab%ROWTYPE
+   IS
+      rec_ fnd_setting_tab%ROWTYPE;
+   BEGIN
+      SELECT * INTO rec_
+         FROM  fnd_setting_tab
+         WHERE parameter = parameter_;
+      RETURN rec_;
+   EXCEPTION
+      WHEN no_data_found THEN
+         rec_.parameter := 'NONE';
+         RETURN rec_;
+   END Get_Parameter;
+
+BEGIN
+   -------------------------------
+   -- Remove obsoleted parameters
+   -------------------------------
+   Remove_Parameter('CONNECTIVITY');
+   Remove_Parameter('DEFJOB_INTERVAL');
+   Remove_Parameter('MONITORING_PROCESS');
+   Remove_Parameter('MONITORING_INTERVAL');
+   Remove_Parameter('KEEP_SCHEDULE_HEAVY');
+   Remove_Parameter('KEEP_SCHEDULE_LIGHT');
+   Remove_Parameter('EVENT_SERVER');
+   Remove_Parameter('KEEP_EVENTS');
+   Remove_Parameter('SEC_SETUP');
+   Remove_Parameter('SEC_METHOD_CHECK');
+   Remove_Parameter('KEEP_REPORTS');
+   Remove_Parameter('HTTP_AVAILABLE');
+   Remove_Parameter('HELP_STYLE');
+   Remove_Parameter('EVENT_EXECUTOR');
+   Remove_Parameter('REF_CACHE_CHECK');
+   Remove_Parameter('FNDMIG_STORAGE');
+   Remove_Parameter('FNDMIG_TABLESPACE');
+   Remove_Parameter('MAX_XML_SIZE');
+   Remove_Parameter('MAX_FO_SIZE');
+   Remove_Parameter('CANCEL_QUERY');
+   Remove_Parameter('IAL_STORAGE_DATA');
+   Remove_Parameter('FNDMIG_STORAGE_DATA');
+   Remove_Parameter('FNDMIG_STORAGE_INDEX');
+   Remove_Parameter('PDF_ARCHIVE_PATH');
+   Remove_Parameter('PDF_ARCHIVATE');
+   Remove_Parameter('LAYOUT_ROOT');
+   Remove_Parameter('PRINT_SERVER');
+
+
+   -------------------------------
+   -- Create/Update parameters
+   -------------------------------
+
+   --
+   -- Event Action Executor
+   --
+
+   -- Make sure that some of the attributes for EVENT_EXECUTOR really are updated
+   -- Move from Event Server to Connect if needed, else leave setting as it is
+   parameter_record_ := Get_Parameter('EVENT_EXECUTOR');
+   IF parameter_record_.value = 'EVENT SERVER' THEN
+      Modify_Parameter ('EVENT_EXECUTOR', '', '', 'CONNECT', '', '', 'Connectivity');
+   END IF;
+   --
+   --  Print Server
+   --
+   New_Parameter ('PLUGIN_PRINT_DIR', 'Report Plug-in output directory', '12.2', '*', '*^^', 'No directory defined^^', 'Reporting', 'CUSTOM STRING');
+   New_Parameter ('DEFAULT_PAPER_FORMAT', 'Default paper format', '12.21', 'A4', 'A4^LETTER^OTHER^',
+                  'A4 paper format^Letter paper format^Other paper format', 'Reporting');
+   New_Parameter ('DATA_ARCHIVE', 'Data archive process startup', '12.3', 'OFF', 'ON^OFF^',
+                  'Data archive background process enabled^Data archive background process disabled^', 'Data Archive');
+   New_Parameter ('DATA_ARCHIVE_STARTUP', 'Data archive process startup interval (seconds)', '12.4', '3600',
+                  '1800^3600^10800^^', 'Start every half hour^Start every hour^Start every third hour^Custom interval^', 'Data Archive', 'CUSTOM NUMBER');
+   New_Parameter ('BATCH_SCHEDULE', 'Scheduled tasks process startup', '12.5', 'ON', 'ON^OFF^',
+                  'Scheduled tasks background process enabled^Scheduled tasks background process disabled^', 'Background Jobs');
+   New_Parameter ('BATCH_SCHED_STARTUP', 'Scheduled tasks process startup interval (seconds)', '12.6', '60',
+                  '60^600^1800^3600^^', 'Start every minute^Start every tenth minute^Start every half hour^Start every hour^Custom interval^', 'Background Jobs', 'CUSTOM NUMBER');
+   New_Parameter ('SHOW_ASGN_DEF_PRINT', 'Show only the assigned logical printers and default physical printer', '12.7', 'YES', 'YES^NO^',
+                  'Show only the assigned logical printers and default physical printer^Show all logical and physical printers^', 'Reporting');
+
+   --
+   -- Security and cache
+   --
+   New_Parameter ('SEC_PRES_SETUP', 'Presentation object security', '14', 'ON', 'ON^OFF^',
+                  'Enabled (user setting overrides)^Disabled (user setting overrides)^', 'Security');
+
+
+   New_Parameter ('FAST_LOGIN_ACTIVE', 'Ignore security info for application owner', '16', 'SHIFT', 'ON^OFF^SHIFT^',
+                  'Never fetch security info during login as application owner^Always fetch security info during login as application owner^Do not fetch security info when SHIFT is pressed during login as application owner^', 'Security');
+   --
+   --  Background processes
+   --
+   New_Parameter ('BATCH_PROCESSES', 'Number of background processes',  '16.8', '3', '3^^', 'Default value^Custom value^', 'Background Jobs', 'CUSTOM NUMBER');
+   New_Parameter ('BATCH_PROCESS_LOG', 'Logging of background processes', '16.9', 'OFF', 'ON^OFF^', 'Background process logging enabled^Background process logging disabled^', 'Background Jobs');
+   --
+   --  Report Formatter printing
+   --
+   New_Parameter ('REP_FO_PRINTING','Report Formatter Spooling','44.05 ','OFF','ON^OFF^','DEV/TEST^PROD (Default)^', 'Reporting', 'FIXED STRING');
+   --
+   -- Cleanup
+   --
+   New_Parameter ('KEEP_DEFJOBS', 'Cleanup age limit in days for completed background jobs', '17', '7', '7^^', 'Default Limit^Custom limit^', 'Background Jobs', 'CUSTOM NUMBER');
+   New_Parameter ('KEEP_DEFJOBS_WARNING', 'Cleanup age limit in days for background jobs with warning', '17.1', '30', '30^^', 'Default Limit^Custom limit^', 'Background Jobs', 'CUSTOM NUMBER');
+   New_Parameter ('KEEP_DEFJOBS_ERROR', 'Cleanup age limit in days for background jobs with errors', '17.2', '180', '180^^', 'Default Limit^Custom limit^', 'Background Jobs', 'CUSTOM NUMBER');
+   New_Parameter ('KEEP_PRINTJOBS', 'Cleanup age limit in days for printouts in Print Manager', '19', '7', '7^^', 'Default Limit^Custom limit^', 'Reporting',  'CUSTOM NUMBER');
+   New_Parameter ('KEEP_BATCH_SCHEDULE', 'Cleanup age limit in days for inactive Scheduled tasks', '20.5', '7', '7^^', 'Default Limit^Custom limit^', 'Background Jobs', 'CUSTOM NUMBER');
+   New_Parameter ('KEEP_PERSONAL_MSG', 'Cleanup age limit in days for read personal messages', '20.6', '7', '7^^', 'Default Limit^Custom limit^', 'System Settings', 'CUSTOM NUMBER');
+   New_Parameter ('KEEP_CHECKPOINT', 'Cleanup age limit in days for Security Checkpoint Log', '20.7', '0', '0^^', 'No Limit (No Cleanup)^Custom limit^', 'Security', 'CUSTOM NUMBER');
+   New_Parameter ('TRANSFER_TIMEOUT','HTTP transfer timeout for outbound calls (seconds)','20.8','1200','1200^^','Default Value^Custom Value','System Settings','CUSTOM NUMBER');
+   --
+   -- Client login
+   --
+
+   New_Parameter ('URL_APP_ONWEB', 'IFS online', '25', 'http://www.ifsworld.com', 'http://www.ifsworld.com^^', 'IFS online^^', 'User Assistance', 'CUSTOM STRING');
+   Modify_Parameter ('URL_APP_ONWEB', 'IFS online', '25', 'http://www.ifsworld.com', 'http://www.ifsworld.com^^', 'IFS online^^', 'User Assistance', 'CUSTOM STRING');
+   New_Parameter ('URL_APP_SUPPORT', 'IFS Portal', '26', 'http://www.ifsworld.com/portal', '*^http://www.ifsworld.com/portal^^', 'No link defined^IFS Portal^^', 'User Assistance', 'CUSTOM STRING');
+   Modify_Parameter ('URL_APP_SUPPORT', 'IFS Portal', '26', 'http://www.ifsworld.com/portal', '*^http://www.ifsworld.com/portal^^', 'No link defined^IFS Portal^^', 'User Assistance', 'CUSTOM STRING');
+   New_Parameter ('URL_OPEN_IFS', 'openIFS Community', '27', 'http://open.ifsworld.com', '*^http://open.ifsworld.com^^', 'No link defined^openIFS Community^^', 'User Assistance', 'CUSTOM STRING');
+   New_Parameter ('URL_HELP_BASE', 'Base address for HTML help', '28', 'http://www.yourwebserver.domain:port/documentation', 'http://www.yourwebserver.domain:port/documentation^^', 'No base address defined^^', 'User Assistance', 'CUSTOM STRING');
+   -- Make sure that the old non working adress is really updated (i.e. if not changed by the administrator)
+   parameter_record_ := Get_Parameter('URL_HELP_BASE');
+   IF upper(parameter_record_.value) = 'HTTP://DOC/HELP' THEN
+      Modify_Parameter ('URL_HELP_BASE', '', '', 'http://www.yourwebserver.domain:port/documentation', '', '', 'User Assistance', 'CUSTOM STRING');
+   END IF;
+   New_Parameter ('DEFAULT_LANGUAGE', 'Default server language setup', '29', 'en', 'en^^', 'English^^', 'User Settings', 'CUSTOM STRING');
+   --
+   -- BLOB Management
+   --
+   New_Parameter ('BLOB_STORAGE', 'Location to store BLOB data', '29.1', 'ASK', 'INT^EXT^ASK^', 'Internally in database^Externally on file system^Ask the user^', 'System Settings');
+   --
+   -- Event Registry date and time formats
+   --
+   New_Parameter ('EVENT_REG_DATETIME', 'Event Registry date and time format', '30', 'YYYY-MM-DD HH24.MI.SS', 'YYYY-MM-DD HH24.MI.SS^^', 'Default format^Custom Format^', 'Event Management', 'CUSTOM DATE');
+   New_Parameter ('EVENT_REG_DATE', 'Event Registry date format', '31', 'YYYY-MM-DD', 'YYYY-MM-DD^^', 'Default format^Custom Format^', 'Event Management', 'CUSTOM DATE');
+   New_Parameter ('EVENT_REG_TIME', 'Event Registry time format', '32', 'HH24.MI.SS', 'HH24.MI.SS^^', 'Default format^Custom Format^', 'Event Management', 'CUSTOM DATE');
+   --
+   -- Connectivity
+   --
+   New_Parameter ('CON_INBOX', 'Connectivity Inbox process available', '33', 'OFF', 'ON^OFF^',
+                  'Connectivity Inbox background process enabled^Connectivity Inbox background process disabled^', 'Connectivity');
+   New_Parameter ('CON_OUTBOX', 'Connectivity Outbox process available', '34', 'OFF', 'ON^OFF^',
+                  'Connectivity Outbox background process enabled^Connectivity Outbox background process disabled^', 'Connectivity');
+   New_Parameter ('CON_IN_INTERVAL',  'Connectivity Inbox process restartup interval (seconds)', '35', '30',
+                  '5^10^30^60^^', 'Very fast restart^Fast restart^Medium restart^Slow restart^Custom restart^', 'Connectivity', 'CUSTOM NUMBER');
+   New_Parameter ('CON_OUT_INTERVAL', 'Connectivity Outbox process restartup interval (seconds)', '36', '30',
+                  '5^10^30^60^^', 'Very fast restart^Fast restart^Medium restart^Slow restart^Custom restart^', 'Connectivity', 'CUSTOM NUMBER');
+   New_Parameter ('CON_KEEP_INBOX', 'Cleanup age limit in days for accepted messages in Inbox', '37', '7', '7^^', 'Default limit^Custom limit^', 'Connectivity', 'CUSTOM NUMBER');
+   New_Parameter ('CON_KEEP_OUTBOX', 'Cleanup age limit in days for accepted messages in Outbox', '38', '7', '7^^', 'Default limit^Custom limit', 'Connectivity', 'CUSTOM NUMBER');
+   --
+   -- Information Abstraction Layer
+   --
+   New_Parameter ('IAL_USER', 'Information Access Layer (IAL) Oracle user', '40', '&IAL_OWNER', '&IAL_OWNER^*^^', 'Default IAL Owner^IAL not configured^^', 'Reporting', 'CUSTOM STRING');
+   Modify_Parameter ('IAL_USER', 'Information Access Layer (IAL) Oracle user', '40', '&IAL_OWNER', '&IAL_OWNER^*^^', 'Default IAL Owner^IAL not configured^^', 'Reporting', 'CUSTOM STRING');
+   New_Parameter ('IAL_REPLICATION', 'Information Access Layer (IAL) replication setup', '41', 'ON', 'ON^OFF^', 'Scheduled replication enabled^Scheduled replication disabled^', 'Reporting');
+   New_Parameter ('IAL_TABLESPACE_DATA', 'Default tablespace for dynamically created tables of IAL Owner Schema', '41.1', '&DEFAULT_TABLESPACE', '&DEFAULT_TABLESPACE^^', 'Default tablespace^^', 'Reporting', 'CUSTOM STRING');
+   Modify_Parameter ('IAL_TABLESPACE_DATA', 'Default tablespace for dynamically created tables of IAL Owner Schema', '41.1', '&DEFAULT_TABLESPACE', '&DEFAULT_TABLESPACE^^', 'Default tablespace^^', 'Reporting', 'CUSTOM STRING');
+   New_Parameter ('IAL_CREATE_EMPTY_TAB', 'Information Access Layer (IAL) create empty table when exception in creating temp table', '41.3', 'YES', 'YES^NO^',
+                  'Create empty table when exception in creating temp table^Do not create empty table when exception in creating temp table^', 'Reporting');
+   New_Parameter ('IAL_ERROR_OCCURENCE', 'Information Access Layer (IAL) - Maximum occurrences of erroneous schedule jobs', '41.4', '0', '0^-1^^','Default Limit^No Limit is Defined^Custom limit^', 'Reporting', 'CUSTOM NUMBER');
+   --
+   -- Replication
+   --
+   New_Parameter ('REPLICATE', 'Replication process available', '42.0', 'OFF', 'ON^OFF^',
+                  'Replication background process enabled^Replication background process disabled^', 'Replication');
+   New_Parameter ('REPL_INTERVAL',  'Replication process restartup interval (seconds)', '42.1', '30',
+                  '5^10^30^60^^', 'Very fast restart^Fast restart^Medium restart^Slow restart^^', 'Replication', 'CUSTOM NUMBER');
+   New_Parameter ('REPL_KEEP', 'Cleanup age limit in days for replicated messages', '42.2', '0.007',
+                  '0.007^0.04^1^^', 'One minute^One hour^One day^^', 'Replication', 'CUSTOM NUMBER');
+   Modify_Parameter ('REPL_KEEP', 'Cleanup age limit in days for replicated messages', '42.2', '0.007',
+                  '0.007^0.04^1^^', 'Ten minutes^One hour^One day^^', 'Replication', 'CUSTOM NUMBER');
+   New_Parameter ('REPL_SND_WARN', 'Log Replication Send warnings', '43.0', 'ON', 'ON^OFF^',
+                  'Logging of Replication Send warnings enabled^Logging of Replication send warnings disabled^', 'Replication');
+   New_Parameter ('REPL_SND_INFO', 'Log Replication Send information', '43.1', 'OFF', 'ON^OFF^',
+                  'Logging of Replication Send information enabled^Logging of Replication send information disabled^', 'Replication');
+   New_Parameter ('REPL_RCV_WARN', 'Log Replication Receive warnings', '43.2', 'ON', 'ON^OFF^',
+                  'Logging of Replication Receive warnings enabled^Logging of Replication receive warnings disabled^', 'Replication');
+   New_Parameter ('REPL_RCV_INFO', 'Log Replication Receive information', '43.3', 'OFF', 'ON^OFF^',
+                  'Logging of Replication Receive information enabled^Logging of Replication receive information disabled^', 'Replication');
+   New_Parameter ('REPL_STATISTICS', 'Collect Replication statistics information', '44.0', 'OFF', 'ON^OFF^',
+                  'Replication statistics collection enabled^Replication statistics collection disabled^', 'Replication');
+   New_Parameter ('REPL_STAT_KEY_FORMAT', 'Replication statistics date key format', '44.1', 'YYYY-MM-DD',
+                  'YYYY-MM-DD^YYYY-MM-DD-HH24^', 'Collect statistics per day^Collect statistics per hour^', 'Replication', 'FIXED DATE');
+   --
+   -- Tablespace settings for new users
+   --
+   -- Fetch default value for TS_DEFAULT
+   value_ := NULL;
+   OPEN  get_default_ts;
+   FETCH get_default_ts INTO value_;
+   CLOSE get_default_ts;
+   IF value_ IS NULL THEN
+      OPEN  get_user_ts;
+      FETCH get_user_ts INTO value_, dummy_;
+      CLOSE  get_user_ts;
+   END IF;
+   New_Parameter ('TS_DEFAULT', 'Default tablespace for new Oracle users', '50', Nvl(value_, 'USERS'), 'USERS^^', 'Default tablespace^^', 'User Settings', 'CUSTOM STRING');
+   -- Fetch default value for TS_TEMPORARY
+   value_ := NULL;
+   OPEN  get_temp_ts;
+   FETCH get_temp_ts INTO value_;
+   CLOSE get_temp_ts;
+   IF value_ IS NULL THEN
+      OPEN  get_user_ts;
+      FETCH get_user_ts INTO dummy_, value_;
+      CLOSE  get_user_ts;
+   END IF;
+   New_Parameter ('TS_TEMPORARY', 'Temporary tablespace for new Oracle users', '51', Nvl(value_, 'TEMP'), 'TEMP^^', 'Temporary tablespace^^', 'User Settings', 'CUSTOM STRING');
+   New_Parameter ('DEFAULT_PROFILE', 'Default profile for new Oracle users', '52', 'DEFAULT', 'DEFAULT^^', 'Default profile^^', 'User Settings', 'CUSTOM STRING');
+
+   --
+   -- Custom Fields
+   --
+   New_Parameter ('CUSTOM_FIELDS', 'Custom Fields framework', '54.0', 'ON', 'ON^OFF^', 'Custom Fields framework enabled^Custom Fields framework disabled^', 'Custom Fields');
+   New_Parameter ('CF_TS_DEFAULT', 'Default tablespace for Custom Fields tables', '54.1', 'IFSAPP_DATA', 'IFSAPP_DATA^^', 'Default Custom Fields table tablespace^^', 'Custom Fields', 'CUSTOM STRING');
+   New_Parameter ('CF_TS_INDEX', 'Default tablespace for Custom Fields indexes', '54.2', 'IFSAPP_INDEX', 'IFSAPP_INDEX^^', 'Default Custom Fields index tablespace^^', 'Custom Fields', 'CUSTOM STRING');
+   New_Parameter ('CF_TS_LOB', 'Default tablespace for Custom Fields LOB''s', '54.3', 'IFSAPP_LOB', 'IFSAPP_LOB^^', 'Default Custom Fields LOB tablespace^^', 'Custom Fields', 'CUSTOM STRING');
+   New_Parameter ('INFO_CARDS', 'Info Cards framework', '54.8', 'ON', 'ON^OFF^', 'Info Cards framework enabled^Info Cards framework disabled^', 'Custom Fields');
+   --
+   -- Query Dialog Hints
+   --
+   New_Parameter ('QUERY_HINTS', 'Query dialog hints', '60', 'OFF', 'ON^OFF^', 'Query dialog hints are enabled^Query dialog hints are disabled^', 'User Assistance');
+     
+   --
+   -- IFS Currency - Kept Precision
+   --
+   New_Parameter ('IFS_CURR_PRECISION', 'Stored decimals for objects using ''IFS Currency - Preserve Precision''', '61', '10', '2^3^4^5^6^7^8^9^10^11^12^13^14^15^',
+                  '2 decimals (Min amount)^3 decimals^4 decimals^5 decimals^6 decimals^7 decimals^8 decimals^9 decimals^10 amount of decimals (Default)^11 decimals^12 decimals^13 decimals^14 decimals^15 decimals (Max amount)^', 'System Settings');
+
+   --
+   -- Search Dialog Match Case Default
+   --
+   New_Parameter ('SEARCH_MATCH_CASE', 'Search dialog Match case Default', '62', 'ON', 'ON^OFF^', 'Search Dialog match case option is default ON^Search Dialog match case option is default OFF^', 'User Assistance');
+     
+   
+   --
+   -- IFS Data Migration parameters
+   --
+   New_Parameter ('FNDMIG_TBLSPACE_DATA', 'Data Migration default tablespace for dynamically created tables', '71', '*', '*^^', 'No tablespace defined^^', 'Data Migration', 'CUSTOM STRING');
+   New_Parameter ('FNDMIG_TBLSPACE_IND', 'Data Migration default tablespace for dynamically created indexes', '73', '*', '*^^', 'No tablespace defined^^', 'Data Migration', 'CUSTOM STRING');
+   New_Parameter ('FNDMIG_ALT_REPL_USR', 'Data Migration alternative user for replication jobs', '75', '*', '*^^', 'No user defined^^', 'Data Migration', 'CUSTOM STRING');
+
+   --
+   -- Reporting parameters
+   --
+   New_Parameter ('REPDES_GRAPHICS', 'Base path for Report Designer graphics on the application server', '80', '.', '.', 'Current directory^^', 'Reporting', 'CUSTOM STRING');
+   New_Parameter ('REP_MAX_XML_SIZE', 'Maximum allowed XML size for Report Designer reports (kB)', '81', '0', '0^^', 'No limit^Custom limit^', 'Reporting', 'CUSTOM STRING');
+   New_Parameter ('REP_MAX_INT_XML_SIZE', 'Breakpoint XML size for when to format Report Designer reports in memory or using disk storage (kB)', '82', '100', '100^^', 'Default breakpoint^Custom breakpoint^', 'Reporting', 'CUSTOM STRING');
+   New_Parameter ('REP_EXT_RF_CS', 'External Report Formatter Connect String', '83', '<host>:<port>', '<host>:<port>^Disabled^^', 'Disabled. (Connect String Format)^Disabled. Internal report formatter will be used.^Activated. Changing this requires a restart of the application server. External report formatter will be used for previews and printing to local printers.^', 'Reporting', 'CUSTOM STRING');
+   New_Parameter ('REP_RULE_LOG', 'Report rule advanced logging ON/OFF','84','OFF','ON^OFF','Report rule advanced logging on^Report rule advanced logging off','Reporting');
+   --
+   -- Default file encoding
+   --
+   OPEN  get_encoding;
+   FETCH get_encoding INTO value_;
+   CLOSE get_encoding;
+   New_Parameter ('DEFAULT_FILEENCODING', 'Default file encoding for files read/written by Oracle', '90', value_, '*^^', 'No default encoding defined^', 'System Settings', 'CUSTOM STRING');
+   --
+   -- Security Checkpoint
+   --
+   New_Parameter ('CHECKPOINT', 'Security checkpoint framework available', '92', 'OFF', 'ON^OFF^',
+                  'Security checkpoint available^Security checkpoint not available^', 'Security');
+   New_Parameter ('CHECKPOINT_TYPE', 'Type of hardware support for Security Checkpoint', '93', 'SIMPLE', 'SIMPLE^CHALLENGE_RESPONSE^',
+                  'Simple Security checkpoint^Challenge/Response Security checkpoint^', 'Security');
+   New_Parameter ('CHECKPOINT_METHOD', 'Security checkpoint method', '94', 'PASSWORD', 'PASSWORD^HARDWARE^PASSWORD_AND_HARDWARE^',
+                  'Password Security checkpoint^Hardware Security checkpoint^Password and hardware Security checkpoint', 'Security');
+   New_Parameter ('CHECKPOINT_U_TIMEOUT',  'Security Checkpoint username timeout', '95', '-1',
+                  '-1^0^2^5^^', 'Userfriendly mode (username always shown)^FDR21 11.200 Strict (always re-type username)^Short timeout^Long timeout^Custom timeout (minutes)^', 'Security', 'CUSTOM NUMBER');
+   --
+   -- Debug
+   --
+   New_Parameter ('REMOTE_DEBUGGING', 'Remote Debugging allowed, should be OFF for production installations', '99', 'OFF', 'ON^OFF^',
+                  'Remote Debugging allowed^Remote Debugging disallowed^', 'System Settings');
+   --
+   -- Object connections
+   --
+   New_Parameter ('OBJ_CONN_DELETE', 'Delete Object Connections when Objects are Deleted', '90', 'OFF', 'ON^OFF^', 'Connections are deleted^Connections are not deleted^', 'System Settings');
+   -- Report parameters
+   New_Parameter ('REPORT_LIFETIME', 'Cleanup age limit in days for reports in Archive', '100', '7', '7^^', 'Default Limit^Custom limit^','Reporting', 'CUSTOM NUMBER');
+
+   -- WinPopUp destination
+   New_Parameter ('WINPOPUP_DEST', 'WinPopup messages destination - OS User or Host', '110', 'HOST', 'HOST^USER^', 'Send WinPopup messages to computer^Send WinPopup messages to OS user^','Connect', 'FIXED STRING');
+   New_Parameter ('URL_EXT_SERVER', 'Extended Server Url', '125', 'http://<host>:<port>', 'http://<host>:<port>', 'Custom URL^^', 'Reporting', 'CUSTOM STRING');
+
+   --
+   --  Crystal Web Service
+   --
+   New_Parameter ('CR_SERVER_NAME', 'The machine name where the Crystal Web Service is installed', '120', '*', '*^^', 'Server not specified^Server used^', 'Reporting', 'CUSTOM STRING');
+   New_Parameter ('CR_SERVER_PROTOCAL', 'The protocol of the Web Server where the Crystal Web Service is running', '121', 'http', 'http^^', 'http is used as the default protocol^Protocol used^', 'Reporting', 'CUSTOM STRING');
+   New_Parameter ('CR_SERVER_PORT', 'The IIS port for the above mentioned Web Server', '122', '80', '80^^', 'Port 80 is used as the default IIS port^IIS port used^', 'Reporting', 'CUSTOM STRING');
+   New_Parameter ('CR_VIRTUAL_DIRECTORY', 'The Virtual Directory name given to the Crystal Web Service in IIS', '123', 'IFSCRWebSetup', 'IFSCRWebSetup^^', 'Default Virtual Directory used^Virtual Directory used^', 'Reporting', 'CUSTOM STRING');
+   New_Parameter ('CR_SECURED_REP_REQ', 'Specify if web database access security check is required', '124', 'NO', 'YES^NO^', 'Security check is used^Security check is not used^', 'Reporting', 'FIXED STRING');
+
+
+   --
+   --  Proxy Server parameters
+   --
+   New_Parameter ('PROXY_SERVER', 'Proxy Server used for HTTP requests', '150.1', '*', '*^^',
+                  'No proxy server^Proxy server (format=[http://]host[:port][/])^', 'HTTP', 'CUSTOM STRING');
+   New_Parameter ('NO_PROXY_DOMAINS', 'List of hosts and domains for which no proxy should be used', '150.2', '*', '*^^',
+                  'No hosts or domains^Comma separated list of hosts and domains^', 'HTTP', 'CUSTOM STRING');
+                  
+   --
+   -- Key field validate parameter
+   --
+   New_Parameter ('KEY_STRING_VALIDATE', 'Define the characters which should not appear in Key Fields', '151', '.&%_<>=;~', '.&%_<>=;~^*^', 'Default Character String^No Character Defined^', 'User Settings', 'CUSTOM STRING'); 
+
+   -- BI parameters
+   -- MS Sql Server Reporting Services
+   --
+   New_Parameter ('REP_SERV_BASE_URL', 'Base URL for MS Reporting Services', '126', 'protocol://<host>:<port>', 'protocol://<host>:<port>^*^^', 'Not Installed - Template^Disabled^Installed^', 'Business Intelligence', 'CUSTOM STRING');
+   New_Parameter ('MS_REP_VIEW_FEATURE', 'IEE Feature for MS Reporting Services', '127', 'ifswin:<feature>', 'ifswin:<feature>^*^^', 'Not Installed - Template^Disabled^Installed^', 'Business Intelligence', 'CUSTOM STRING');
+   New_Parameter ('REPDES_PDF_A', 'Make Report Designer PDF/A compliant', '128', 'NO', 'YES^NO^', 'PDF/A enabled^pdf/A disabled^', 'Reporting', 'FIXED STRING');
+   
+   -- 
+   -- Output channels
+   --
+   New_Parameter ('PRINT_COMPANY_LOGO', 'Url or path of the company logo file used in quick print', '128', 'http://<host>:<port>/../<logo.png>', 'http://<host>:<port>/../<logo.png>', 'Company Logo not specified^^', 'Output Channels', 'CUSTOM STRING');
+
+
+END;
+/
+
+PROMPT Initiating process for Scheduled tasks
+
+BEGIN
+   Batch_SYS.Init_All_Processes_(0);
+END;
+/
+
+COMMIT
+/
+
