@@ -1192,7 +1192,7 @@ public class PlsqlFileExecutor {
             }
 
             //Check for - Comments           
-            if (!insideComment && Character.toString(c).equals("-") && i + 1 < plsqlString.length() && Character.toString(plsqlString.charAt(i + 1)).equals("-")) {
+            if (!insideString && !insideComment && Character.toString(c).equals("-") && i + 1 < plsqlString.length() && Character.toString(plsqlString.charAt(i + 1)).equals("-")) {
                 insideComment = true;
             } else if (insideComment && Character.toString(c).equals("\n")) {
                 insideComment = false;
