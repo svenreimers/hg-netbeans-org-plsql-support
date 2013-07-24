@@ -390,7 +390,7 @@ public final class FindUsagesAction extends CookieAction implements Runnable {
          if (rs.next()) {
             return rs.getString("SIGNATURE");
          } else if (!isFindUsagesEnabled(connection)) {
-            final NotifyDescriptor d = new NotifyDescriptor.Message("Find usages disabled. The database setting PLSCOPE_SETTINGS must be set to 'IDENTIFIERS:ALL' to enable the functionality.",
+            final NotifyDescriptor d = new NotifyDescriptor.Message(NbBundle.getMessage(FindUsagesAction.class, "MSG_FindUsagesDisabled"),
                   NotifyDescriptor.INFORMATION_MESSAGE);
             DialogDisplayer.getDefault().notify(d);
          }
