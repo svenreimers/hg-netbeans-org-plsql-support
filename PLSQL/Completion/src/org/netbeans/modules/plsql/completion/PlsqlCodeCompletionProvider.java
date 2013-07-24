@@ -66,7 +66,9 @@ import org.netbeans.spi.editor.completion.CompletionResultSet;
 import org.netbeans.spi.editor.completion.CompletionTask;
 import org.netbeans.spi.editor.completion.support.AsyncCompletionQuery;
 import org.netbeans.spi.editor.completion.support.AsyncCompletionTask;
+import org.openide.filesystems.FileObject;
 import org.openide.loaders.DataObject;
+import org.openide.util.Lookup;
 
 /**
  *
@@ -117,6 +119,13 @@ public class PlsqlCodeCompletionProvider implements CompletionProvider {
          if (origin instanceof DataObject) {
             DataObject dataObject = (DataObject) origin;
             DatabaseConnectionMediator mediator = dataObject.getLookup().lookup(DatabaseConnectionMediator.class);
+             if (mediator == null) {
+                 FileObject primaryFile = dataObject.getPrimaryFile();
+                 DatabaseConnectionMediator.Factory factory = Lookup.getDefault().lookup(DatabaseConnectionMediator.Factory.class);
+                 if (factory != null) {
+                     mediator = factory.create(primaryFile);
+                 }
+             }
             databaseConnection = mediator.getConnection().getConnection();
          }
          this.cache = DatabaseContentManager.getInstance(databaseConnection);

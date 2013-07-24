@@ -68,7 +68,12 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import org.netbeans.api.db.explorer.DatabaseConnection;
+import org.netbeans.api.project.FileOwnerQuery;
+import org.netbeans.api.project.Project;
 import org.netbeans.modules.db.api.sql.execute.SQLExecution;
+import org.netbeans.modules.plsql.execution.impl.DatabaseConnectionMediatorFactory;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionAdapter;
+import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionManager;
 import org.netbeans.modules.plsqlsupport.db.DatabaseConnectionMediator;
 import org.openide.awt.ActionID;
 import org.openide.awt.ActionReference;
@@ -76,6 +81,7 @@ import org.openide.awt.ActionReferences;
 import org.openide.awt.ActionRegistration;
 import org.openide.awt.Mnemonics;
 import org.openide.cookies.EditorCookie;
+import org.openide.filesystems.FileObject;
 import org.openide.loaders.DataObject;
 import org.openide.util.ContextAwareAction;
 import org.openide.util.HelpCtx;
@@ -90,7 +96,7 @@ import org.openide.util.actions.Presenter;
 @ActionRegistration(displayName = "#LBL_ConnectionAction", lazy = false)
 @ActionReferences({
     @ActionReference(path = "Editors/text/x-plsql/Toolbars/Default",
-            name = "org-netbeans-modules-plsql-execution-ConnectionAction", position = 100)
+    name = "org-netbeans-modules-plsql-execution-ConnectionAction", position = 100)
 })
 public final class ConnectionAction extends AbstractAction implements ContextAwareAction, Presenter.Toolbar {
 
@@ -132,10 +138,20 @@ public final class ConnectionAction extends AbstractAction implements ContextAwa
 //        return NO_CONNECTION;
 //    }
     @Override
-    public Component getToolbarPresenter() {
-        final DatabaseConnectionMediator mediator = dataObject.getLookup().lookup(DatabaseConnectionMediator.class);
+    public Component getToolbarPresenter() {       
+        DatabaseConnectionMediator mediator = null;
+        mediator = dataObject.getLookup().lookup(DatabaseConnectionMediator.class);
+         //DatabaseConnectionMediator is not added to model file's lookup. So it gives error when 
+        // opening cursor Definition dialog in reports and Advancequeryviews in server packages.
         if (mediator == null) {
-            return null;
+            FileObject primaryFile = dataObject.getPrimaryFile();
+            DatabaseConnectionMediator.Factory factory = Lookup.getDefault().lookup(DatabaseConnectionMediator.Factory.class);
+            if (factory != null) {
+                mediator = factory.create(primaryFile);
+            }
+            if (mediator == null) {
+                return null;
+            }
         }
         toolbarPresenter = new ToolbarPresenter(actionContext, mediator);
         return toolbarPresenter;
