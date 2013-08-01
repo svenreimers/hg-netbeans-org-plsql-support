@@ -51,7 +51,6 @@ import org.netbeans.modules.plsql.lexer.PlsqlBlockFactory;
 import org.netbeans.modules.plsql.lexer.PlsqlBlockType;
 import org.netbeans.modules.plsql.utilities.PlsqlFileUtil;
 import java.awt.EventQueue;
-import java.awt.Frame;
 import java.util.List;
 import javax.swing.JEditorPane;
 import javax.swing.JOptionPane;
@@ -78,11 +77,6 @@ import org.openide.windows.WindowManager;
  */
 public class ShowSourceInDatabaseAction extends CookieAction {
 
-   private Node[] activatedNodes;
-   private Project project;
-   private String objName;
-   private Object errorMsg;
-
    @Override
    protected int mode() {
       return CookieAction.MODE_EXACTLY_ONE;
@@ -95,7 +89,7 @@ public class ShowSourceInDatabaseAction extends CookieAction {
 
    @Override
    protected void performAction(Node[] arg0) {
-      project = activatedNodes[0].getLookup().lookup(Project.class);
+      final Project project = getActivatedNodes()[0].getLookup().lookup(Project.class);
       final DatabaseConnectionManager connectionProvider = DatabaseConnectionManager.getInstance(project);
       final DatabaseContentManager cache = DatabaseContentManager.getInstance(connectionProvider.getTemplateConnection());
 
@@ -110,7 +104,10 @@ public class ShowSourceInDatabaseAction extends CookieAction {
             if (DialogDescriptor.OK_OPTION == DialogDisplayer.getDefault().notify(dbObjDlg)) {            
                DatabaseConnection databaseConnection = connectionProvider.getPooledDatabaseConnection(false);
                try {
-                  objName = dbObjPanel.getInputText();
+                  final String objName = dbObjPanel.getInputText();
+                  if (objName.isEmpty()){
+                     return;
+                  }
                   if (cache.isView(objName)) {
                      try {
                         PlsqlHyperlinkUtil.openAsTempFile(objName, VIEW, databaseConnection, project, null);
@@ -136,11 +133,9 @@ public class ShowSourceInDatabaseAction extends CookieAction {
                      } catch (BadLocationException ex) {
                         Exceptions.printStackTrace(ex);
                      }
-                  } else {
-                     errorMsg = "[" + objName + "]View or Package not exists.";
+                  } else {                     
                      JOptionPane.showMessageDialog(WindowManager.getDefault().getMainWindow(),
-                             errorMsg, "Error", JOptionPane.ERROR_MESSAGE);
-
+                             NbBundle.getMessage(ShowSourceInDatabaseAction.class, "MSG_DbObjectNotFound", objName), "Error", JOptionPane.ERROR_MESSAGE);
                   }
                } finally {
                   connectionProvider.releaseDatabaseConnection(databaseConnection);
@@ -204,14 +199,11 @@ public class ShowSourceInDatabaseAction extends CookieAction {
    }
 
    @Override
-   protected boolean enable(Node[] activatedNodes) {
-      this.activatedNodes = activatedNodes;
+   protected boolean enable(Node[] activatedNodes) {      
       if (!super.enable(activatedNodes)) {
          return false;
       }
-
       Project p = activatedNodes[0].getLookup().lookup(Project.class);
-
       return DatabaseConnectionManager.getInstance(p).isOnline();
    }
 }

@@ -49,14 +49,12 @@ import org.netbeans.modules.plsql.hyperlink.PlsqlGoToImplAction;
 import org.netbeans.modules.plsql.hyperlink.util.PlsqlHyperlinkUtil;
 import org.netbeans.modules.plsql.utilities.PlsqlFileUtil;
 import java.awt.EventQueue;
-import java.awt.Frame;
 import javax.swing.JOptionPane;
 import org.netbeans.api.db.explorer.DatabaseConnection;
 import org.netbeans.api.project.Project;
 import org.netbeans.modules.plsql.utilities.ui.DbObjectPresenterPanel;
 import org.openide.DialogDescriptor;
 import org.openide.DialogDisplayer;
-import org.openide.cookies.EditorCookie;
 import org.openide.loaders.DataObject;
 import org.openide.nodes.Node;
 import org.openide.util.Exceptions;
@@ -71,12 +69,7 @@ import org.openide.windows.WindowManager;
  * @author csamlk
  */
 public class ShowDatabaseObjectAction extends CookieAction {
-
-   private Node[] activatedNodes;
-   private Project project;
-   private String objName;
-   private Object errorMsg;
-
+   
    @Override
    protected int mode() {
       return CookieAction.MODE_EXACTLY_ONE;
@@ -89,7 +82,7 @@ public class ShowDatabaseObjectAction extends CookieAction {
 
    @Override
    protected void performAction(Node[] arg0) {
-      project = activatedNodes[0].getLookup().lookup(Project.class);
+      final Project project = getActivatedNodes()[0].getLookup().lookup(Project.class);
       final DatabaseConnectionManager connectionProvider = DatabaseConnectionManager.getInstance(project);
 
       final DatabaseContentManager cache = DatabaseContentManager.getInstance(connectionProvider.getTemplateConnection());
@@ -101,7 +94,10 @@ public class ShowDatabaseObjectAction extends CookieAction {
             DbObjectPresenterPanel dbObjPanel = new DbObjectPresenterPanel(project, "Database Table, View or Package Name:", "");
             DialogDescriptor dbObjDlg = new DialogDescriptor(dbObjPanel.getPanel(), NbBundle.getMessage(ShowDatabaseObjectAction.class, "LBL_ShowDatabaseDialogTitle"));
             if (DialogDescriptor.OK_OPTION == DialogDisplayer.getDefault().notify(dbObjDlg)) {
-               objName = dbObjPanel.getInputText();
+               String objName = dbObjPanel.getInputText();
+               if (objName.isEmpty()){
+                  return;
+               }
                DatabaseConnection databaseConnection = connectionProvider.getPooledDatabaseConnection(false);
                try {
                   if (cache.isView(objName)) {
@@ -131,11 +127,9 @@ public class ShowDatabaseObjectAction extends CookieAction {
                      } catch (NotConnectedToDbException ex) {
                         Exceptions.printStackTrace(ex);
                      }
-                  } else {
-                     errorMsg = "[" + objName + "]Table, View or Package not exists.";
+                  } else {                     
                      JOptionPane.showMessageDialog(WindowManager.getDefault().getMainWindow(),
-                             errorMsg, "Error", JOptionPane.ERROR_MESSAGE);
-
+                             NbBundle.getMessage(ShowSourceInDatabaseAction.class, "MSG_DbObjectNotFound", objName), "Error", JOptionPane.ERROR_MESSAGE);
                   }
                } finally {
                   connectionProvider.releaseDatabaseConnection(databaseConnection);
@@ -143,9 +137,6 @@ public class ShowDatabaseObjectAction extends CookieAction {
             }
          }
       });
-
-
-
    }
 
    @Override
@@ -159,14 +150,11 @@ public class ShowDatabaseObjectAction extends CookieAction {
    }
 
    @Override
-   protected boolean enable(Node[] activatedNodes) {
-      this.activatedNodes = activatedNodes;
+   protected boolean enable(Node[] activatedNodes) {      
       if (!super.enable(activatedNodes)) {
          return false;
       }
-
       Project p = activatedNodes[0].getLookup().lookup(Project.class);
-
       return DatabaseConnectionManager.getInstance(p).isOnline();
    }
 }
