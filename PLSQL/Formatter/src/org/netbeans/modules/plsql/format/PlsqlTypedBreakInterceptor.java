@@ -52,6 +52,9 @@ public class PlsqlTypedBreakInterceptor implements TypedBreakInterceptor {
    private boolean wordInRowBelowStartsWith(BaseDocument doc, int insertPos, String word) throws BadLocationException {
       int currentRow = Utilities.getLineOffset(doc, insertPos);
       int rowStartFromLineOffset = Utilities.getRowStartFromLineOffset(doc, currentRow + 1);
+      if(rowStartFromLineOffset<0){
+          rowStartFromLineOffset = 0;
+      }
       return Utilities.getWord(doc, rowStartFromLineOffset).startsWith(word);
    }
 
