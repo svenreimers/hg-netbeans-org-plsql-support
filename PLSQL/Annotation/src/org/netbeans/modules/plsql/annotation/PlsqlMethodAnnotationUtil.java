@@ -373,7 +373,8 @@ public class PlsqlMethodAnnotationUtil {
                         hasReturn = HAS_RETURNS;
                     }
                 } else if (token.toString().equalsIgnoreCase("ERROR_SYS")
-                        || token.toString().equalsIgnoreCase("APPLICATION_SEARCH_SYS")) {
+                        || token.toString().equalsIgnoreCase("APPLICATION_SEARCH_SYS")
+                        || token.toString().equalsIgnoreCase("VMO_ERROR_SYS")) {
                     if (ts.moveNext()) {
                         token = ts.token();
                         if (token.id() == PlsqlTokenId.DOT) {
