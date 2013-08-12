@@ -53,7 +53,7 @@ public class PlsqlFoldManagerFactory implements FoldManagerFactory {
 
    @Override
    public FoldManager createFoldManager() {
-      final String property = System.getProperty("plsql.fold.manager", "old");
+      final String property = System.getProperty("plsql.fold.manager", "new");
       if ("custom".equals(property)) {
          return new CustomFoldManager();
       }

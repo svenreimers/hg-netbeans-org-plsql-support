@@ -99,7 +99,7 @@ public class PlsqlExecutableBlocksMakerTest extends TestRecordPlayer {
             PlsqlExecutableBlocksMaker instance = new PlsqlExecutableBlocksMaker(doc);
             List<PlsqlExecutableObject> makeExceutableObjects = instance.makeExceutableObjects();
             
-            int size = makeExceutableObjects.size();           
+            int size = makeExceutableObjects.size(); 
             assertEquals(12, size);
             processExecutableBLocksBlocks(plsqlFileName,makeExceutableObjects);
             
@@ -220,7 +220,7 @@ public class PlsqlExecutableBlocksMakerTest extends TestRecordPlayer {
             List<PlsqlExecutableObject> makeExceutableObjects = instance.makeExceutableObjects();
             
             int size = makeExceutableObjects.size();           
-            assertEquals(83, size);
+            assertEquals(81, size);
             processExecutableBLocksBlocks(plsqlFileName,makeExceutableObjects);
             
         } catch (BadLocationException ex) {

@@ -5,6 +5,7 @@
 package org.netbeans.modules.plsql.fold;
 
 import java.io.Serializable;
+import org.netbeans.api.editor.fold.FoldType;
 
 /**
  *
@@ -15,15 +16,17 @@ class FoldSearchObject implements Serializable {
    private static final long serialVersionUID = 1L;
    private final int startOffset;
    private final int endOffset;
+   private FoldType foldType;
    private FoldAdapter fold;
 
-   FoldSearchObject(int startOffset, int endOffset) {
+   FoldSearchObject(int startOffset, int endOffset, FoldType foldType) {
       this.startOffset = startOffset;
       this.endOffset = endOffset;
+      this.foldType = foldType;
    }
 
    FoldSearchObject(FoldAdapter fold) {
-      this(-1, -1);
+      this(-1, -1,null);
       this.fold = fold;
    }
 
@@ -40,7 +43,14 @@ class FoldSearchObject implements Serializable {
       }
       return endOffset;
    }
-
+   
+   public FoldType getFoldType(){
+       if (foldType == null) {
+         return fold.getFoldType();
+      }
+      return foldType;
+   }
+   
    @Override
    public int hashCode() {
       int hash = 7;

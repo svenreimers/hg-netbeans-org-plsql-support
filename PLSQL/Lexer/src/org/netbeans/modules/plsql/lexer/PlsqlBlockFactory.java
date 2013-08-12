@@ -2524,6 +2524,10 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
         ts.moveNext();
 
         //Calculate end offset
+        if(commentEnd.id() == PlsqlTokenId.WHITESPACE ){
+            ts.movePrevious();
+            commentEnd = ts.token();
+        }
         int endOffset = commentEnd.offset(tokenHierarchy) + commentEnd.length();
 
         return new PlsqlBlock(commentBegin.offset(tokenHierarchy),
@@ -3870,7 +3874,7 @@ public class PlsqlBlockFactory extends Observable implements DocumentListener {
         Token<PlsqlTokenId> tmp = ts.token();
         LOG.log(Level.FINE, "getNextNonWhitespaceForComments, tmp.id()={0}, tmp.text()={1}", new Object[]{tmp.id(), tmp.text().toString()});
         while (moveNext) {
-            if (tmp.id() == PlsqlTokenId.WHITESPACE && "\n".equals(tmp.text())) {
+            if (tmp.id() == PlsqlTokenId.WHITESPACE && ("\n".equals(tmp.text()) || tmp.text().toString().contains("\n "))) {
                 moveNext = ts.moveNext();
                 tmp = ts.token();
             } else {

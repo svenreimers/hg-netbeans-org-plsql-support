@@ -1,0 +1,58 @@
+-----------------------------------------------------------------------------
+--
+--  Logical unit: <<<LU: Put your LU name here>>>
+--
+--  IFS Developer Studio Template Version 2.5
+--
+--  Date    Sign    History
+--  ------  ------  ---------------------------------------------------------
+-----------------------------------------------------------------------------
+
+DEFINE MODULE        = <<<MODULE:   Put your module name here>>>
+DEFINE LU            = <<<LU:       Put your lu name here>>>
+DEFINE PKG           = <<<PKG:      Put your PACKAGE name here>>>
+
+PROMPT Creating &PKG SPECIFICATION
+
+CREATE OR REPLACE PACKAGE BODY &PKG IS
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC IMPLEMENTATION METHODS ---------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PRIVATE METHODS ----------------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PROTECTED METHODS --------------------------
+-----------------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------------
+-------------------- LU SPECIFIC PUBLIC METHODS -----------------------------
+-----------------------------------------------------------------------------
+
+PROCEDURE Delete___ (
+   objid_  IN VARCHAR2,
+   remrec_ IN &VIEW%ROWTYPE )
+
+IS
+        key_ VARCHAR2(2000);
+        key_ VARCHAR2(2000);
+   type_ intface_header_tab.procedure_name%TYPE;
+BEGIN
+   temp =: NULL;
+   --
+   -- Call to Intface_Util_API.Register_Delete_ removed.
+   -- Logic is now handled in Intface_Util_API.Drop_IC_Table_
+   --
+   
+   key_ := remrec_.intface_name || '^' || remrec_.column_name || '^';
+   Reference_SYS.Do_Cascade_Delete(lu_name_, key_);
+   DELETE           
+      FROM  intface_detail_tab
+      WHERE &OBJID = objid_;   
+END Delete___;

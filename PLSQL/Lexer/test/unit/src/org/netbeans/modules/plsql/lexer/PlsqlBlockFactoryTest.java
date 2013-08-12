@@ -568,6 +568,28 @@ public class PlsqlBlockFactoryTest extends TestRecordPlayer {
         }
     }
     
+    @Test
+    public void testForComments() throws IOException, BadLocationException {
+        System.out.println("Test for Comment blocks ");
+        final String plsqlFileName = "TestComments.apy";
+        FileObject fileObject = fs.getRoot().createData(plsqlFileName);
+        assertNotNull(fileObject);
+        try {
+            PlsqlBlockFactory blockFac = loadAsTmpFile(fileObject, plsqlFileName);
+            assertNotNull(blockFac);
+
+            List<PlsqlBlock> lstBlockFac = blockFac.getBlockHierarchy();
+            //printHierarchy(lstBlockFac, "");
+            //assertEquals(2, lstBlockFac.size());
+            processBlocks(plsqlFileName, lstBlockFac);
+
+        } finally {
+            if (fileObject != null) {
+                fileObject.delete();
+            }
+        }
+    }
+    
    
     private PlsqlBlockFactory loadAsTmpFile(FileObject fileObj, String fileName) throws IOException, BadLocationException {
         InputStream inputStream = new FileInputStream(new File(getDataDir(), fileName));

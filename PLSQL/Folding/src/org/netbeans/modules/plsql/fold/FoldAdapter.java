@@ -5,6 +5,7 @@
 package org.netbeans.modules.plsql.fold;
 
 import org.netbeans.api.editor.fold.Fold;
+import org.netbeans.api.editor.fold.FoldType;
 
 /**
  *
@@ -24,5 +25,9 @@ class FoldAdapter {
 
    int getEndOffset() {
       return fold.getEndOffset();
+   }
+   
+   FoldType getFoldType(){
+        return fold.getType();   
    }
 }
