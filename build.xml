@@ -13,8 +13,8 @@
    <property name="timestamp.file" value=".lastModified"/>
 
    <property environment="env"/>
-   <property name="env.BUILD_NUMBER" value="0" description="Set a fake value if not run from Jenkins"/>
-   <property name="env.next_jira_release_version" value="8.72.0" description="Set a fake value if not run from Jenkins"/>
+   <property name="env.BUILD_NUMBER" value="0-SNAPSHOT" description="Set a fake value if not run from Jenkins"/>
+   <property name="env.next_jira_release_version" value="8.72" description="Set a fake value if not run from Jenkins"/>
    <property name="new_version" value="${env.next_jira_release_version}.${env.BUILD_NUMBER}" description="Set a version number based on info from Jenkins"/>
 
    <condition property="build.id" value="${env.BUILD_ID}" else="dev">
@@ -227,7 +227,7 @@
             uri="antlib:org.apache.maven.artifact.ant"
             classpathref="maven-ant-tasks.classpath" />
 
-   <target name="maven-install" description="install jars in local maven repo" >
+   <target name="maven-install" description="install jars in local maven repo" depends="nbms">
       <condition property="nbm.update.exists">
          <available file="${basedir}/build/updates" />
       </condition>
