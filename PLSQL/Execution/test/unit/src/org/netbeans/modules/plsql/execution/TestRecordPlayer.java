@@ -30,6 +30,10 @@ public class TestRecordPlayer extends NbTestCase {
         super(name);
     }
 
+    public void testShouldPassBeforeCommit() {
+        assertFalse(recordTestData);
+    }
+
     public void processExecutableBLocksBlocks(String plsqlFileName, List<PlsqlExecutableObject> exceutableObjects) throws IOException {
         List<String> expectedExceutableObjTypes = new ArrayList<String>();
         populateListOfExceutableObjects(exceutableObjects, expectedExceutableObjTypes);
